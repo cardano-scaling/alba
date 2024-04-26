@@ -11,27 +11,38 @@ permissions:
 
 jobs:
   build:
+    env:
+      cabal-build-dir: _build
 
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - uses: actions/setup-haskell@v1
+    - name: ✅ Checkout
+      uses: actions/checkout@v4
+
+    - name: 🌳 Environment
+      uses: haskell-actions/setup@v2
+      id: setup-haskell-cabal
       with:
         ghc-version: '9.8.2'
         cabal-version: '3.2'
 
-    - name: Cache
-      uses: actions/cache@v3
+    - name: 🧊 Freeze
+      run: >
+        cabal freeze
+        --builddir=${{ env.cabal-build-dir }}
+
+    - name: 🚪 Cache
+      uses: actions/cache@v4
       env:
-        cache-name: cache-cabal
+        hash: ${{ hashFiles('cabal.project.freeze') }}
       with:
-        path: ~/.cabal
-        key: ${{ runner.os }}-build-${{ env.cache-name }}-${{ hashFiles('**/*.cabal') }}-${{ hashFiles('**/cabal.project') }}
+        key: ${{ matrix.os }}-ghc-${{ matrix.ghc }}-${{ env.hash }}
         restore-keys: |
-          ${{ runner.os }}-build-${{ env.cache-name }}-
-          ${{ runner.os }}-build-
-          ${{ runner.os }}-
+          ${{ matrix.os }}-ghc-${{ matrix.ghc }}-
+        path: |
+          ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
+          ${{ env.cabal-build-dir }}
 
     - name: Install libsodium
       run: |
@@ -43,14 +54,16 @@ jobs:
          make
          sudo make install
 
-    - name: Install dependencies
+    - name: 🪨 Install dependencies
       run: |
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
-    - name: Build
+
+    - name: 🏠 Build
       env:
         LD_LIBRARY_PATH: "/usr/local/lib:$LD_LIBRARY_PATH"
         PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
       run: cabal build --enable-tests --enable-benchmarks  --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
-    - name: Run tests
+
+    - name: 🧪 Run tests
       run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
