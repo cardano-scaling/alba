@@ -8,28 +8,17 @@ author:             Arnaud Bailly <arnaud.bailly@iohk.io>
 maintainer:         Arnaud Bailly <arnaud.bailly@iohk.io>
 category:           Network
 build-type:         Simple
-extra-source-files: ReadMe.md
-
-data-dir: golden
-data-files: *.json
+extra-source-files: README.md
 
 library
   exposed-modules:
     ALBA
   hs-source-dirs:   src
   build-depends:
-                      aeson
-                , QuickCheck
-                , base >=4.9 && <5
+                  base >=4.9 && <5
                 , base16-bytestring
                 , bytestring
                 , cereal
-                , generic-random
-                , hashable
-                , io-classes
-                , quickcheck-instances
-                , text
-                , time
   default-extensions:  StrictData
   default-language: Haskell2010
   ghc-options:      -Wall -Wunused-packages
