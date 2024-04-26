@@ -1,0 +1,75 @@
+cabal-version:      3.0
+name:               alba
+version:            0.1.0.0
+synopsis:           Approximate Lower Bound Arguments
+license:            Apache-2.0
+license-file:       LICENSE
+author:             Arnaud Bailly <arnaud.bailly@iohk.io>
+maintainer:         Arnaud Bailly <arnaud.bailly@iohk.io>
+category:           Network
+build-type:         Simple
+extra-source-files: ReadMe.md
+
+data-dir: golden
+data-files: *.json
+
+library
+  exposed-modules:
+    ALBA
+  hs-source-dirs:   src
+  build-depends:
+                      aeson
+                , QuickCheck
+                , base >=4.9 && <5
+                , base16-bytestring
+                , bytestring
+                , cereal
+                , generic-random
+                , hashable
+                , io-classes
+                , quickcheck-instances
+                , text
+                , time
+  default-extensions:  StrictData
+  default-language: Haskell2010
+  ghc-options:      -Wall -Wunused-packages
+  extra-libraries: sodium
+  include-dirs: cbits
+  includes: cbits/blake2b.h
+  c-sources: cbits/blake2b.c
+
+test-suite test
+    default-language: Haskell2010
+    type:             exitcode-stdio-1.0
+    hs-source-dirs:   test
+    main-is:          Main.hs
+    other-modules:    ALBASpec
+    build-depends:
+                    base >= 4.9 && <5
+                  , QuickCheck
+                  , base16-bytestring
+                  , bytestring
+                  , cereal
+                  , hspec
+                  , alba
+                  , quickcheck-classes
+                  , quickcheck-instances
+
+    build-tool-depends:
+       hspec-discover:hspec-discover
+
+    ghc-options: -rtsopts -threaded
+
+benchmark bench
+  hs-source-dirs: bench/
+  main-is:        ALBABench.hs
+  type:           exitcode-stdio-1.0
+  build-depends:
+    , aeson
+    , base
+    , bytestring
+    , criterion
+    , alba
+    , QuickCheck
+
+  ghc-options:    -threaded -rtsopts
