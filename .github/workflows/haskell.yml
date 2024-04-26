@@ -53,4 +53,4 @@ jobs:
         PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
       run: cabal build --enable-tests --enable-benchmarks  --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
     - name: Run tests
-      run: cabal test all
+      run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
