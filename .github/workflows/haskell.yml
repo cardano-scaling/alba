@@ -44,13 +44,13 @@ jobs:
          sudo make install
 
     - name: Install dependencies
-      env:
-        LD_LIBRARY_PATH: "/usr/local/lib:$LD_LIBRARY_PATH"
-        PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
       run: |
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
     - name: Build
-      run: cabal build --enable-tests --enable-benchmarks all
+      env:
+        LD_LIBRARY_PATH: "/usr/local/lib:$LD_LIBRARY_PATH"
+        PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
+      run: cabal build --enable-tests --enable-benchmarks  --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
     - name: Run tests
       run: cabal test all
