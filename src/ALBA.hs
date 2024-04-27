@@ -70,9 +70,6 @@ instance Hashable a => Hashable [a] where
 instance (Hashable a, Hashable b) => Hashable (a, b) where
   hash (a, b) = hash $ hash a <> hash b
 
-instance (Hashable a, Hashable b, Hashable c) => Hashable (a, b, c) where
-  hash (a, b, c) = hash $ hash a <> hash b <> hash c
-
 newtype Bytes = Bytes ByteString
   deriving newtype (Hashable, Eq)
 
@@ -82,13 +79,9 @@ instance Show Bytes where
 -- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
 prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
-  go numRounds round0
+  go (fromInteger u - 1) round0
  where
-  numRounds = fromInteger u - 1
-
-  round0 =
-    [ (t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let h_i = hash tuple `oracle` n_p
-    ]
+  round0 = [(t, [s_i]) | s_i <- s_p, t <- [1 .. d]]
 
   (u, d, q) = computeParams params
 
@@ -98,19 +91,14 @@ prove params@Params{n_p} s_p =
         !m = h `oracle` n
      in m == 0
 
-  go :: Int -> [(Integer, [Bytes], Integer)] -> Proof
+  go :: Int -> [(Integer, [Bytes])] -> Proof
   go 0 acc =
     let prob = ceiling $ 1 / q
-        s_p'' = filter (`h1` prob) acc
-     in Proof $ head $ map (\(n, s, _) -> (n, s)) s_p''
+        s_p'' = filter (flip h1 prob) acc
+     in Proof $ head s_p''
   go n acc =
-    let s_p'' =
-          [ (t, s_i : s_j, h_i)
-          | s_i <- s_p
-          , let h_i = hash s_i `oracle` n_p
-          , (t, s_j, h_j) <- acc
-          , h_i == h_j
-          ]
+    let s_p' = filter (flip h1 n_p) acc
+        s_p'' = [(t, s_i : s_j) | s_i <- s_p, (t, s_j) <- s_p']
      in go (n - 1) s_p''
 
 computeParams :: Params -> (Integer, Integer, Double)
