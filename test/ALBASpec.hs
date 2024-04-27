@@ -90,7 +90,7 @@ spec = do
 prop_oracleDistributionIsUniform :: Property
 prop_oracleDistributionIsUniform = do
   forAll (resize 100 arbitrary) $ \(bytes :: ByteString) -> do
-    let remainder = bytes `oracle` 10
+    let remainder = hash bytes `oracle` 10
     remainder >= 0 && remainder < 10
       & tabulate "distribution" [show remainder]
       & coverTable "distribution" (map (\r -> (show r, 10)) [0 .. 9])
@@ -192,7 +192,7 @@ prop_randomOracle :: ByteString -> Property
 prop_randomOracle bytes =
   forAll arbitrary $ \(Positive n) ->
     let bytesInteger = fromBytesLE bytes
-        o = oracle bytes n
+        o = hash bytes `oracle` n
         oracleBytes = BS.dropWhile (== 0) $ toBytesLE o
         allButOneBytes = BS.reverse $ BS.drop 1 oracleBytes
      in bytesInteger

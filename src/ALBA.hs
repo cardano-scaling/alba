@@ -1,10 +1,11 @@
-{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CApiFFI #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ALBA where
@@ -50,8 +51,18 @@ type W a = a -> Int
 newtype Proof = Proof (Integer, [Bytes])
   deriving (Show, Eq)
 
+newtype Hash = Hash ByteString
+  deriving newtype (Eq)
+  deriving (Show) via Bytes
+
+instance Semigroup Hash where
+  Hash a <> Hash b = hash $ a <> b
+
+instance Monoid Hash where
+  mempty = Hash ""
+
 class Hashable a where
-  hash :: a -> ByteString
+  hash :: a -> Hash
 
 instance Hashable Integer where
   hash = hash . encode
@@ -62,13 +73,13 @@ instance Hashable ByteString where
       let (foreignPtr, len) = toForeignPtr0 bytes
        in withForeignPtr foreignPtr $ \ptr -> do
             void $ blake2b256_hash ptr len out
-            BS.pack <$> peekArray 32 out
+            Hash . BS.pack <$> peekArray 32 out
 
 instance Hashable a => Hashable [a] where
-  hash = hash . BS.concat . map hash
+  hash = foldMap hash
 
 instance (Hashable a, Hashable b) => Hashable (a, b) where
-  hash (a, b) = hash $ hash a <> hash b
+  hash (a, b) = hash a <> hash b
 
 newtype Bytes = Bytes ByteString
   deriving newtype (Hashable, Eq)
@@ -81,24 +92,21 @@ prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
   go (fromInteger u - 1) round0
  where
-  round0 = [(t, [s_i]) | s_i <- s_p, t <- [1 .. d]]
+  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let h_i = hash tuple]
 
   (u, d, q) = computeParams params
 
-  h1 :: Hashable a => a -> Integer -> Bool
-  h1 a n =
-    let !h = hash a
-        !m = h `oracle` n
-     in m == 0
+  h1 :: Integer -> (Integer, [Bytes], Hash) -> Bool
+  h1 n (_, _, h) = h `oracle` n == 0
 
-  go :: Int -> [(Integer, [Bytes])] -> Proof
+  go :: Int -> [(Integer, [Bytes], Hash)] -> Proof
   go 0 acc =
     let prob = ceiling $ 1 / q
-        s_p'' = filter (flip h1 prob) acc
-     in Proof $ head s_p''
+        s_p'' = filter (h1 prob) acc
+     in Proof $ head $ map (\(k, bs, _) -> (k, bs)) s_p''
   go n acc =
-    let s_p' = filter (flip h1 n_p) acc
-        s_p'' = [(t, s_i : s_j) | s_i <- s_p, (t, s_j) <- s_p']
+    let s_p' = filter (h1 n_p) acc
+        s_p'' = [(t, s_i : s_j, h_i) | s_i <- s_p, (t, s_j, h_j) <- s_p', let h_i = h_j <> hash s_i]
      in go (n - 1) s_p''
 
 computeParams :: Params -> (Integer, Integer, Double)
@@ -151,8 +159,8 @@ toBytesLE n =
 -- dn_p$ , and output $i \mod n_p$ otherwise. (Naturally, only the honest
 -- prover and verifier will actually fail; dishonest parties can do
 -- whatever they want.)
-oracle :: ByteString -> Integer -> Integer
-oracle bytes n =
+oracle :: Hash -> Integer -> Integer
+oracle (Hash bytes) n =
   if isPowerOf2 n
     then modPowerOf2 bytes n
     else modNonPowerOf2 bytes n
@@ -191,18 +199,20 @@ verify :: Params -> Proof -> Bool
 verify params@Params{n_p} (Proof (d, bs)) =
   let (u, _, q) = computeParams params
 
-      fo item (0, n, acc) =
+      fo item (0, _, []) =
+        let h = hash (d, [item])
+         in (oracle h n_p, h, [item])
+      fo item (0, prev_h, acc) =
         let prf = item : acc
-            toh = (n, prf)
+            h = prev_h <> hash item
             prob = ceiling $ 1 / q
-            h = hash toh
             m =
               if length prf < length bs
                 then oracle h n_p
                 else oracle h prob
-         in (m, n, item : acc)
+         in (m, h, item : acc)
       fo _ (k, n, acc) = (k, n, acc)
 
       fst3 (a, _, _) = a
    in length bs == fromInteger u
-        && ((== 0) . fst3) (foldr fo (0, d, []) bs)
+        && ((== 0) . fst3) (foldr fo (0, Hash "", []) bs)
