@@ -44,7 +44,7 @@ jobs:
           ${{ steps.setup-haskell-cabal.outputs.cabal-store }}
           ${{ env.cabal-build-dir }}
 
-    - name: Install libsodium
+    - name: ❄ Install libsodium
       run: |
          git clone https://github.com/input-output-hk/libsodium
          cd libsodium
