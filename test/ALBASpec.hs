@@ -82,16 +82,16 @@ spec = do
       ]
 
   it "proof has different elements" $ do
-    elems <- generate $ resize 10 genItems
+    elems <- generate $ resize 10 (genItems 8)
     let params = Params 8 8 8 2
         proof = prove params elems
         Proof (_, bs) = proof
     List.nub bs `shouldBe` bs
 
-  prop "can verify small proof is valid" $ prop_verifyValidProof 100
+  prop "can verify small proof is valid" $ prop_verifyValidProof 8 100
   modifyMaxSuccess (const 10) $
     prop "can verify large proof is valid" $
-      prop_verifyValidProof 300
+      prop_verifyValidProof 50 300
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
 prop_oracleDistributionIsUniform :: Property
@@ -120,7 +120,7 @@ prop_rejectTamperedProof =
 
 genModifiedProof :: Gen (Proof, Proof)
 genModifiedProof = do
-  items <- resize 100 genItems
+  items <- resize 100 (genItems 20)
   let params = Params 8 8 80 20
       (u, _, q) = computeParams params
       proof@(Proof (n, bs)) = prove params items
@@ -164,9 +164,9 @@ flipBit j bs =
   b = BS.index bs k
   b' = b `xor` (1 `shiftL` l)
 
-prop_verifyValidProof :: Integer -> Property
-prop_verifyValidProof coeff =
-  forAll (resize (fromInteger coeff) genItems) $ \items -> do
+prop_verifyValidProof :: Int -> Integer -> Property
+prop_verifyValidProof len coeff =
+  forAll (resize (fromInteger coeff) (genItems len)) $ \items -> do
     let params = Params 8 8 (coeff * 8 `div` 10) (coeff * 2 `div` 10)
         (u, _, q) = computeParams params
         proof = prove params items
@@ -178,8 +178,8 @@ shrinkPowerOf2 n
   | n > 2 = [n `div` 2]
   | otherwise = []
 
-genItems :: Gen [Bytes]
-genItems = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf 8 arbitrary)
+genItems :: Int -> Gen [Bytes]
+genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)
 
 checkParameters :: (Params, Integer) -> SpecWith ()
 checkParameters (params, expected) =
