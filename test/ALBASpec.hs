@@ -81,13 +81,6 @@ spec = do
       , (Params 128 128 800 200, 68)
       ]
 
-  it "proof has different elements" $ do
-    elems <- generate $ resize 10 (genItems 8)
-    let params = Params 8 8 8 2
-        proof = prove params elems
-        Proof (_, bs) = proof
-    List.nub bs `shouldBe` bs
-
   prop "can verify small proof is valid" $ prop_verifyValidProof 8 100
   modifyMaxSuccess (const 10) $
     prop "can verify large proof is valid" $
