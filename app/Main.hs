@@ -33,6 +33,10 @@ main = do
 
 parseOptions :: [String] -> IO Options
 parseOptions [] = pure defaultOptions
+parseOptions ("--security" : lam : rest) = do
+  let λ = read lam
+  opts <- parseOptions rest
+  pure $ opts{params = (params opts){λ_sec = λ, λ_rel = λ}}
 parseOptions ("--size" : sz : rest) = do
   let size = read sz
   opts <- parseOptions rest

@@ -105,7 +105,7 @@ prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
   go (fromInteger u - 1) round0
  where
-  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let h_i = hash tuple]
+  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let !h_i = hash tuple]
 
   (u, d, q) = computeParams params
 
