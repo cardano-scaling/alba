@@ -12,7 +12,7 @@
 module ALBA where
 
 import Control.Exception (bracket)
-import Data.Bits (setBit, shiftR, (.&.))
+import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, setBit, shiftR, (.&.), (.<<.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
@@ -72,13 +72,18 @@ class Hashable a where
 instance Hashable Integer where
   hash = hash . encode
 
+buffer :: Ptr Word8
+buffer = unsafePerformIO $ mallocBytes 32
+{-# NOINLINE buffer #-}
+
 instance Hashable ByteString where
+  {-# SCC hash #-}
   hash bytes =
-    unsafePerformIO $ bracket (mallocBytes 32) free $ \out ->
+    unsafePerformIO $
       let (foreignPtr, len) = toForeignPtr0 bytes
        in withForeignPtr foreignPtr $ \ptr -> do
-            void $ blake2b256_hash ptr len out
-            Hash . BS.pack <$> peekArray 32 out
+            void $ blake2b256_hash ptr len buffer
+            Hash . BS.pack <$> peekArray 32 buffer
 
 instance Hashable a => Hashable [a] where
   hash = foldMap hash
@@ -182,12 +187,15 @@ modNonPowerOf2 bytes n =
     then error $ "failed: i = " <> show i <> ", d = " <> show d <> ", n = " <> show n <> ", k = " <> show k
     else i `mod` n
  where
-  k :: Word64 = ceiling $ logBase 2 (fromIntegral n / εFail)
+  k = logBase2 (n * εFail)
   d = 2 ^ k `div` n
   i = modPowerOf2 bytes (2 ^ k)
 
-εFail :: Double
-εFail = 1e-10
+εFail :: Word64
+εFail = 1 .<<. 30 -- roughly 1 in a billion
+
+logBase2 :: FiniteBits b => b -> Int
+logBase2 x = finiteBitSize x - 1 - countLeadingZeros x
 
 modPowerOf2 :: ByteString -> Word64 -> Word64
 modPowerOf2 bytes n =
@@ -196,8 +204,7 @@ modPowerOf2 bytes n =
 
 isPowerOf2 :: Word64 -> Bool
 isPowerOf2 n =
-  let q :: Word64 = truncate $ logBase 2 (fromIntegral n :: Double)
-   in 2 ^ q == n
+  countLeadingZeros n + countTrailingZeros n == 63
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
 verify :: Params -> Proof -> Bool
