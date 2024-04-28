@@ -12,8 +12,10 @@ import ALBA (
   computeParams,
   fromBytes,
   fromBytesLE,
+  genItems,
   isPowerOf2,
   modBS,
+  modPowerOf2,
   oracle,
   prove,
   toBytesLE,
@@ -25,6 +27,7 @@ import qualified Data.ByteString as BS
 import Data.Function ((&))
 import qualified Data.List as List
 import Data.Serialize (encode)
+import Data.Word (Word64)
 import Debug.Trace
 import Test.Hspec (Spec, SpecWith, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
@@ -64,12 +67,12 @@ import Test.QuickCheck.State (Confidence (..))
 spec :: Spec
 spec = do
   prop "can hash bytestrings" prop_hashBytestring
-  prop "can take naive modulus of a bytestring" prop_modBytestring
   modifyMaxSuccess (const 1000) $
     prop "can flip a single bit from a bytestring" prop_flip1Bit
   modifyMaxSuccess (const 1000) $
     prop "convert Integer to/from LE ByteString" prop_roundtripBytesInteger
   prop "asserts power-of-2-ness" prop_isPowerOf2
+  prop "compute power of 2 modulus" prop_modPowerOf2
   modifyMaxSuccess (const 1000) $
     prop "can generate uniform random number within bound" prop_randomOracle
   prop "oracle distribution is uniform" prop_oracleDistributionIsUniform
@@ -157,9 +160,9 @@ flipBit j bs =
   b = BS.index bs k
   b' = b `xor` (1 `shiftL` l)
 
-prop_verifyValidProof :: Int -> Integer -> Property
+prop_verifyValidProof :: Int -> Word64 -> Property
 prop_verifyValidProof len coeff =
-  forAll (resize (fromInteger coeff) (genItems len)) $ \items -> do
+  forAll (resize (fromIntegral coeff) (genItems len)) $ \items -> do
     let params = Params 8 8 (coeff * 8 `div` 10) (coeff * 2 `div` 10)
         (u, _, q) = computeParams params
         proof = prove params items
@@ -171,9 +174,6 @@ shrinkPowerOf2 n
   | n > 2 = [n `div` 2]
   | otherwise = []
 
-genItems :: Int -> Gen [Bytes]
-genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)
-
 checkParameters :: (Params, Integer) -> SpecWith ()
 checkParameters (params, expected) =
   it ("check u = " <> show expected <> " for " <> show params) $
@@ -184,34 +184,37 @@ prop_hashBytestring :: ByteString -> ByteString -> Property
 prop_hashBytestring bytes1 bytes2 =
   bytes1 /= bytes2 ==> hash bytes1 =/= hash bytes2
 
-prop_modBytestring :: Positive Integer -> Positive Integer -> Property
-prop_modBytestring (Positive x) (Positive y) =
-  y < x ==> modBS (toBytesLE x) y === x `mod` y
+prop_randomOracle :: Property
+prop_randomOracle =
+  forAll (BS.pack <$> vectorOf 8 arbitrary) $ \(bytes :: ByteString) ->
+    forAll arbitrary $ \(Positive (Small n)) ->
+      n >= 2 ==>
+        let h = hash bytes
+            o = h `oracle` n
+            oracleBytes = BS.dropWhile (== 0) $ toBytesLE o
+            allButOneBytes = BS.reverse $ BS.drop 1 oracleBytes
+         in o < n
+              & counterexample ("fast oracle (as bytes): " <> show (BS.unpack oracleBytes))
+              & counterexample ("fast oracle: " <> show o)
+              & counterexample ("input:" <> show h)
 
-prop_randomOracle :: ByteString -> Property
-prop_randomOracle bytes =
-  forAll arbitrary $ \(Positive n) ->
-    let bytesInteger = fromBytesLE bytes
-        o = hash bytes `oracle` n
-        oracleBytes = BS.dropWhile (== 0) $ toBytesLE o
-        allButOneBytes = BS.reverse $ BS.drop 1 oracleBytes
-     in bytesInteger
-          > n
-          ==> and (BS.zipWith (==) bytes allButOneBytes)
-            & counterexample ("fast oracle (as bytes): " <> show (BS.unpack oracleBytes))
-            & counterexample ("fast oracle: " <> show o)
-            & counterexample ("input (as integer): " <> show bytesInteger)
-            & counterexample ("input (as bytes):" <> show (BS.unpack bytes))
-
-prop_roundtripBytesInteger :: Positive Integer -> Property
+prop_roundtripBytesInteger :: Positive Word64 -> Property
 prop_roundtripBytesInteger (Positive n) =
   n >= 0 ==> fromBytesLE (toBytesLE n) === n
+
+prop_modPowerOf2 :: Property
+prop_modPowerOf2 =
+  forAll genPowerOf2 $ \n ->
+    n > 2 ==>
+      forAll arbitrary $ \(w :: Word64) ->
+        let bytes = toBytesLE w
+         in modPowerOf2 bytes n === fromBytesLE bytes `mod` n
 
 prop_isPowerOf2 :: Property
 prop_isPowerOf2 =
   forAll genPowerOf2 $ \n ->
-    isPowerOf2 n
+    n /= 0 ==> isPowerOf2 n
 
-genPowerOf2 :: Gen Integer
+genPowerOf2 :: Gen Word64
 genPowerOf2 =
   arbitrary >>= \(Positive (Small k)) -> pure $ 2 ^ k

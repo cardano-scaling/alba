@@ -15,7 +15,8 @@ library
     ALBA
   hs-source-dirs:   src
   build-depends:
-                  base >=4.9 && <5
+                    base >=4.9 && <5
+                , QuickCheck
                 , base16-bytestring
                 , bytestring
                 , cereal
@@ -26,6 +27,16 @@ library
   include-dirs: cbits
   includes: cbits/blake2b.h
   c-sources: cbits/blake2b.c
+
+executable alba
+  hs-source-dirs: app
+  main-is:        Main.hs
+  build-depends:
+                  alba
+                , QuickCheck
+                , base
+
+  ghc-options:    -threaded -prof -rtsopts
 
 test-suite test
     default-language: Haskell2010

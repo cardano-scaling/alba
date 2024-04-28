@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CApiFFI #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DerivingStrategies #-}
@@ -18,9 +19,12 @@ import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (toForeignPtr0)
 import Data.Functor (void)
 import qualified Data.List as List
-import Data.Serialize (encode)
+import Data.Serialize (Serialize, encode, getWord64le, putWord64le, runGet, runPut)
+import Data.Word (Word64)
+import Debug.Trace (trace)
 import Foreign (Ptr, Word8, countTrailingZeros, free, mallocBytes, peekArray, withForeignPtr)
 import System.IO.Unsafe (unsafePerformIO)
+import Test.QuickCheck (Gen, arbitrary, sized, vectorOf)
 
 foreign import capi unsafe "blake2b.h blake2b256_hash" blake2b256_hash :: Ptr Word8 -> Int -> Ptr Word8 -> IO Int
 
@@ -38,9 +42,9 @@ data Params = Params
   -- ^ Verification parameter.
   -- Controls the probability that `verify` returns `True` when the proof is invalid.
   -- 128 seems like a good value
-  , n_p :: Integer
+  , n_p :: Word64
   -- ^ Estimated size of "honest" parties set.
-  , n_f :: Integer
+  , n_f :: Word64
   -- ^ Estimated size of "adversarial" parties set.
   }
   deriving (Show)
@@ -50,6 +54,7 @@ type W a = a -> Int
 
 newtype Proof = Proof (Integer, [Bytes])
   deriving (Show, Eq)
+  deriving newtype (Serialize)
 
 newtype Hash = Hash ByteString
   deriving newtype (Eq)
@@ -82,10 +87,13 @@ instance (Hashable a, Hashable b) => Hashable (a, b) where
   hash (a, b) = hash a <> hash b
 
 newtype Bytes = Bytes ByteString
-  deriving newtype (Hashable, Eq)
+  deriving newtype (Hashable, Eq, Serialize)
 
 instance Show Bytes where
   show (Bytes bs) = show $ Hex.encode bs
+
+genItems :: Int -> Gen [Bytes]
+genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)
 
 -- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
 prove :: Params -> [Bytes] -> Proof
@@ -96,17 +104,18 @@ prove params@Params{n_p} s_p =
 
   (u, d, q) = computeParams params
 
-  h1 :: Integer -> (Integer, [Bytes], Hash) -> Bool
+  prob = ceiling $ 1 / q
+
+  h1 :: Word64 -> (Integer, [Bytes], Hash) -> Bool
   h1 n (_, _, h) = h `oracle` n == 0
 
   go :: Int -> [(Integer, [Bytes], Hash)] -> Proof
   go 0 acc =
-    let prob = ceiling $ 1 / q
-        s_p'' = filter (h1 prob) acc
+    let s_p'' = filter (h1 prob) acc
      in Proof $ head $ map (\(k, bs, _) -> (k, bs)) s_p''
   go n acc =
-    let s_p' = filter (h1 n_p) acc
-        s_p'' = [(t, s_i : s_j, h_i) | s_i <- s_p, (t, s_j, h_j) <- s_p', let h_i = h_j <> hash s_i]
+    let !s_p' = filter (h1 n_p) acc
+        !s_p'' = [(t, s_i : s_j, h_i) | s_i <- s_p, (t, s_j, h_j) <- s_p', let !h_i = h_j <> hash s_i]
      in go (n - 1) s_p''
 
 computeParams :: Params -> (Integer, Integer, Double)
@@ -136,15 +145,17 @@ modBS bs q =
 fromBytes :: ByteString -> Integer -> Integer
 fromBytes bs q = BS.foldl' (\acc b -> (acc * 256 + fromIntegral b) `mod` q) 0 bs
 
-fromBytesLE :: ByteString -> Integer
-fromBytesLE = BS.foldr (\b acc -> acc * 256 + fromIntegral b) 0
+fromBytesLE :: ByteString -> Word64
+fromBytesLE = either error id . runGet getWord64le
 
-toBytesLE :: Integer -> ByteString
-toBytesLE n =
-  BS.pack $ List.unfoldr go n
- where
-  go 0 = Nothing
-  go m = Just (fromIntegral m, m `shiftR` 8)
+toBytesLE :: Word64 -> ByteString
+toBytesLE = runPut . putWord64le
+
+writeProof :: FilePath -> Proof -> IO Int
+writeProof file proof = do
+  let serialized = encode proof
+  BS.writeFile file serialized
+  pure $ BS.length serialized
 
 -- | Compute a "random" oracle from a `ByteString` that's lower than some integer `n`.
 --
@@ -159,39 +170,33 @@ toBytesLE n =
 -- dn_p$ , and output $i \mod n_p$ otherwise. (Naturally, only the honest
 -- prover and verifier will actually fail; dishonest parties can do
 -- whatever they want.)
-oracle :: Hash -> Integer -> Integer
+oracle :: Hash -> Word64 -> Word64
 oracle (Hash bytes) n =
   if isPowerOf2 n
     then modPowerOf2 bytes n
     else modNonPowerOf2 bytes n
 
-modNonPowerOf2 :: ByteString -> Integer -> Integer
+modNonPowerOf2 :: ByteString -> Word64 -> Word64
 modNonPowerOf2 bytes n =
   if i >= d * n
-    then error "failed"
+    then error $ "failed: i = " <> show i <> ", d = " <> show d <> ", n = " <> show n <> ", k = " <> show k
     else i `mod` n
  where
-  k :: Integer = ceiling $ logBase 2 (fromIntegral n / εFail)
+  k :: Word64 = ceiling $ logBase 2 (fromIntegral n / εFail)
   d = 2 ^ k `div` n
   i = modPowerOf2 bytes (2 ^ k)
 
 εFail :: Double
-εFail = 1e-20
+εFail = 1e-10
 
-modPowerOf2 :: ByteString -> Integer -> Integer
+modPowerOf2 :: ByteString -> Word64 -> Word64
 modPowerOf2 bytes n =
-  case dropWhile (== 0) $ BS.unpack $ toBytesLE n of
-    (msb : rest) ->
-      let
-        nbytes = reverse $ List.foldl' (\k i -> setBit k i) 0 [0 .. countTrailingZeros msb - 1] : replicate (length rest) 0xff
-        r = BS.pack $ zipWith (.&.) nbytes (BS.unpack bytes)
-       in
-        fromBytesLE r
-    [] -> error "modPowerOf2: n is 0"
+  let r = fromBytesLE $ BS.take 8 bytes
+   in (n - 1) .&. r
 
-isPowerOf2 :: Integer -> Bool
+isPowerOf2 :: Word64 -> Bool
 isPowerOf2 n =
-  let q :: Integer = truncate $ logBase 2 (fromIntegral n :: Double)
+  let q :: Word64 = truncate $ logBase 2 (fromIntegral n :: Double)
    in 2 ^ q == n
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
