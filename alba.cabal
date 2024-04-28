@@ -10,6 +10,10 @@ category:           Network
 build-type:         Simple
 extra-source-files: README.md
 
+flag dump
+  manual: True
+  default: True
+
 library
   exposed-modules:
     ALBA
@@ -27,6 +31,9 @@ library
   include-dirs: cbits
   includes: cbits/blake2b.h
   c-sources: cbits/blake2b.c
+
+  if flag(dump)
+    ghc-options: -ddump-simpl -ddump-stg-final -ddump-to-file
 
 executable alba
   hs-source-dirs: app

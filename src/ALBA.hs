@@ -77,8 +77,8 @@ buffer = unsafePerformIO $ mallocBytes 32
 {-# NOINLINE buffer #-}
 
 instance Hashable ByteString where
-  {-# SCC hash #-}
   hash bytes =
+    {-# SCC hash #-}
     unsafePerformIO $
       let (foreignPtr, len) = toForeignPtr0 bytes
        in withForeignPtr foreignPtr $ \ptr -> do
