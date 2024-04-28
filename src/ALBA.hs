@@ -19,7 +19,7 @@ import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (toForeignPtr0)
 import Data.Functor (void)
 import qualified Data.List as List
-import Data.Serialize (Serialize, encode, getWord64le, putWord64le, runGet, runPut)
+import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.Word (Word64)
 import Debug.Trace (trace)
 import Foreign (Ptr, Word8, countTrailingZeros, free, mallocBytes, peekArray, withForeignPtr)
@@ -161,6 +161,11 @@ writeProof file proof = do
   let serialized = encode proof
   BS.writeFile file serialized
   pure $ BS.length serialized
+
+readProof :: FilePath -> IO Proof
+readProof file = do
+  serialized <- BS.readFile file
+  pure $ either error id $ decode serialized
 
 -- | Compute a "random" oracle from a `ByteString` that's lower than some integer `n`.
 --
