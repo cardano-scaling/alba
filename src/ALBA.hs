@@ -105,6 +105,8 @@ prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
   go (fromInteger u - 1) round0
  where
+  preHash = zip s_p (hash <$> s_p)
+
   round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let !h_i = hash tuple]
 
   (u, d, q) = computeParams params
@@ -120,7 +122,7 @@ prove params@Params{n_p} s_p =
      in Proof $ head $ map (\(k, bs, _) -> (k, bs)) s_p''
   go n acc =
     let !s_p' = filter (h1 n_p) acc
-        !s_p'' = [(t, s_i : s_j, h_i) | s_i <- s_p, (t, s_j, h_j) <- s_p', let !h_i = h_j <> hash s_i]
+        !s_p'' = [(t, s_i : s_j, h_i) | (s_i, h_si) <- preHash, (t, s_j, h_j) <- s_p', let !h_i = h_j <> h_si]
      in go (n - 1) s_p''
 
 computeParams :: Params -> (Integer, Integer, Double)
