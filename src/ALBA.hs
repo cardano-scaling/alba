@@ -161,7 +161,7 @@ fromBytes :: ByteString -> Integer -> Integer
 fromBytes bs q = BS.foldl' (\acc b -> (acc * 256 + fromIntegral b) `mod` q) 0 bs
 
 fromBytesLE :: ByteString -> Word64
-fromBytesLE = either error id . runGet getWord64le
+fromBytesLE = either error id . runGet getWord64le . BS.take 8
 
 toBytesLE :: Word64 -> ByteString
 toBytesLE = runPut . putWord64le
@@ -215,7 +215,7 @@ logBase2 x = finiteBitSize x - 1 - countLeadingZeros x
 
 modPowerOf2 :: ByteString -> Word64 -> Word64
 modPowerOf2 bytes n =
-  let r = fromBytesLE $ BS.take 8 bytes
+  let r = fromBytesLE bytes
    in (n - 1) .&. r
 
 isPowerOf2 :: Word64 -> Bool
