@@ -21,6 +21,7 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
 import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
+import Data.String (IsString (..))
 import Data.Word (Word64)
 import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
 import Foreign.C (errnoToIOError, getErrno)
@@ -101,6 +102,9 @@ newtype Bytes = Bytes ByteString
 
 instance Show Bytes where
   show (Bytes bs) = show $ Hex.encode bs
+
+instance IsString Bytes where
+  fromString = Bytes . Hex.decodeLenient . fromString
 
 genItems :: Int -> Gen [Bytes]
 genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)

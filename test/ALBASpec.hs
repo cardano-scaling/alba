@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
 
@@ -108,10 +109,14 @@ prop_rejectTamperedProof =
   forAll genModifiedProof $ \(original, tampered) -> do
     let params = Params 8 8 8 2
         (u, _, q) = computeParams params
+        verified = verify params tampered
     conjoin
       [ original =/= tampered
-      , verify params tampered === False
+      , verified === False
       ]
+      & cover 99.99 (not verified) "tampered proof rejected"
+      -- there's still a small chance that a tampered proof
+      -- is accepted because the params value are quite small
       & counterexample ("u = " <> show u <> ", q = " <> show q)
 
 genModifiedProof :: Gen (Proof, Proof)
