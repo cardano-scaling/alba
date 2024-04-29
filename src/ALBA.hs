@@ -22,7 +22,6 @@ import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
 import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.Word (Word64)
-import Debug.Trace (trace)
 import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
 import Foreign.C (errnoToIOError, getErrno)
 import GHC.IO.Exception (ioException)
@@ -111,28 +110,38 @@ prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
   go (fromInteger u - 1) round0
  where
-  preHash = zip s_p (hash <$> s_p)
+  preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
 
-  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let !h_i = hash tuple, h_i `oracle` n_p == 0]
+  round0 =
+    [ (t, [s_i], h_0, n_p0)
+    | (s_i, (h, l)) <- preHash
+    , t <- [1 .. d]
+    , let !h_0 = hash t <> h
+    , let n_p0 = h_0 `oracle` n_p
+    , l == n_p0
+    ]
 
   (u, d, q) = computeParams params
 
   prob_q = ceiling $ 1 / q
 
-  go :: Int -> [(Integer, [Bytes], Hash)] -> Proof
+  go :: Int -> [(Integer, [Bytes], Hash, Word64)] -> Proof
   go 0 acc =
-    Proof $ head $ [(k, bs) | (k, bs, h) <- acc, h `oracle` prob_q == 0]
+    Proof $ head $ [(k, bs) | (k, bs, h, _) <- acc, h `oracle` prob_q == 0]
   go n acc =
     let !s_p'' =
           {-# SCC s_p'' #-}
-          [ (t, s_i : s_j, h_i)
-          | (s_i, h_si) <- preHash
-          , (t, s_j, h_j) <- acc
+          [ (t, s_i : s_j, h_i, h_i `oracle` n_p)
+          | (s_i, (h_si, n_pi)) <- preHash
+          , (t, s_j, h_j, n_pj) <- acc
+          , n_pi == n_pj
           , let !h_i = h_j <> h_si
-          , h_i `oracle` n_p == 0
           ]
      in go (n - 1) s_p''
 
+-- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
+--
+-- See corollary 1 in ALBA paper, p. 11.
 computeParams :: Params -> (Integer, Integer, Double)
 computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   (u, d, q)
@@ -142,12 +151,13 @@ computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   loge :: Double
   loge = logBase 2 e
 
-  u =
-    ceiling $
-      (fromIntegral λ_sec + logBase 2 (fromIntegral λ_rel) + 1 + logBase 2 loge)
-        / logBase 2 (fromIntegral n_p / fromIntegral n_f)
+  u' =
+    (fromIntegral λ_sec + logBase 2 (fromIntegral λ_rel) + 1 + logBase 2 loge)
+      / logBase 2 (fromIntegral n_p / fromIntegral n_f)
 
-  d = (2 * u * λ_rel) `div` floor loge
+  u = ceiling u'
+
+  d = ceiling $ (u' + log u') * fromIntegral λ_rel / loge
 
   q :: Double
   q = 2 * fromIntegral λ_rel / (fromIntegral d * loge)
@@ -228,20 +238,28 @@ verify params@Params{n_p} (Proof (d, bs)) =
   let (u, _, q) = computeParams params
 
       check item = \case
-        (0, _, []) ->
-          let h = hash (d, [item])
-           in (oracle h n_p, h, [item])
-        (0, prev_h, acc) ->
+        (True, _, []) ->
+          let h = hash item
+              l = oracle h n_p
+              h_0 = hash d <> h
+              n_p0 = h_0 `oracle` n_p
+           in (l == n_p0, h_0, [item])
+        (True, h_j, acc) ->
           let prf = item : acc
-              h = prev_h <> hash item
+              h_si = hash item
+              n_pi = h_si `oracle` n_p
+              h_i = h_j <> h_si
+              n_pj = oracle h_j n_p
+              -- last round
               prob = ceiling $ 1 / q
+              n_last = oracle h_i prob
               m =
                 if length prf < length bs
-                  then oracle h n_p
-                  else oracle h prob
-           in (m, h, item : acc)
+                  then n_pj == n_pi
+                  else n_last == 0
+           in (m, h_i, item : acc)
         other -> other
 
       fst3 (a, _, _) = a
    in length bs == fromInteger u
-        && ((== 0) . fst3) (foldr check (0, Hash "", []) bs)
+        && fst3 (foldr check (True, Hash "", []) bs)
