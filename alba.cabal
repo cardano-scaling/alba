@@ -20,10 +20,11 @@ library
   hs-source-dirs:   src
   build-depends:
                     base >=4.9 && <5
-                , QuickCheck
-                , base16-bytestring
-                , bytestring
-                , cereal
+                  , QuickCheck
+                  , base16-bytestring
+                  , bytestring
+                  , cereal
+                  , deepseq
   default-extensions:  StrictData
   default-language: Haskell2010
   ghc-options:      -Wall -Wunused-packages

@@ -4,26 +4,28 @@
 {-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module ALBA where
 
-import Control.Exception (bracket)
-import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, setBit, shiftR, (.&.), (.<<.))
+import Control.DeepSeq (NFData)
+import Control.Monad (unless)
+import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, (.&.), (.<<.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
-import Data.ByteString.Internal (toForeignPtr0)
-import Data.Functor (void)
-import qualified Data.List as List
+import Data.ByteString.Internal (unsafeCreate)
 import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.Word (Word64)
 import Debug.Trace (trace)
-import Foreign (Ptr, Word8, countTrailingZeros, free, mallocBytes, peekArray, withForeignPtr)
-import System.IO.Unsafe (unsafePerformIO)
+import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
+import Foreign.C (errnoToIOError, getErrno)
+import GHC.IO.Exception (ioException)
 import Test.QuickCheck (Gen, arbitrary, sized, vectorOf)
 
 foreign import capi unsafe "blake2b.h blake2b256_hash" blake2b256_hash :: Ptr Word8 -> Int -> Ptr Word8 -> IO Int
@@ -56,12 +58,15 @@ newtype Proof = Proof (Integer, [Bytes])
   deriving (Show, Eq)
   deriving newtype (Serialize)
 
-newtype Hash = Hash ByteString
-  deriving newtype (Eq)
+newtype Hash where
+  Hash :: ByteString -> Hash
+  deriving newtype (Eq, NFData)
   deriving (Show) via Bytes
 
 instance Semigroup Hash where
-  Hash a <> Hash b = hash $ a <> b
+  Hash a <> Hash b =
+    {-# SCC hash_semigroup #-}
+    hash $ a <> b
 
 instance Monoid Hash where
   mempty = Hash ""
@@ -72,24 +77,25 @@ class Hashable a where
 instance Hashable Integer where
   hash = hash . encode
 
-buffer :: Ptr Word8
-buffer = unsafePerformIO $ mallocBytes 32
-{-# NOINLINE buffer #-}
-
 instance Hashable ByteString where
   hash bytes =
-    {-# SCC hash #-}
-    unsafePerformIO $
-      let (foreignPtr, len) = toForeignPtr0 bytes
-       in withForeignPtr foreignPtr $ \ptr -> do
-            void $ blake2b256_hash ptr len buffer
-            Hash . BS.pack <$> peekArray 32 buffer
+    {-# SCC hash_bs #-}
+    Hash <$> unsafeCreate 32 $ \outptr ->
+      BS.useAsCStringLen bytes $ \(inptr, inputlen) -> do
+        res <- blake2b256_hash (castPtr inptr) inputlen outptr
+        unless (res == 0) $ do
+          errno <- getErrno
+          ioException $ errnoToIOError "blake2b256_hash" errno Nothing Nothing
 
 instance Hashable a => Hashable [a] where
-  hash = foldMap hash
+  hash =
+    {-# SCC hash_list #-}
+    foldMap hash
 
 instance (Hashable a, Hashable b) => Hashable (a, b) where
-  hash (a, b) = hash a <> hash b
+  hash (a, b) =
+    {-# SCC hash_pair #-}
+    hash a <> hash b
 
 newtype Bytes = Bytes ByteString
   deriving newtype (Hashable, Eq, Serialize)
@@ -107,22 +113,24 @@ prove params@Params{n_p} s_p =
  where
   preHash = zip s_p (hash <$> s_p)
 
-  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let !h_i = hash tuple]
+  round0 = [(t, [s_i], h_i) | s_i <- s_p, t <- [1 .. d], let tuple = (t, [s_i]), let !h_i = hash tuple, h_i `oracle` n_p == 0]
 
   (u, d, q) = computeParams params
 
-  prob = ceiling $ 1 / q
-
-  h1 :: Word64 -> (Integer, [Bytes], Hash) -> Bool
-  h1 n (_, _, h) = h `oracle` n == 0
+  prob_q = ceiling $ 1 / q
 
   go :: Int -> [(Integer, [Bytes], Hash)] -> Proof
   go 0 acc =
-    let s_p'' = filter (h1 prob) acc
-     in Proof $ head $ map (\(k, bs, _) -> (k, bs)) s_p''
+    Proof $ head $ [(k, bs) | (k, bs, h) <- acc, h `oracle` prob_q == 0]
   go n acc =
-    let !s_p' = filter (h1 n_p) acc
-        !s_p'' = [(t, s_i : s_j, h_i) | (s_i, h_si) <- preHash, (t, s_j, h_j) <- s_p', let !h_i = h_j <> h_si]
+    let !s_p'' =
+          {-# SCC s_p'' #-}
+          [ (t, s_i : s_j, h_i)
+          | (s_i, h_si) <- preHash
+          , (t, s_j, h_j) <- acc
+          , let !h_i = h_j <> h_si
+          , h_i `oracle` n_p == 0
+          ]
      in go (n - 1) s_p''
 
 computeParams :: Params -> (Integer, Integer, Double)
@@ -194,12 +202,13 @@ modNonPowerOf2 bytes n =
     then error $ "failed: i = " <> show i <> ", d = " <> show d <> ", n = " <> show n <> ", k = " <> show k
     else i `mod` n
  where
+  k' = 1 .<<. k
   k = logBase2 (n * εFail)
-  d = 2 ^ k `div` n
-  i = modPowerOf2 bytes (2 ^ k)
+  d = k' `div` n
+  i = modPowerOf2 bytes k'
 
 εFail :: Word64
-εFail = 1 .<<. 30 -- roughly 1 in a billion
+εFail = 1 .<<. 40 -- roughly 1 in 10 billions
 
 logBase2 :: FiniteBits b => b -> Int
 logBase2 x = finiteBitSize x - 1 - countLeadingZeros x
@@ -218,20 +227,21 @@ verify :: Params -> Proof -> Bool
 verify params@Params{n_p} (Proof (d, bs)) =
   let (u, _, q) = computeParams params
 
-      fo item (0, _, []) =
-        let h = hash (d, [item])
-         in (oracle h n_p, h, [item])
-      fo item (0, prev_h, acc) =
-        let prf = item : acc
-            h = prev_h <> hash item
-            prob = ceiling $ 1 / q
-            m =
-              if length prf < length bs
-                then oracle h n_p
-                else oracle h prob
-         in (m, h, item : acc)
-      fo _ (k, n, acc) = (k, n, acc)
+      check item = \case
+        (0, _, []) ->
+          let h = hash (d, [item])
+           in (oracle h n_p, h, [item])
+        (0, prev_h, acc) ->
+          let prf = item : acc
+              h = prev_h <> hash item
+              prob = ceiling $ 1 / q
+              m =
+                if length prf < length bs
+                  then oracle h n_p
+                  else oracle h prob
+           in (m, h, item : acc)
+        other -> other
 
       fst3 (a, _, _) = a
    in length bs == fromInteger u
-        && ((== 0) . fst3) (foldr fo (0, Hash "", []) bs)
+        && ((== 0) . fst3) (foldr check (0, Hash "", []) bs)
