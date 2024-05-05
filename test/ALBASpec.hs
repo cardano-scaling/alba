@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -10,6 +11,7 @@ import ALBA (
   Hashable (..),
   Params (..),
   Proof (..),
+  Verification (..),
   computeParams,
   fromBytes,
   fromBytesLE,
@@ -19,6 +21,7 @@ import ALBA (
   modPowerOf2,
   oracle,
   prove,
+  prove',
   toBytesLE,
   verify,
  )
@@ -86,9 +89,7 @@ spec = do
       ]
 
   prop "can verify small proof is valid" $ prop_verifyValidProof 8 100
-  modifyMaxSuccess (const 10) $
-    prop "can verify large proof is valid" $
-      prop_verifyValidProof 50 300
+  prop "can verify large proof is valid" $ prop_verifyValidProof 400 1000
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
 prop_oracleDistributionIsUniform :: Property
@@ -110,21 +111,22 @@ prop_rejectTamperedProof =
     let params = Params 8 8 8 2
         (u, _, q) = computeParams params
         verified = verify params tampered
+        valid = Verified{proof = tampered, params}
     conjoin
       [ original =/= tampered
-      , verified === False
+      , verified =/= valid
       ]
-      & cover 99.99 (not verified) "tampered proof rejected"
+      & cover 99.99 (verified /= valid) "tampered proof rejected"
       -- there's still a small chance that a tampered proof
       -- is accepted because the params value are quite small
       & counterexample ("u = " <> show u <> ", q = " <> show q)
 
 genModifiedProof :: Gen (Proof, Proof)
 genModifiedProof = do
-  items <- resize 100 (genItems 20)
+  items <- resize 100 (genItems 10)
   let params = Params 8 8 80 20
       (u, _, q) = computeParams params
-      proof@(Proof (n, bs)) = prove params items
+      proof@(Proof (n, bs)) = prove' params items
   frequency
     [ (1, pure $ (proof, Proof (n + 1, bs)))
     , (length items, ((proof,) . (Proof . (n,))) <$> flip1Bit bs)
@@ -166,12 +168,12 @@ flipBit j bs =
   b' = b `xor` (1 `shiftL` l)
 
 prop_verifyValidProof :: Int -> Word64 -> Property
-prop_verifyValidProof len coeff =
-  forAll (resize (fromIntegral coeff) (genItems len)) $ \items -> do
-    let params = Params 8 8 (coeff * 8 `div` 10) (coeff * 2 `div` 10)
+prop_verifyValidProof itemSize numItems =
+  forAll (resize (fromIntegral numItems) (genItems itemSize)) $ \items -> do
+    let params = Params 8 8 (numItems * 8 `div` 10) (numItems * 2 `div` 10)
         (u, _, q) = computeParams params
-        proof = prove params items
-    verify params proof === True
+        proof = prove' params items
+    verify params proof === Verified{proof, params}
       & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
 
 shrinkPowerOf2 :: Integer -> [Integer]

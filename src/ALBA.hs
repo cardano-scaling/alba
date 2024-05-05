@@ -7,6 +7,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -20,6 +21,7 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
+import Data.Maybe (fromMaybe)
 import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.String (IsString (..))
 import Data.Word (Word64)
@@ -49,7 +51,7 @@ data Params = Params
   , n_f :: Word64
   -- ^ Estimated size of "adversarial" parties set.
   }
-  deriving (Show)
+  deriving (Show, Eq)
 
 -- | Weight function for type `a`.
 type W a = a -> Int
@@ -112,7 +114,7 @@ genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitr
 -- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
 prove :: Params -> [Bytes] -> Proof
 prove params@Params{n_p} s_p =
-  go (fromInteger u - 1) round0
+  go (fromInteger u - 1) 0 round0
  where
   preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
 
@@ -129,19 +131,60 @@ prove params@Params{n_p} s_p =
 
   prob_q = ceiling $ 1 / q
 
-  go :: Int -> [(Integer, [Bytes], Hash, Word64)] -> Proof
-  go 0 acc =
+  go :: Int -> Integer -> [(Integer, [Bytes], Hash, Word64)] -> Proof
+  go 0 idx acc =
     Proof $ head $ [(k, bs) | (k, bs, h, _) <- acc, h `oracle` prob_q == 0]
-  go n acc =
-    let !s_p'' =
-          {-# SCC s_p'' #-}
+  go n idx acc =
+    let s_p' =
           [ (t, s_i : s_j, h_i, h_i `oracle` n_p)
           | (s_i, (h_si, n_pi)) <- preHash
           , (t, s_j, h_j, n_pj) <- acc
           , n_pi == n_pj
           , let !h_i = h_j <> h_si
           ]
-     in go (n - 1) s_p''
+     in go (n - 1) idx s_p'
+
+prove' :: Params -> [Bytes] -> Proof
+prove' params@Params{n_p} s_p =
+  fromMaybe (error "No valid proof") $ start round0
+ where
+  preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
+
+  (u, d, q) = computeParams params
+
+  prob_q = ceiling $ 1 / q
+
+  round0 =
+    [ (t, [s_i], h_0, n_p0)
+    | (s_i, (h, l)) <- preHash
+    , t <- [1 .. d]
+    , let !h_0 = hash t <> h
+    , let n_p0 = h_0 `oracle` n_p
+    , l == n_p0
+    ]
+
+  start :: [(Integer, [Bytes], Hash, Word64)] -> Maybe Proof
+  start [] = Nothing
+  start ((t, s_i, h_i, n_pi) : rest) =
+    case go (fromInteger $ u - 2) preHash (t, s_i, h_i, n_pi) of
+      Nothing -> start rest
+      prf -> prf
+
+  go :: Int -> [(Bytes, (Hash, Word64))] -> (Integer, [Bytes], Hash, Word64) -> Maybe Proof
+  go 0 ((s_i, (h_si, _)) : rest) (n, acc, h_j, n_pj) =
+    let h_i = h_j <> h_si
+        n_pj' = h_i `oracle` prob_q
+     in if n_pj' == 0
+          then Just $ Proof (n, s_i : acc)
+          else go 0 rest (n, acc, h_j, n_pj)
+  go _ [] _ = Nothing
+  go k ((s_i, (h_si, n_pi)) : rest) (n, acc, h_j, n_pj) =
+    let h_i = h_j <> h_si
+     in if n_pi == n_pj
+          then case go (k - 1) preHash (n, s_i : acc, h_i, h_i `oracle` n_p) of
+            Nothing -> go k rest (n, acc, h_j, n_pj)
+            prf -> prf
+          else go k rest (n, acc, h_j, n_pj)
 
 -- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
 --
@@ -236,19 +279,26 @@ isPowerOf2 :: Word64 -> Bool
 isPowerOf2 n =
   countLeadingZeros n + countTrailingZeros n == 63
 
+data Verification
+  = Verified {proof :: Proof, params :: Params}
+  | InvalidItem {proof :: Proof, item :: Bytes, level :: Int}
+  | InvalidLength {proof :: Proof, expected :: Int}
+  deriving (Show, Eq)
+
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
-verify :: Params -> Proof -> Bool
-verify params@Params{n_p} (Proof (d, bs)) =
+verify :: Params -> Proof -> Verification
+verify params@Params{n_p} proof@(Proof (d, bs)) =
   let (u, _, q) = computeParams params
 
       check item = \case
-        (True, _, []) ->
+        (v@Verified{}, _, []) ->
           let h = hash item
               l = oracle h n_p
               h_0 = hash d <> h
               n_p0 = h_0 `oracle` n_p
-           in (l == n_p0, h_0, [item])
-        (True, h_j, acc) ->
+              m = if l == n_p0 then v else InvalidItem{proof, item, level = 0}
+           in (m, h_0, [item])
+        (v@Verified{}, h_j, acc) ->
           let prf = item : acc
               h_si = hash item
               n_pi = h_si `oracle` n_p
@@ -257,13 +307,14 @@ verify params@Params{n_p} (Proof (d, bs)) =
               -- last round
               prob = ceiling $ 1 / q
               n_last = oracle h_i prob
-              m =
-                if length prf < length bs
-                  then n_pj == n_pi
-                  else n_last == 0
+              m
+                | length prf < length bs && n_pj == n_pi = v
+                | length prf == length bs && n_last == 0 = v
+                | otherwise = InvalidItem{proof, item, level = length prf}
            in (m, h_i, item : acc)
         other -> other
 
       fst3 (a, _, _) = a
-   in length bs == fromInteger u
-        && fst3 (foldr check (True, Hash "", []) bs)
+   in if length bs /= fromInteger u
+        then InvalidLength{proof, expected = fromInteger u}
+        else fst3 (foldr check (Verified{proof, params}, Hash "", []) bs)

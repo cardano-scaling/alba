@@ -1,7 +1,8 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import ALBA (Params (..), genItems, prove, readProof, verify, writeProof)
+import ALBA (Params (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
 import Data.Word (Word64)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (..), exitWith)
@@ -42,9 +43,9 @@ main = do
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Verifying proof with " <> show opts'
       readProof output >>= \prf ->
-        if verify params prf
-          then putStrLn ("Verified proof " <> show prf)
-          else putStrLn ("Cannot verify proof " <> show prf) >> exitWith (ExitFailure 1)
+        case verify params prf of
+          Verified{} -> putStrLn ("Verified proof " <> show prf)
+          other -> putStrLn ("Cannot verify proof " <> show prf <> ", failure: " <> show other) >> exitWith (ExitFailure 1)
 
 adjustForSize :: Options -> Options
 adjustForSize opts@Options{size, params = pars@Params{n_p, n_f}} =
