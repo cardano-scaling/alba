@@ -123,7 +123,7 @@ prop_rejectTamperedProof =
 
 genModifiedProof :: Gen (Proof, Proof)
 genModifiedProof = do
-  items <- resize 100 (genItems 10)
+  items <- resize 100 (genItems 100)
   let params = Params 8 8 80 20
       (u, _, q) = computeParams params
       proof@(Proof (n, bs)) = prove' params items
