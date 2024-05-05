@@ -24,7 +24,7 @@ defaultOptions =
   Options
     { size = 100
     , len = 8
-    , params = Params 8 8 80 20
+    , params = Params 128 128 80 20
     , output = "proof.alba"
     }
 
@@ -46,6 +46,26 @@ main = do
         case verify params prf of
           Verified{} -> putStrLn ("Verified proof " <> show prf)
           other -> putStrLn ("Cannot verify proof " <> show prf <> ", failure: " <> show other) >> exitWith (ExitFailure 1)
+
+usage :: IO ()
+usage =
+  putStrLn $
+    unlines
+      [ "alba: Command-line utility for creating and verifying ALBA proofs"
+      , ""
+      , "Usage:"
+      , "alba prove <options>  : Generate an ALBA proof file from a (random) set of items"
+      , "alba verify <options> : Verify an ALBA proof. Note that options must be consistent with"
+      , "                        the options used for proving"
+      , ""
+      , "Options:"
+      , "--security <int> : The security level of the proof (default: 128)"
+      , "--size <int>     : The number of elements in the input set (default: 100)"
+      , "--len <int>      : The length (in bytes) of each item in the input set (default: 8)"
+      , "--honest-ratio <int>"
+      , "                 : The assumed percentage of \"honest\" items in the input set (default: 80)"
+      , "--output <file>  : The file containing proof to write or verify (default: alba.proof)"
+      ]
 
 adjustForSize :: Options -> Options
 adjustForSize opts@Options{size, params = pars@Params{n_p, n_f}} =
@@ -78,5 +98,8 @@ parseOptions = \case
     let rat = read hn
     opts <- parseOptions rest
     pure $ opts{params = (params opts){n_p = rat, n_f = 100 - rat}}
+  ("--output" : output : rest) -> do
+    opts <- parseOptions rest
+    pure $ opts{output}
   other -> do
-    error ("Invalid arguments: " <> unwords other)
+    usage >> exitWith (ExitFailure 2)
