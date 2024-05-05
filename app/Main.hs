@@ -59,6 +59,7 @@ usage =
       , "                        the options used for proving"
       , ""
       , "Options:"
+      , "--help           : Display this help text"
       , "--security <int> : The security level of the proof (default: 128)"
       , "--size <int>     : The number of elements in the input set (default: 100)"
       , "--len <int>      : The length (in bytes) of each item in the input set (default: 8)"
@@ -82,6 +83,8 @@ parseCommand = \case
 
 parseOptions = \case
   [] -> pure defaultOptions
+  ("--help" : _) ->
+    usage >> exitWith ExitSuccess
   ("--security" : lam : rest) -> do
     let λ = read lam
     opts <- parseOptions rest
