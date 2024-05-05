@@ -112,45 +112,12 @@ genItems :: Int -> Gen [Bytes]
 genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)
 
 -- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
-prove :: Params -> [Bytes] -> Proof
-prove params@Params{n_p} s_p =
-  go (fromInteger u - 1) 0 round0
- where
-  preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
-
-  round0 =
-    [ (t, [s_i], h_0, n_p0)
-    | (s_i, (h, l)) <- preHash
-    , t <- [1 .. d]
-    , let !h_0 = hash t <> h
-    , let n_p0 = h_0 `oracle` n_p
-    , l == n_p0
-    ]
-
-  (u, d, q) = computeParams params
-
-  prob_q = ceiling $ 1 / q
-
-  go :: Int -> Integer -> [(Integer, [Bytes], Hash, Word64)] -> Proof
-  go 0 idx acc =
-    Proof $ head $ [(k, bs) | (k, bs, h, _) <- acc, h `oracle` prob_q == 0]
-  go n idx acc =
-    let s_p' =
-          [ (t, s_i : s_j, h_i, h_i `oracle` n_p)
-          | (s_i, (h_si, n_pi)) <- preHash
-          , (t, s_j, h_j, n_pj) <- acc
-          , n_pi == n_pj
-          , let !h_i = h_j <> h_si
-          ]
-     in go (n - 1) idx s_p'
-
--- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
 --
 -- This version of `prove` is much more efficient than the original
 -- one as constructs the proof using depth-first search over the
 -- required length.
-prove' :: Params -> [Bytes] -> Proof
-prove' params@Params{n_p} s_p =
+prove :: Params -> [Bytes] -> Proof
+prove params@Params{n_p} s_p =
   fromMaybe (error "No valid proof") $ start round0
  where
   preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p

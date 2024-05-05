@@ -1,4 +1,4 @@
-import ALBA (Bytes (..), Params (..), Proof, hash, prove')
+import ALBA (Bytes (..), Params (..), Proof, hash, prove)
 import Control.Monad (forM)
 import Criterion (Benchmark)
 import Criterion.Main (bench, bgroup, defaultMain, nf, whnf)
@@ -34,7 +34,7 @@ benchProof (bytes, λ) =
       label = "Proving " <> show coeff <> "/" <> show (BS.length $ head bytes) <> " (Params: " <> show params <> ")"
    in bench label $
         whnf
-          (uncurry prove')
+          (uncurry prove)
           (params, Bytes <$> bytes)
 
 genItems :: (Int, Int) -> IO [ByteString]

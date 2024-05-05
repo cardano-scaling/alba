@@ -21,7 +21,7 @@ import ALBA (
   modPowerOf2,
   oracle,
   prove,
-  prove',
+  prove,
   toBytesLE,
   verify,
  )
@@ -126,7 +126,7 @@ genModifiedProof = do
   items <- resize 100 (genItems 100)
   let params = Params 8 8 80 20
       (u, _, q) = computeParams params
-      proof@(Proof (n, bs)) = prove' params items
+      proof@(Proof (n, bs)) = prove params items
   frequency
     [ (1, pure $ (proof, Proof (n + 1, bs)))
     , (length items, ((proof,) . (Proof . (n,))) <$> flip1Bit bs)
@@ -172,7 +172,7 @@ prop_verifyValidProof itemSize numItems =
   forAll (resize (fromIntegral numItems) (genItems itemSize)) $ \items -> do
     let params = Params 8 8 (numItems * 8 `div` 10) (numItems * 2 `div` 10)
         (u, _, q) = computeParams params
-        proof = prove' params items
+        proof = prove params items
     verify params proof === Verified{proof, params}
       & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
 
