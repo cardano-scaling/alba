@@ -18,8 +18,7 @@ main = do
     [ bgroup "Hashing" [benchHash testBytes]
     , bgroup
         "Proof Generation"
-        -- code does not currently run in a reasonable time for larger values of λ
-        $ [benchProof (b, λ) | b <- benches, λ <- [8, 9, 10]]
+        $ [benchProof (b, λ) | b <- benches, λ <- [10, 64, 128]]
     ]
 
 benchHash :: ByteString -> Benchmark

@@ -144,6 +144,11 @@ prove params@Params{n_p} s_p =
           ]
      in go (n - 1) idx s_p'
 
+-- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
+--
+-- This version of `prove` is much more efficient than the original
+-- one as constructs the proof using depth-first search over the
+-- required length.
 prove' :: Params -> [Bytes] -> Proof
 prove' params@Params{n_p} s_p =
   fromMaybe (error "No valid proof") $ start round0

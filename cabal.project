@@ -21,8 +21,6 @@ tests: True
 
 test-show-details: direct
 
-optimization: False
-
 package *
   benchmarks: True
 
