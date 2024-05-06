@@ -21,7 +21,6 @@ import ALBA (
   modPowerOf2,
   oracle,
   prove,
-  prove,
   toBytesLE,
   verify,
  )
@@ -107,9 +106,8 @@ prop_oracleDistributionIsUniform = do
 
 prop_rejectTamperedProof :: Property
 prop_rejectTamperedProof =
-  forAll genModifiedProof $ \(original, tampered) -> do
-    let params = Params 8 8 8 2
-        (u, _, q) = computeParams params
+  forAll (genModifiedProof params) $ \(original, tampered) -> do
+    let (u, _, q) = computeParams params
         verified = verify params tampered
         valid = Verified{proof = tampered, params}
     conjoin
@@ -120,12 +118,13 @@ prop_rejectTamperedProof =
       -- there's still a small chance that a tampered proof
       -- is accepted because the params value are quite small
       & counterexample ("u = " <> show u <> ", q = " <> show q)
+ where
+  params = Params 64 64 80 20
 
-genModifiedProof :: Gen (Proof, Proof)
-genModifiedProof = do
+genModifiedProof :: Params -> Gen (Proof, Proof)
+genModifiedProof params = do
   items <- resize 100 (genItems 100)
-  let params = Params 8 8 80 20
-      (u, _, q) = computeParams params
+  let (u, _, q) = computeParams params
       proof@(Proof (n, bs)) = prove params items
   frequency
     [ (1, pure $ (proof, Proof (n + 1, bs)))
