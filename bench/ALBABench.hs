@@ -11,14 +11,14 @@ main :: IO ()
 main = do
   benches <-
     forM
-      [ (s_p, len) | s_p <- [100, 200, 300], len <- [64, 128, 256]
+      [ (s_p, len) | s_p <- [500, 1000 .. 10000], let len = 256
       ]
       genItems
   defaultMain
     [ bgroup "Hashing" [benchHash testBytes]
     , bgroup
         "Proof Generation"
-        $ [benchProof (b, λ) | b <- benches, λ <- [10, 64, 128]]
+        $ [benchProof (b, λ) | b <- benches, let λ = 128]
     ]
 
 benchHash :: ByteString -> Benchmark
@@ -31,7 +31,7 @@ benchProof :: ([ByteString], Integer) -> Benchmark
 benchProof (bytes, λ) =
   let coeff = fromIntegral $ length bytes
       params = Params λ λ (coeff * 8 `div` 10) (coeff * 2 `div` 10)
-      label = "Proving " <> show coeff <> "/" <> show (BS.length $ head bytes) <> " (Params: " <> show params <> ")"
+      label = show coeff <> "/" <> show (BS.length $ head bytes)
    in bench label $
         whnf
           (uncurry prove)

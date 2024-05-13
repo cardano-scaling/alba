@@ -78,6 +78,8 @@ parseCommand = \case
     Prove <$> parseOptions rest
   ("verify" : rest) ->
     Verify <$> parseOptions rest
+  ("--help" : _) ->
+    usage >> exitWith ExitSuccess
   other ->
     exitWith (ExitFailure 1)
 
