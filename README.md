@@ -91,6 +91,8 @@ It should be relatively straightforward to tweak the benchmarks for different fi
 This repository contains some specific benchmarks outputs formatted by criterion as HTML standalone pages:
 
 * [Simple benchmark](bench.html): Shows proving time for various number of items
+
+  ![](bench.png)
 * Large benchmarks (in [HTML](bench-1000-100000.html) and [CSV](bench-1000-100000.csv)): Runtime for all list of items from 1000 to 100000 stepped by 1000. The following picture represents a fraction of that data:
 
   ![](bench-1000-100000.png)
