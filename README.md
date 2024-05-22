@@ -16,6 +16,9 @@ _Approximate Lower Bound Arguments_ are a form of cryptographic certificates tha
 
 Here is an alternative graphical representation of how ALBA certificates are produced, using the basic construction. We start with a set denote $S_p$ of elements such that each is _unique_ and its availability can be asserted by a verifier through some predicate (called $R$) in the paper.
 
+> ![NOTE]
+> The $S_p$ set can be smaller than the expected maximum number of elements we want to build a proof on, with a lower bound on $n_p$ the number of expected honest elements.
+
 ![Initial set](proving-0.jpg)
 
 The first step is to construct the cartesian product of each element of $S_p$, here called $a$ through $k$, with all the integers lower than some parameter $d$, yielding a set of size $\|S_p\| \times d$
@@ -23,6 +26,9 @@ The first step is to construct the cartesian product of each element of $S_p$, h
 ![Initial tupling](proving-1.jpg)
 
 From this set, we pseudo-randomly select $n_p$ pairs using a "random oracle" $\mathbb{H}$. $\mathbb{H}$ is effectively just a hash function and to select the adequate number of pairs we pick those with a hash value modulo $n_p$ equals to 0, yielding a set of size roughly $n_p$ of pair of an integer and some item in $S_p$.
+
+> ![NOTE]
+> The ratio $n_p / n_f$ is a key factor when setting the needed length of the proof.
 
 ![Selecting pairs](proving-2.jpg)
 
@@ -72,6 +78,55 @@ To run tests:
 ```
 cabal test
 ```
+## Run
+
+This package provides a small executable, unsurprisingly called `alba`, one can use to generate random data and proofs from those. It can also verify a given proof.
+
+```
+$ cabal run alba -- --help
+alba: Command-line utility for creating and verifying ALBA proofs
+
+Usage:
+alba prove <options>  : Generate an ALBA proof file from a (random) set of items
+alba verify <options> : Verify an ALBA proof. Note that options must be consistent with
+                        the options used for proving
+
+Options:
+--help           : Display this help text
+--security <int> : The security level of the proof (default: 128)
+--size <int>     : The actual number of elements to build a proof for (default: 100)
+--bound <int>    : The maximum number of elements in the input set (default: 100)
+--len <int>      : The length (in bytes) of each item in the input set (default: 8)
+--honest-ratio <int>
+                 : The assumed _percentage_ of "honest" items in the input set (default: 80)
+--output <file>  : The file containing proof to write or verify (default: alba.proof)
+```
+
+Here are a few examples use:
+
+* Generate a proof for a set of size 900 from a maximum bound of 1000, assuming 80% honest ratio, with each item of length 256 bytes, in a file called `alba.proof`:
+
+  ```
+  $ cabal run alba -- prove --bound 1000 --size 900 --len 500 --output alba.proof
+  Generating proof Options {size = 900, bound = 1000, len = 500, params = Params {λ_sec = 128, λ_rel = 128, n_p = 800, n_f = 200}, output = "alba.proof"}
+  Written proof to 'alba.proof' (34557 bytes)
+  ```
+
+* Verifying the above generated proof with same parameters:
+
+  ```
+  $ cabal run alba -- verify --bound 1000 --size 900 --len 500 --output alba.proof
+  Verifying proof with Options {size = 900, bound = 1000, len = 500, params = Params {λ_sec = 128, λ_rel = 128, n_p = 800, n_f = 200}, output = "alba.proof"}
+  Verified proof Proof (6,["df5fd475c65f745cf63dc2705f33f8a9190460ffc97a0eaa9...
+  ```
+
+  A textual representation of the proof is dumped on the standard output.
+
+* Generate a proof for a subset of elements smaller than $n_p$ blows up:
+
+  ```
+  $ cabal run alba -- prove --bound 1000 --size 700 --len 500 --output alba.proof
+  ```
 
 ## Benchmarks
 
@@ -93,15 +148,20 @@ This repository contains some specific benchmarks outputs formatted by criterion
 * [Simple benchmark](bench.html): Shows proving time for various number of items
 
   ![](bench.png)
-* Large benchmarks (in [HTML](bench-1000-100000.html) and [CSV](bench-1000-100000.csv)): Runtime for all list of items from 1000 to 100000 stepped by 1000. The following picture represents a fraction of that data:
+* Large benchmarks (in [HTML](bench-1000-100000.html) and [CSV](bench-1000-100000.csv)): Run time for all list of items from 1000 to 100000 stepped by 1000. The following picture represents a fraction of that data:
 
   ![](bench-1000-100000.png)
-* Variance benchmark (in [HTML](bench-5000x10.html) and [CSV](bench-5000x10.csv)): Runtime for 10 different list of 5000 items
+* Variance benchmark (in [HTML](bench-5000x10.html) and [CSV](bench-5000x10.csv)): Run time for 10 different list of 5000 items
 
   ![](bench-5000x10.png)
+* Size of prover input set (in [HTML](bench-size-bound.html) and [CSV](bench-size-bound.csv)): Run time for various values of `size` and `bound` number of items over varying honest ratio ($n_p$)
+
+  ![](bench-size-bound.png)
 
 While the benchmark shows execution time is roughly linear as the number of items increases, there are locally wild variations: A smaller number of items could lead to a significantly larger execution time. This seems easily explainable by the fact the number of hashes executed depends on the "shape" of the tree of data one needs to traverse. Even with identical set of data, different number of items yields different values for parameters $d$, $u$ and $q$ which necessarily modify the computed hashes and therefore the depth-first search for a proof.
 
 To confirm this hypothesis, the "Variance benchmark" runs prover with _different_ set of data for _same_ number of items. Running ALBA prover on 10 different lists of 5000 items yields also varying running time, with a difference of a factor 2 between slowest and fastest. Again, this is explanable by the "random" nature of the data: Different lists can lead to different traversal of the tree when constructing the proof, some requiring more hashes than others.
+
+Note also the execution time increases as the number of items provided to the prover gets closer to the minimum expected number of honest items.
 
 All these numbers were obtained on a single [C2, 4 CPUs, 16GB Ram](https://cloud.google.com/compute/docs/compute-optimized-machines#c2_series) machine from Google Cloud running Ubuntu 22.04.

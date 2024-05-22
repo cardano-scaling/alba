@@ -5,7 +5,7 @@
 import ALBA (Params (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
 import Data.Word (Word64)
 import System.Environment (getArgs)
-import System.Exit (ExitCode (..), exitWith)
+import System.Exit (ExitCode (..), exitSuccess, exitWith)
 import Test.QuickCheck (generate, resize)
 
 data Command
@@ -14,6 +14,7 @@ data Command
 
 data Options = Options
   { size :: Word64
+  , bound :: Word64
   , len :: Int
   , params :: Params
   , output :: FilePath
@@ -23,6 +24,7 @@ data Options = Options
 defaultOptions =
   Options
     { size = 100
+    , bound = 100
     , len = 8
     , params = Params 128 128 80 20
     , output = "proof.alba"
@@ -61,16 +63,17 @@ usage =
       , "Options:"
       , "--help           : Display this help text"
       , "--security <int> : The security level of the proof (default: 128)"
-      , "--size <int>     : The number of elements in the input set (default: 100)"
+      , "--size <int>     : The actual number of elements to build a proof for (default: bound * honest_ratio)"
+      , "--bound <int>    : The maximum number of elements in the input set (default: 100)"
       , "--len <int>      : The length (in bytes) of each item in the input set (default: 8)"
       , "--honest-ratio <int>"
-      , "                 : The assumed percentage of \"honest\" items in the input set (default: 80)"
+      , "                 : The assumed _percentage_ of \"honest\" items in the input set (default: 80)"
       , "--output <file>  : The file containing proof to write or verify (default: alba.proof)"
       ]
 
 adjustForSize :: Options -> Options
-adjustForSize opts@Options{size, params = pars@Params{n_p, n_f}} =
-  opts{params = pars{n_p = size * n_p `div` 100, n_f = size * n_f `div` 100}}
+adjustForSize opts@Options{size, bound, params = pars@Params{n_p, n_f}} =
+  opts{params = pars{n_p = bound * n_p `div` 100, n_f = bound * n_f `div` 100}}
 
 parseCommand :: [String] -> IO Command
 parseCommand = \case
@@ -79,7 +82,7 @@ parseCommand = \case
   ("verify" : rest) ->
     Verify <$> parseOptions rest
   ("--help" : _) ->
-    usage >> exitWith ExitSuccess
+    usage >> exitSuccess
   other ->
     exitWith (ExitFailure 1)
 
@@ -95,6 +98,10 @@ parseOptions = \case
     let size = read sz
     opts <- parseOptions rest
     pure $ opts{size}
+  ("--bound" : sz : rest) -> do
+    let bound = read sz
+    opts <- parseOptions rest
+    pure $ opts{bound}
   ("--len" : ln : rest) -> do
     let len = read ln
     opts <- parseOptions rest

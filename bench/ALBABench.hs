@@ -11,14 +11,20 @@ main :: IO ()
 main = do
   benches <-
     forM
-      [ (s_p, len) | s_p <- replicate 10 5000, let len = 256
-      ]
+      [(s_p, 256) | s_p <- [1000, 5000, 10000, 50000, 100000]]
       genItems
   defaultMain
     [ bgroup "Hashing" [benchHash testBytes]
     , bgroup
         "Proof Generation"
-        $ [benchProof (b, λ) | b <- benches, let λ = 128]
+        $ [ benchProof (b, s_p, n_p)
+          | b <- benches
+          , n_p <- [60, 66, 80]
+          , let high = fromIntegral (length b)
+          , let low = high * n_p `div` 100
+          , let mid = (high + low) `div` 2
+          , s_p <- [low, mid, high]
+          ]
     ]
 
 benchHash :: ByteString -> Benchmark
@@ -27,15 +33,15 @@ benchHash bytes =
  where
   label = "hashing len=" <> show (BS.length bytes)
 
-benchProof :: ([ByteString], Integer) -> Benchmark
-benchProof (bytes, λ) =
+benchProof :: ([ByteString], Int, Int) -> Benchmark
+benchProof (bytes, s_p, n_p) =
   let coeff = fromIntegral $ length bytes
-      params = Params λ λ (coeff * 8 `div` 10) (coeff * 2 `div` 10)
-      label = show coeff <> "/" <> show (BS.length $ head bytes)
+      params = Params 128 128 (coeff * fromIntegral n_p `div` 100) (coeff * (100 - fromIntegral n_p) `div` 100)
+      label = show s_p <> "/" <> show coeff <> "/" <> show n_p <> "%"
    in bench label $
         whnf
           (uncurry prove)
-          (params, Bytes <$> bytes)
+          (params, Bytes <$> take s_p bytes)
 
 genItems :: (Int, Int) -> IO [ByteString]
 genItems (numItems, itemSize) =
