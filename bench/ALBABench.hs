@@ -11,7 +11,7 @@ main :: IO ()
 main = do
   benches <-
     forM
-      [ (s_p, len) | s_p <- [1000, 2000 .. 100000], let len = 256
+      [ (s_p, len) | s_p <- replicate 10 5000, let len = 256
       ]
       genItems
   defaultMain
