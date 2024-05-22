@@ -165,14 +165,16 @@ computeParams Params{λ_rel, λ_sec, n_p, n_f} =
  where
   e = exp 1
 
+  log_2 = logBase 2
+
   loge :: Double
-  loge = logBase 2 e
+  loge = log_2 e
 
   log3 :: Double
-  log3 = logBase 2 3
+  log3 = log_2 3
 
   u' =
-    (fromIntegral λ_sec + logBase 2 (fromIntegral λ_rel + log3) + 1 - logBase 2 loge)
+    (fromIntegral λ_sec + log_2 (fromIntegral λ_rel + log3) + 1 - log_2 loge)
       / logBase 2 (fromIntegral n_p / fromIntegral n_f)
 
   u = ceiling u'
