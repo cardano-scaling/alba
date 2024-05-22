@@ -158,7 +158,7 @@ prove params@Params{n_p} s_p =
 
 -- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
 --
--- See corollary 1 in ALBA paper, p. 11.
+-- See corollary 2 in ALBA paper, p. 19.
 computeParams :: Params -> (Integer, Integer, Double)
 computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   (u, d, q)
@@ -168,16 +168,19 @@ computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   loge :: Double
   loge = logBase 2 e
 
+  log3 :: Double
+  log3 = logBase 2 3
+
   u' =
-    (fromIntegral λ_sec + logBase 2 (fromIntegral λ_rel) + 1 + logBase 2 loge)
+    (fromIntegral λ_sec + logBase 2 (fromIntegral λ_rel + log3) + 1 - logBase 2 loge)
       / logBase 2 (fromIntegral n_p / fromIntegral n_f)
 
   u = ceiling u'
 
-  d = ceiling $ (u' + log u') * fromIntegral λ_rel / loge
+  d = ceiling $ 16 * u' * (fromIntegral λ_rel + log3) / loge
 
   q :: Double
-  q = 2 * fromIntegral λ_rel / (fromIntegral d * loge)
+  q = 2 * (fromIntegral λ_rel + log3) / (fromIntegral d * loge)
 
 modBS :: ByteString -> Integer -> Integer
 modBS bs q =
