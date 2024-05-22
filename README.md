@@ -16,7 +16,7 @@ _Approximate Lower Bound Arguments_ are a form of cryptographic certificates tha
 
 Here is an alternative graphical representation of how ALBA certificates are produced, using the basic construction. We start with a set denote $S_p$ of elements such that each is _unique_ and its availability can be asserted by a verifier through some predicate (called $R$) in the paper.
 
-> ![NOTE]
+> [!NOTE]
 > The $S_p$ set can be smaller than the expected maximum number of elements we want to build a proof on, with a lower bound on $n_p$ the number of expected honest elements.
 
 ![Initial set](proving-0.jpg)
@@ -27,7 +27,7 @@ The first step is to construct the cartesian product of each element of $S_p$, h
 
 From this set, we pseudo-randomly select $n_p$ pairs using a "random oracle" $\mathbb{H}$. $\mathbb{H}$ is effectively just a hash function and to select the adequate number of pairs we pick those with a hash value modulo $n_p$ equals to 0, yielding a set of size roughly $n_p$ of pair of an integer and some item in $S_p$.
 
-> ![NOTE]
+> [!NOTE]
 > The ratio $n_p / n_f$ is a key factor when setting the needed length of the proof.
 
 ![Selecting pairs](proving-2.jpg)
