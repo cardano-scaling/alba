@@ -30,12 +30,13 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Function ((&))
 import qualified Data.List as List
-import Data.Serialize (encode)
+import Data.Serialize (decode, encode)
 import Data.Word (Word64)
 import Debug.Trace
 import Test.Hspec (Spec, SpecWith, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
 import Test.QuickCheck (
+  Arbitrary,
   Gen,
   Large (..),
   Positive (..),
@@ -94,6 +95,25 @@ spec = do
   prop "can verify large proof is valid" $ prop_verifyValidProof 400 1000
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
+  prop "can roundtrip serialisation of proof" prop_roundtripProof
+  prop "needs to retry when proof is stuck from repeated elements" prop_retryOnStuckProof
+
+prop_roundtripProof :: Proof -> Property
+prop_roundtripProof proof =
+  let bs = encode proof
+   in decode bs === Right proof
+
+prop_retryOnStuckProof :: Property
+prop_retryOnStuckProof =
+  forAll (resize 100 (genItems 10)) $ \items -> do
+    let params = Params 16 16 80 20
+        (u, _, q) = computeParams params
+        fewerItems = drop 80 items
+        proof@Proof{retryCount} = prove params fewerItems
+    verify params proof == Verified{proof, params}
+      && retryCount > 0
+      & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof <> ", retryCount = " <> show retryCount)
+
 prop_oracleDistributionIsUniform :: Property
 prop_oracleDistributionIsUniform =
   forAll (resize 100 arbitrary) $ \(bytes :: ByteString) -> do
@@ -128,10 +148,10 @@ genModifiedProof :: Params -> Gen (Proof, Proof)
 genModifiedProof params = do
   items <- resize 100 (genItems 100)
   let (u, _, q) = computeParams params
-      proof@(Proof (n, bs)) = prove params items
+      proof@(Proof n k bs) = prove params items
   frequency
-    [ (1, pure $ (proof, Proof (n + 1, bs)))
-    , (length items, ((proof,) . (Proof . (n,))) <$> flip1Bit bs)
+    [ (1, pure $ (proof, Proof (n + 1) k bs))
+    , (length items, (proof,) . Proof n k <$> flip1Bit bs)
     ]
 
 prop_flip1Bit :: ByteString -> Property
@@ -227,3 +247,10 @@ prop_isPowerOf2 =
 genPowerOf2 :: Gen Word64
 genPowerOf2 =
   arbitrary >>= \(Positive (Small k)) -> pure $ 2 ^ k
+
+instance Arbitrary Proof where
+  arbitrary = do
+    items <- genItems 100
+    n <- arbitrary
+    k <- arbitrary
+    pure $ Proof n k items

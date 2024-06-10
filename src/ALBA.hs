@@ -20,11 +20,12 @@ import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
 import Data.Maybe (fromMaybe)
-import Data.Serialize (Serialize, decode, encode, getWord64le, putWord64le, runGet, runPut)
+import Data.Serialize (Serialize (..), decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.String (IsString (..))
 import Data.Word (Word64)
 import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
 import Foreign.C (errnoToIOError, getErrno)
+import GHC.Generics (Generic)
 import GHC.IO.Exception (ioException)
 import Test.QuickCheck (Gen, arbitrary, sized, vectorOf)
 
@@ -54,9 +55,25 @@ data Params = Params
 -- | Weight function for type `a`.
 type W a = a -> Int
 
-newtype Proof = Proof (Integer, [Bytes])
+data Proof = Proof
+  { index :: Integer
+  -- ^ The initial index with which the proof was generated
+  , retryCount :: Integer
+  , elements :: [Bytes]
+  }
   deriving (Show, Eq)
-  deriving newtype (Serialize)
+
+instance Serialize Proof where
+  put Proof{index, retryCount, elements} = do
+    put index
+    put retryCount
+    put elements
+
+  get = do
+    index <- get
+    retryCount <- get
+    elements <- get
+    pure $ Proof index retryCount elements
 
 newtype Hash where
   Hash :: ByteString -> Hash
@@ -145,7 +162,7 @@ prove params@Params{n_p} s_p =
     let h_i = h_j <> h_si
         n_pj' = h_i `oracle` prob_q
      in if n_pj' == 0
-          then Just $ Proof (n, s_i : acc)
+          then Just $ Proof n 0 (s_i : acc)
           else go 0 rest (n, acc, h_j, n_pj)
   go _ [] _ = Nothing
   go k ((s_i, (h_si, n_pi)) : rest) (n, acc, h_j, n_pj) =
@@ -262,7 +279,7 @@ data Verification
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
 verify :: Params -> Proof -> Verification
-verify params@Params{n_p} proof@(Proof (d, bs)) =
+verify params@Params{n_p} proof@(Proof d _ bs) =
   let (u, _, q) = computeParams params
 
       check item = \case
