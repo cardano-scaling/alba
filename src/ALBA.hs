@@ -75,6 +75,9 @@ instance Serialize Proof where
     elements <- get
     pure $ Proof index retryCount elements
 
+data NoProof = NoProof
+  deriving (Show, Eq)
+
 newtype Hash where
   Hash :: ByteString -> Hash
   deriving newtype (Eq, NFData)
@@ -131,9 +134,9 @@ genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitr
 -- This version of `prove` is much more efficient than the original
 -- one as constructs the proof using depth-first search over the
 -- required length.
-prove :: Params -> [Bytes] -> Proof
+prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{n_p} s_p =
-  fromMaybe (error "No valid proof") $ start round0
+  maybe (Left NoProof) Right $ start round0
  where
   preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
 

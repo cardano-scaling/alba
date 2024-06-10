@@ -7,24 +7,7 @@
 
 module ALBASpec where
 
-import ALBA (
-  Bytes (..),
-  Hashable (..),
-  Params (..),
-  Proof (..),
-  Verification (..),
-  computeParams,
-  fromBytes,
-  fromBytesLE,
-  genItems,
-  isPowerOf2,
-  modBS,
-  modPowerOf2,
-  oracle,
-  prove,
-  toBytesLE,
-  verify,
- )
+import ALBA (Bytes (..), Hashable (..), NoProof (..), Params (..), Proof (..), Verification (..), computeParams, fromBytes, fromBytesLE, genItems, isPowerOf2, modBS, modPowerOf2, oracle, prove, toBytesLE, verify)
 import Data.Bits (Bits (..), countTrailingZeros)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -109,10 +92,13 @@ prop_retryOnStuckProof =
     let params = Params 16 16 80 20
         (u, _, q) = computeParams params
         fewerItems = drop 80 items
-        proof@Proof{retryCount} = prove params fewerItems
-    verify params proof == Verified{proof, params}
-      && retryCount > 0
-      & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof <> ", retryCount = " <> show retryCount)
+     in counterexample ("u = " <> show u <> ", q = " <> show q) $
+          case prove params fewerItems of
+            Left NoProof -> property False
+            Right proof@Proof{retryCount} ->
+              verify params proof == Verified{proof, params}
+                && retryCount > 0
+                & counterexample ("retryCount = " <> show retryCount)
 
 prop_oracleDistributionIsUniform :: Property
 prop_oracleDistributionIsUniform =
@@ -148,11 +134,13 @@ genModifiedProof :: Params -> Gen (Proof, Proof)
 genModifiedProof params = do
   items <- resize 100 (genItems 100)
   let (u, _, q) = computeParams params
-      proof@(Proof n k bs) = prove params items
-  frequency
-    [ (1, pure $ (proof, Proof (n + 1) k bs))
-    , (length items, (proof,) . Proof n k <$> flip1Bit bs)
-    ]
+   in case prove params items of
+        Left NoProof -> genModifiedProof params
+        Right proof@(Proof n k bs) ->
+          frequency
+            [ (1, pure $ (proof, Proof (n + 1) k bs))
+            , (length items, (proof,) . Proof n k <$> flip1Bit bs)
+            ]
 
 prop_flip1Bit :: ByteString -> Property
 prop_flip1Bit bytes =
@@ -194,9 +182,11 @@ prop_verifyValidProof itemSize numItems =
   forAll (resize (fromIntegral numItems) (genItems itemSize)) $ \items -> do
     let params = Params 8 8 (numItems * 8 `div` 10) (numItems * 2 `div` 10)
         (u, _, q) = computeParams params
-        proof = prove params items
-    verify params proof === Verified{proof, params}
-      & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
+     in case prove params items of
+          Left NoProof -> property False
+          Right proof ->
+            verify params proof === Verified{proof, params}
+              & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
 
 shrinkPowerOf2 :: Integer -> [Integer]
 shrinkPowerOf2 n
