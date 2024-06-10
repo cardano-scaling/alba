@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import ALBA (Params (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
+import ALBA (NoProof (..), Params (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
 import Data.Word (Word64)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (..), exitSuccess, exitWith)
@@ -38,9 +38,11 @@ main = do
       bs <- generate $ resize (fromIntegral size) $ genItems len
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Generating proof " <> show opts'
-      let prf = prove params bs
-      writeProof output prf >>= \n ->
-        putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes)")
+      case prove params bs of
+        Left NoProof -> putStrLn "No proof could be generated" >> exitWith (ExitFailure 1)
+        Right prf ->
+          writeProof output prf >>= \n ->
+            putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes)")
     Verify opts@Options{size, len, params = pars@Params{n_p, n_f}, output} -> do
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Verifying proof with " <> show opts'
