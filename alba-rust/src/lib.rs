@@ -3,12 +3,35 @@ use blake2::digest::VariableOutput;
 use blake2::Blake2bVar;
 use more_asserts::assert_le;
 use num_bigint::BigUint;
+use num_traits::{One, ToPrimitive};
 use std::f64::consts::LOG2_E;
 use std::mem::size_of_val;
 use std::ops::{Div, Shl};
 
-/// Type of the digest output.
-pub type DIGEST = [u8; 32];
+#[derive(Debug, Clone)]
+struct PreHash {
+    h: Vec<u8>,
+    s: [u8; 32],
+}
+
+#[derive(Debug, Clone)]
+struct Round {
+    t: usize,
+    h: Vec<u8>,
+    s_list: Vec<[u8; 32]>,
+    n_pi: usize,
+}
+
+struct Cycle {
+    k: usize,
+    round: Round,
+}
+
+#[derive(Debug, Clone)]
+struct Proof {
+    d: usize,
+    items: Vec<[u8; 32]>,
+}
 
 #[derive(Clone)]
 pub struct Params {
@@ -43,15 +66,101 @@ impl AlbaSetup {
     }
 }
 
+fn prove(s_p: Vec<[u8; 32]>, alba_setup: AlbaSetup) -> Proof {
+    let mut pre_hash: Vec<PreHash> = Vec::new();
+
+    // Generate pre_hash list
+    for s in s_p {
+        let h = hash_bytes(s.as_slice()).to_vec();
+        pre_hash.push(PreHash { h, s });
+    }
+
+    let mut round_stack: Vec<Round> = Vec::new();
+
+    for hs in &pre_hash {
+        for t in 1..&alba_setup.d + 1 {
+            let mut new_h = hash_bytes(&[t as u8]).to_vec();
+            new_h.extend(&hs.h.clone());
+            let new_round = Round {
+                t,
+                h: new_h,
+                s_list: [hs.s].to_vec(),
+                n_pi: alba_setup.n_p,
+            };
+            round_stack.push(new_round);
+        }
+    }
+
+    while !round_stack.is_empty() {
+        let round = round_stack.first().unwrap();
+
+        let result = go(&alba_setup.u - 2, pre_hash.clone(), round.clone());
+        if let Some(value) = result {
+            return value;
+        }
+    }
+    Proof {
+        d: 0,
+        items: vec![],
+    }
+}
+
+fn go(k: usize, pre_hash: Vec<PreHash>, round_entry: Round) -> Option<Proof> {
+    let mut cycle_stack: Vec<Cycle> = Vec::new();
+    cycle_stack.push(Cycle {
+        k,
+        round: round_entry,
+    });
+
+    while let Some(cycle) = cycle_stack.pop() {
+        if k == 0 || pre_hash.is_empty() {
+            continue;
+        }
+
+        let t = cycle.round.t; //t
+
+        for ph in &pre_hash {
+            let mut new_hash = cycle.round.h.clone();
+            new_hash.append(&mut ph.h.clone());
+
+            let mut new_s_list = cycle.round.s_list.clone();
+            new_s_list.push(ph.s);
+
+            let mod_value: BigUint = BigUint::one() << 64;
+            let n_pj_bigint: BigUint = BigUint::from_bytes_be(&new_hash) % mod_value;
+            let n_pj_new = n_pj_bigint.to_usize().unwrap();
+
+            if n_pj_new == 0 {
+                return Some(Proof {
+                    d: n_pj_new,
+                    items: new_s_list,
+                });
+            };
+
+            let new_cycle = Cycle {
+                k: &k - 1,
+                round: Round {
+                    t,
+                    h: new_hash,
+                    s_list: new_s_list,
+                    n_pi: n_pj_new,
+                },
+            };
+            cycle_stack.push(new_cycle);
+        }
+    }
+    None
+}
+
 // Helper functions
-pub fn hash_bytes(data: &[u8]) -> DIGEST {
+pub fn hash_bytes(data: &[u8]) -> [u8; 32] {
     let mut hasher = Blake2bVar::new(32).unwrap();
     hasher.update(data);
     let mut buf = [0u8; 32];
     hasher.finalize_variable(&mut buf).unwrap();
     buf
 }
-pub fn gen_items(size: u8) -> Vec<DIGEST> {
+pub fn gen_items(size: u8) -> Vec<[u8; 32]> {
     let mut s_p = Vec::with_capacity(size as usize);
     for b in 0..size {
         let b_arr = [b];
@@ -60,7 +169,7 @@ pub fn gen_items(size: u8) -> Vec<DIGEST> {
     }
     s_p
 }
-pub fn mod_non_power_of_2(bytes: &DIGEST, n_p: usize) -> BigUint {
+pub fn mod_non_power_of_2(bytes: &[u8; 32], n_p: usize) -> BigUint {
     let i = BigUint::from_bytes_be(bytes);
     let k = size_of_val(&n_p.clone());
     let d = BigUint::from(((1).shl(k - 1)) as usize) / n_p;
@@ -70,7 +179,7 @@ pub fn mod_non_power_of_2(bytes: &DIGEST, n_p: usize) -> BigUint {
 
     i % BigUint::from(n_p)
 }
-pub fn oracle(h: &DIGEST, n_p: usize) -> BigUint {
+pub fn oracle(h: &[u8; 32], n_p: usize) -> BigUint {
     if n_p.is_power_of_two() {
         let mut little = [0u8; 8];
         little.copy_from_slice(&h[0..8]);
@@ -84,6 +193,21 @@ pub fn oracle(h: &DIGEST, n_p: usize) -> BigUint {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn try_prove() {
+        let params = Params {
+            lambda_sec: 128.0,
+            lambda_rel: 128.0,
+            n_p: 100,
+            n_f: 50,
+        };
+        let alba_setup = AlbaSetup::gen_setup(params.clone());
+        let s_p = gen_items(10);
+
+        let proof = prove(s_p, alba_setup);
+        println!("{:?}", proof)
+    }
 
     #[test]
     fn try_functions() {
