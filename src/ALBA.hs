@@ -136,15 +136,21 @@ genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitr
 -- required length.
 prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{n_p} s_p =
-  maybe (Left NoProof) Right $ start round0
+  maybe (Left NoProof) Right $ proveWithRetry 0
  where
-  preHash = zip s_p $ map (\bs -> let h = hash bs in (h, h `oracle` n_p)) s_p
-
   (u, d, q) = computeParams params
 
   prob_q = ceiling $ 1 / q
 
-  round0 =
+  proveWithRetry :: Integer -> Maybe Proof
+  proveWithRetry retryCount =
+    case start preHash (round0 preHash) of
+      Nothing -> proveWithRetry (retryCount + 1)
+      Just prf -> Just prf{retryCount}
+   where
+    preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
+
+  round0 preHash =
     [ (t, [s_i], h_0, n_p0)
     | (s_i, (h, l)) <- preHash
     , t <- [1 .. d]
@@ -153,28 +159,28 @@ prove params@Params{n_p} s_p =
     , l == n_p0
     ]
 
-  start :: [(Integer, [Bytes], Hash, Word64)] -> Maybe Proof
-  start [] = Nothing
-  start ((t, s_i, h_i, n_pi) : rest) =
+  start :: [(Bytes, (Hash, Word64))] -> [(Integer, [Bytes], Hash, Word64)] -> Maybe Proof
+  start _ [] = Nothing
+  start preHash ((t, s_i, h_i, n_pi) : rest) =
     case go (fromInteger $ u - 2) preHash (t, s_i, h_i, n_pi) of
-      Nothing -> start rest
+      Nothing -> start preHash rest
       prf -> prf
-
-  go :: Int -> [(Bytes, (Hash, Word64))] -> (Integer, [Bytes], Hash, Word64) -> Maybe Proof
-  go 0 ((s_i, (h_si, _)) : rest) (n, acc, h_j, n_pj) =
-    let h_i = h_j <> h_si
-        n_pj' = h_i `oracle` prob_q
-     in if n_pj' == 0
-          then Just $ Proof n 0 (s_i : acc)
-          else go 0 rest (n, acc, h_j, n_pj)
-  go _ [] _ = Nothing
-  go k ((s_i, (h_si, n_pi)) : rest) (n, acc, h_j, n_pj) =
-    let h_i = h_j <> h_si
-     in if n_pi == n_pj
-          then case go (k - 1) preHash (n, s_i : acc, h_i, h_i `oracle` n_p) of
-            Nothing -> go k rest (n, acc, h_j, n_pj)
-            prf -> prf
-          else go k rest (n, acc, h_j, n_pj)
+   where
+    go :: Int -> [(Bytes, (Hash, Word64))] -> (Integer, [Bytes], Hash, Word64) -> Maybe Proof
+    go 0 ((s_i, (h_si, _)) : rest) (n, acc, h_j, n_pj) =
+      let h_i = h_j <> h_si
+          n_pj' = h_i `oracle` prob_q
+       in if n_pj' == 0
+            then Just $ Proof n 0 (s_i : acc)
+            else go 0 rest (n, acc, h_j, n_pj)
+    go _ [] _ = Nothing
+    go k ((s_i, (h_si, n_pi)) : rest) (n, acc, h_j, n_pj) =
+      let h_i = h_j <> h_si
+       in if n_pi == n_pj
+            then case go (k - 1) preHash (n, s_i : acc, h_i, h_i `oracle` n_p) of
+              Nothing -> go k rest (n, acc, h_j, n_pj)
+              prf -> prf
+            else go k rest (n, acc, h_j, n_pj)
 
 -- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
 --
@@ -282,12 +288,12 @@ data Verification
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
 verify :: Params -> Proof -> Verification
-verify params@Params{n_p} proof@(Proof d _ bs) =
+verify params@Params{n_p} proof@(Proof d k bs) =
   let (u, _, q) = computeParams params
 
       check item = \case
         (v@Verified{}, _, []) ->
-          let h = hash item
+          let h = hash k <> hash item
               l = oracle h n_p
               h_0 = hash d <> h
               n_p0 = h_0 `oracle` n_p
@@ -295,7 +301,7 @@ verify params@Params{n_p} proof@(Proof d _ bs) =
            in (m, h_0, [item])
         (v@Verified{}, h_j, acc) ->
           let prf = item : acc
-              h_si = hash item
+              h_si = hash k <> hash item
               n_pi = h_si `oracle` n_p
               h_i = h_j <> h_si
               n_pj = oracle h_j n_p
