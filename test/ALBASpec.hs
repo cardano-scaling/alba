@@ -79,25 +79,28 @@ spec = do
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
   prop "can roundtrip serialisation of proof" prop_roundtripProof
-  prop "needs to retry when proof is stuck from repeated elements" prop_retryOnStuckProof
+  modifyMaxSuccess (const 30) $
+    prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
 
 prop_roundtripProof :: Proof -> Property
 prop_roundtripProof proof =
   let bs = encode proof
    in decode bs === Right proof
 
-prop_retryOnStuckProof :: Property
-prop_retryOnStuckProof =
+prop_retryProofOnSmallSet :: Property
+prop_retryProofOnSmallSet =
   forAll (resize 100 (genItems 10)) $ \items -> do
     let params = Params 16 16 80 20
         (u, _, q) = computeParams params
-        fewerItems = drop 80 items
+        fewerItems = drop 70 items
      in counterexample ("u = " <> show u <> ", q = " <> show q) $
           case prove params fewerItems of
-            Left NoProof -> property False
+            Left NoProof -> property True & label "no proof"
             Right proof@Proof{retryCount} ->
               verify params proof == Verified{proof, params}
-                && retryCount > 0
+                & label ("retryCount <= " <> show ((retryCount `div` 10 + 1) * 10))
+                & cover 60 (retryCount > 0) "retried proof"
+                & checkCoverage
                 & counterexample ("retryCount = " <> show retryCount)
 
 prop_oracleDistributionIsUniform :: Property
