@@ -75,8 +75,11 @@ instance Serialize Proof where
     elements <- get
     pure $ Proof index retryCount elements
 
-data NoProof = NoProof
-  deriving (Show, Eq)
+newtype NoProof = NoProof Retries
+  deriving stock (Show, Eq)
+
+newtype Retries = Retries Integer
+  deriving stock (Show, Eq)
 
 newtype Hash where
   Hash :: ByteString -> Hash
@@ -135,18 +138,20 @@ genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitr
 -- one as constructs the proof using depth-first search over the
 -- required length.
 prove :: Params -> [Bytes] -> Either NoProof Proof
-prove params@Params{n_p} s_p =
-  maybe (Left NoProof) Right $ proveWithRetry 0
+prove params@Params{λ_sec, n_p} s_p =
+  proveWithRetry 0
  where
   (u, d, q) = computeParams params
 
   prob_q = ceiling $ 1 / q
 
-  proveWithRetry :: Integer -> Maybe Proof
-  proveWithRetry retryCount =
-    case start preHash (round0 preHash) of
-      Nothing -> proveWithRetry (retryCount + 1)
-      Just prf -> Just prf{retryCount}
+  proveWithRetry :: Integer -> Either NoProof Proof
+  proveWithRetry retryCount
+    | retryCount >= λ_sec = Left $ NoProof $ Retries retryCount
+    | otherwise =
+        case start preHash (round0 preHash) of
+          Nothing -> proveWithRetry (retryCount + 1)
+          Just prf -> Right prf{retryCount}
    where
     preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
 
