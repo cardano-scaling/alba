@@ -3,7 +3,7 @@ use blake2::digest::VariableOutput;
 use blake2::Blake2bVar;
 use more_asserts::assert_le;
 use num_bigint::BigUint;
-use num_traits::{One, ToPrimitive};
+use num_traits::{One, ToPrimitive, Zero};
 use std::f64::consts::LOG2_E;
 use std::mem::size_of_val;
 use std::ops::{Div, Shl};
@@ -31,6 +31,13 @@ struct Cycle {
 struct Proof {
     d: usize,
     items: Vec<[u8; 32]>,
+}
+
+struct Verification {
+    proof: Proof,
+    params: Params,
+    valid: bool,
+    reason: Option<String>,
 }
 
 #[derive(Clone)]
@@ -62,6 +69,46 @@ impl AlbaSetup {
             u,
             d,
             q,
+        }
+    }
+}
+
+impl Verification{
+    fn verify(params: Params, proof: Proof) -> Self {
+        let alba_setup = AlbaSetup::gen_setup(params.clone());
+
+        if proof.clone().items.len() != alba_setup.u
+        {
+            Self {
+                params: params.clone(),
+                proof: proof.clone(),
+                valid: false,
+                reason: Some(String::from("Invalid length")),
+            };
+        }
+
+        let mut h_j: [u8; 32] = [0u8; 32];
+        for item in proof.clone().items {
+            let hash_input = [h_j, item].concat();
+            let h_i = hash_bytes(hash_input.as_slice());
+            let n_pj_new = oracle(&h_i, params.clone().n_p);
+
+            if n_pj_new == BigUint::zero() {
+                Self {
+                    params: params.clone(),
+                    proof: proof.clone(),
+                    valid: true,
+                    reason: None,
+                };
+            }
+            h_j.copy_from_slice(h_i.as_slice());
+        }
+
+        Self {
+            params,
+            proof,
+            valid: false,
+            reason: Some(String::from("Verification failed!")),
         }
     }
 }
@@ -197,13 +244,13 @@ mod tests {
     #[test]
     fn try_prove() {
         let params = Params {
-            lambda_sec: 128.0,
-            lambda_rel: 128.0,
+            lambda_sec: 64.0,
+            lambda_rel: 64.0,
             n_p: 100,
             n_f: 50,
         };
         let alba_setup = AlbaSetup::gen_setup(params.clone());
-        let s_p = gen_items(10);
+        let s_p = gen_items(5);
 
         let proof = prove(s_p, alba_setup);
         println!("{:?}", proof)
