@@ -7,14 +7,14 @@
 
 module ALBASpec where
 
-import ALBA (Bytes (..), Hashable (..), NoProof (..), Params (..), Proof (..), Verification (..), computeParams, fromBytes, fromBytesLE, genItems, isPowerOf2, modBS, modPowerOf2, oracle, prove, toBytesLE, verify)
+import ALBA (Bytes (..), Hashable (..), NoProof (..), Params (..), Proof (..), Retries (..), Verification (..), computeParams, fromBytes, fromBytesLE, genItems, isPowerOf2, modBS, modPowerOf2, oracle, prove, toBytesLE, verify)
 import Data.Bits (Bits (..), countTrailingZeros)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Function ((&))
 import qualified Data.List as List
 import Data.Serialize (decode, encode)
-import Data.Word (Word64)
+import Data.Word (Word64, Word8)
 import Debug.Trace
 import Test.Hspec (Spec, SpecWith, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
@@ -79,8 +79,17 @@ spec = do
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
   prop "can roundtrip serialisation of proof" prop_roundtripProof
-  modifyMaxSuccess (const 30) $
+  modifyMaxSuccess (const 30) $ do
     prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
+    prop "stops retrying proof after λ attempts" prop_stopRetryingProof
+
+prop_stopRetryingProof :: Property
+prop_stopRetryingProof =
+  forAll (resize 100 (genItems 10)) $ \items ->
+    forAll (choose (16, 32)) $ \λ ->
+      let params = Params λ λ 80 20
+          fewerItems = drop 81 items
+       in prove params fewerItems === Left (NoProof $ Retries λ)
 
 prop_roundtripProof :: Proof -> Property
 prop_roundtripProof proof =
@@ -95,7 +104,7 @@ prop_retryProofOnSmallSet =
         fewerItems = drop 70 items
      in counterexample ("u = " <> show u <> ", q = " <> show q) $
           case prove params fewerItems of
-            Left NoProof -> property True & label "no proof"
+            Left (NoProof _) -> property True & label "no proof"
             Right proof@Proof{retryCount} ->
               verify params proof == Verified{proof, params}
                 & label ("retryCount <= " <> show ((retryCount `div` 10 + 1) * 10))
@@ -138,7 +147,7 @@ genModifiedProof params = do
   items <- resize 100 (genItems 100)
   let (u, _, q) = computeParams params
    in case prove params items of
-        Left NoProof -> genModifiedProof params
+        Left (NoProof _) -> genModifiedProof params
         Right proof@(Proof n k bs) ->
           frequency
             [ (1, pure $ (proof, Proof (n + 1) k bs))
@@ -186,7 +195,7 @@ prop_verifyValidProof itemSize numItems =
     let params = Params 8 8 (numItems * 8 `div` 10) (numItems * 2 `div` 10)
         (u, _, q) = computeParams params
      in case prove params items of
-          Left NoProof -> property False
+          Left (NoProof _) -> property False
           Right proof ->
             verify params proof === Verified{proof, params}
               & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
