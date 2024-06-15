@@ -10,22 +10,50 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-module ALBA where
+{- HLINT ignore "Redundant do" -}
+
+module ALBA (
+  -- * API
+
+  -- ** Core Functions
+  prove,
+  verify,
+
+  -- ** Utilities
+  computeParams,
+  genItems,
+  oracle,
+  writeProof,
+  readProof,
+  fromBytesLE,
+  toBytesLE,
+  modPowerOf2,
+  isPowerOf2,
+
+  -- * Types
+  Bytes (..),
+  Params (..),
+  Proof (..),
+  NoProof (..),
+  Hashable (..),
+  Retries (..),
+  Verification (..),
+)
+where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (unless)
+import Control.Monad.State.Strict (State, evalState)
 import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, (.&.), (.<<.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
-import Data.Maybe (fromMaybe)
 import Data.Serialize (Serialize (..), decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.String (IsString (..))
 import Data.Word (Word64)
 import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
 import Foreign.C (errnoToIOError, getErrno)
-import GHC.Generics (Generic)
 import GHC.IO.Exception (ioException)
 import Test.QuickCheck (Gen, arbitrary, sized, vectorOf)
 
@@ -37,29 +65,28 @@ foreign import capi unsafe "blake2b.h blake2b256_hash" blake2b256_hash :: Ptr Wo
 -- such that $|S_p| \geq n_p$, the prover can convince the verifier that $|S_p| \geq n_f$
 -- with $n_f < n_p$.
 data Params = Params
-  { λ_sec :: Integer
+  { λ_sec :: !Integer
   -- ^ Security parameter
   -- Controls the probability that `extract` returns a set of size less than `n_f`.
   -- 128 seems like a good value
-  , λ_rel :: Integer
+  , λ_rel :: !Integer
   -- ^ Verification parameter.
   -- Controls the probability that `verify` returns `True` when the proof is invalid.
   -- 128 seems like a good value
-  , n_p :: Word64
+  , n_p :: !Word64
   -- ^ Estimated size of "honest" parties set.
-  , n_f :: Word64
+  , n_f :: !Word64
   -- ^ Estimated size of "adversarial" parties set.
   }
   deriving (Show, Eq)
 
--- | Weight function for type `a`.
-type W a = a -> Int
-
 data Proof = Proof
-  { index :: Integer
+  { index :: !Integer
   -- ^ The initial index with which the proof was generated
-  , retryCount :: Integer
-  , elements :: [Bytes]
+  , retryCount :: !Integer
+  -- ^ Number of retries before a proof was generated
+  , elements :: ![Bytes]
+  -- ^ The set of elements witnessing knowledge of a set of size greater than $n_f$.
   }
   deriving (Show, Eq)
 
@@ -132,6 +159,14 @@ instance IsString Bytes where
 genItems :: Int -> Gen [Bytes]
 genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitrary)
 
+data ProofStep = ProofStep
+  { t :: !Integer
+  , s :: ![Bytes]
+  , h :: !Hash
+  , n :: !Word64
+  }
+  deriving (Show, Eq)
+
 -- | Output a proof `the set of elements known to the prover `s_p` has size greater than $n_f$.
 --
 -- This version of `prove` is much more efficient than the original
@@ -139,53 +174,59 @@ genItems len = sized $ \n -> vectorOf n (Bytes . BS.pack <$> vectorOf len arbitr
 -- required length.
 prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{λ_sec, n_p} s_p =
-  proveWithRetry 0
+  evalState (proveWithRetry 0) 0
  where
+  hashBounds = λ_sec * λ_sec
+
   (u, d, q) = computeParams params
 
   prob_q = ceiling $ 1 / q
 
-  proveWithRetry :: Integer -> Either NoProof Proof
+  proveWithRetry :: Integer -> State Int (Either NoProof Proof)
   proveWithRetry retryCount
-    | retryCount >= λ_sec = Left $ NoProof $ Retries retryCount
-    | otherwise =
-        case start preHash (round0 preHash) of
+    | retryCount >= λ_sec = pure $ Left $ NoProof $ Retries retryCount
+    | otherwise = do
+        step0 <- round0 preHash
+        stepn <- start preHash step0
+        case stepn of
           Nothing -> proveWithRetry (retryCount + 1)
-          Just prf -> Right prf{retryCount}
+          Just prf -> pure $ Right prf{retryCount}
    where
     preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
 
+  round0 :: [(Bytes, (Hash, Word64))] -> State Int [ProofStep]
   round0 preHash =
-    [ (t, [s_i], h_0, n_p0)
-    | (s_i, (h, l)) <- preHash
-    , t <- [1 .. d]
-    , let !h_0 = hash t <> h
-    , let n_p0 = h_0 `oracle` n_p
-    , l == n_p0
-    ]
+    pure
+      [ ProofStep t [s_i] h_0 n_p0
+      | (s_i, (h, l)) <- preHash
+      , t <- [1 .. d]
+      , let !h_0 = hash t <> h
+      , let n_p0 = h_0 `oracle` n_p
+      , l == n_p0
+      ]
 
-  start :: [(Bytes, (Hash, Word64))] -> [(Integer, [Bytes], Hash, Word64)] -> Maybe Proof
-  start _ [] = Nothing
-  start preHash ((t, s_i, h_i, n_pi) : rest) =
-    case go (fromInteger $ u - 2) preHash (t, s_i, h_i, n_pi) of
-      Nothing -> start preHash rest
-      prf -> prf
+  start :: [(Bytes, (Hash, Word64))] -> [ProofStep] -> State Int (Maybe Proof)
+  start _ [] = pure Nothing
+  start preHash (element : elements) =
+    case go (fromInteger $ u - 2) preHash element of
+      Nothing -> start preHash elements
+      prf -> pure prf
    where
-    go :: Int -> [(Bytes, (Hash, Word64))] -> (Integer, [Bytes], Hash, Word64) -> Maybe Proof
-    go 0 ((s_i, (h_si, _)) : rest) (n, acc, h_j, n_pj) =
+    go :: Int -> [(Bytes, (Hash, Word64))] -> ProofStep -> Maybe Proof
+    go 0 ((s_i, (h_si, _)) : rest) step@(ProofStep n acc h_j n_pj) =
       let h_i = h_j <> h_si
           n_pj' = h_i `oracle` prob_q
        in if n_pj' == 0
             then Just $ Proof n 0 (s_i : acc)
-            else go 0 rest (n, acc, h_j, n_pj)
+            else go 0 rest step
     go _ [] _ = Nothing
-    go k ((s_i, (h_si, n_pi)) : rest) (n, acc, h_j, n_pj) =
+    go k ((s_i, (h_si, n_pi)) : rest) step@(ProofStep n acc h_j n_pj) =
       let h_i = h_j <> h_si
        in if n_pi == n_pj
-            then case go (k - 1) preHash (n, s_i : acc, h_i, h_i `oracle` n_p) of
-              Nothing -> go k rest (n, acc, h_j, n_pj)
+            then case go (k - 1) preHash (ProofStep n (s_i : acc) h_i (h_i `oracle` n_p)) of
+              Nothing -> go k rest step
               prf -> prf
-            else go k rest (n, acc, h_j, n_pj)
+            else go k rest step
 
 -- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
 --
@@ -214,14 +255,6 @@ computeParams Params{λ_rel, λ_sec, n_p, n_f} =
 
   q :: Double
   q = 2 * (fromIntegral λ_rel + log3) / (fromIntegral d * loge)
-
-modBS :: ByteString -> Integer -> Integer
-modBS bs q =
-  let n = fromBytes bs q
-   in n `mod` q
-
-fromBytes :: ByteString -> Integer -> Integer
-fromBytes bs q = BS.foldl' (\acc b -> (acc * 256 + fromIntegral b) `mod` q) 0 bs
 
 fromBytesLE :: ByteString -> Word64
 fromBytesLE = either error id . runGet getWord64le . BS.take 8
@@ -286,9 +319,9 @@ isPowerOf2 n =
   countLeadingZeros n + countTrailingZeros n == 63
 
 data Verification
-  = Verified {proof :: Proof, params :: Params}
-  | InvalidItem {proof :: Proof, item :: Bytes, level :: Int}
-  | InvalidLength {proof :: Proof, expected :: Int}
+  = Verified {proof :: !Proof, params :: !Params}
+  | InvalidItem {proof :: !Proof, item :: !Bytes, level :: !Int}
+  | InvalidLength {proof :: !Proof, expected :: !Int}
   deriving (Show, Eq)
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
