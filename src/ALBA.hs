@@ -177,29 +177,28 @@ data ProofStep = ProofStep
 -- required length.
 prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{λ_sec, n_p} s_p =
-  runST $ newSTRef 0 >>= proveWithRetry 0
+  proveWithRetry 0
  where
-  hashBounds = λ_sec * λ_sec
+  hashBounds = fromInteger $ λ_sec * λ_sec
 
   (u, d, q) = computeParams params
 
   prob_q = ceiling $ 1 / q
 
-  proveWithRetry :: Integer -> STRef s Int -> ST s (Either NoProof Proof)
-  proveWithRetry retryCount hashCount
-    | retryCount >= λ_sec = pure $ Left $ NoProof $ Retries retryCount
-    | otherwise = do
-        step0 <- round0 preHash hashCount
-        stepn <- start hashCount preHash step0
-        case stepn of
-          Nothing -> proveWithRetry (retryCount + 1) hashCount
-          Just prf -> pure $ Right prf{retryCount}
+  proveWithRetry :: Integer -> Either NoProof Proof
+  proveWithRetry retryCount
+    | retryCount >= λ_sec = Left $ NoProof $ Retries retryCount
+    | otherwise =
+        case round0 preHash $ start preHash of
+          Nothing -> proveWithRetry (retryCount + 1)
+          Just prf -> Right prf{retryCount}
    where
     preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
 
-  round0 :: [(Bytes, (Hash, Word64))] -> STRef s Int -> ST s [ProofStep]
-  round0 preHash hashCount =
-    pure
+  round0 :: [(Bytes, (Hash, Word64))] -> (Int -> [ProofStep] -> Maybe Proof) -> Maybe Proof
+  round0 preHash k =
+    k
+      (length preHash * fromInteger d)
       [ ProofStep t [s_i] h_0 n_p0
       | (s_i, (h, l)) <- preHash
       , t <- [1 .. d]
@@ -208,29 +207,31 @@ prove params@Params{λ_sec, n_p} s_p =
       , l == n_p0
       ]
 
-  start :: STRef s Int -> [(Bytes, (Hash, Word64))] -> [ProofStep] -> ST s (Maybe Proof)
-  start hashCount preHash = \case
-    [] -> pure Nothing
+  start :: [(Bytes, (Hash, Word64))] -> Int -> [ProofStep] -> Maybe Proof
+  start preHash hashCount = \case
+    [] -> Nothing
     (element : elements) ->
-      case go (fromInteger $ u - 2) preHash element of
-        Nothing -> start hashCount preHash elements
-        prf -> pure prf
+      case go (fromInteger $ u - 2) hashCount preHash element of
+        (hashCount', Nothing)
+          | hashCount' < hashBounds -> start preHash hashCount' elements
+          | otherwise -> Nothing
+        (_, prf) -> prf
    where
-    go :: Int -> [(Bytes, (Hash, Word64))] -> ProofStep -> Maybe Proof
-    go 0 ((s_i, (h_si, _)) : rest) step@(ProofStep n acc h_j n_pj) =
+    go :: Int -> Int -> [(Bytes, (Hash, Word64))] -> ProofStep -> (Int, Maybe Proof)
+    go 0 hCount ((s_i, (h_si, _)) : rest) step@(ProofStep n acc h_j _) =
       let h_i = h_j <> h_si
           n_pj' = h_i `oracle` prob_q
        in if n_pj' == 0
-            then Just $ Proof n 0 (s_i : acc)
-            else go 0 rest step
-    go _ [] _ = Nothing
-    go k ((s_i, (h_si, n_pi)) : rest) step@(ProofStep n acc h_j n_pj) =
+            then (succ hCount, Just $ Proof n 0 (s_i : acc))
+            else go 0 (succ hCount) rest step
+    go k hCount ((s_i, (h_si, n_pi)) : rest) step@(ProofStep n acc h_j n_pj) =
       let h_i = h_j <> h_si
        in if n_pi == n_pj
-            then case go (k - 1) preHash (ProofStep n (s_i : acc) h_i (h_i `oracle` n_p)) of
-              Nothing -> go k rest step
+            then case go (k - 1) (succ hCount) preHash (ProofStep n (s_i : acc) h_i (h_i `oracle` n_p)) of
+              (hCount', Nothing) -> go k hCount' rest step
               prf -> prf
-            else go k rest step
+            else go k (succ hCount) rest step
+    go _ hCount [] _ = (hCount, Nothing)
 
 -- | Compute ALBA parameters: Length of proof, seed number, and probability of selecting last tuple.
 --
