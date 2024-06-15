@@ -112,8 +112,12 @@ prop_retryProofOnHashBounds =
               retryCount >= 0 && retryCount <= λ
                 & counterexample ("retryCount = " <> show retryCount)
                 & counterexample ("numItems = " <> show numItems)
-                & label ("retryCount <= " <> show ((retryCount `div` 10 + 1) * 10))
-                & cover 60 (retryCount > 0) "retried proof"
+                & label ("# prove run = " <> show (succ retryCount))
+                -- 35% is completely empirical, the real target is for
+                -- the average number of proof run to be around 2 but
+                -- QuickCheck does not provide an easy way to target
+                -- an average value
+                & cover 35 (retryCount > 0) "retried proof"
                 & checkCoverage
             Left (NoProof _) -> property True & label "no proof"
 
