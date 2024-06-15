@@ -43,15 +43,11 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (unless)
-import Control.Monad.ST.Strict (ST, runST)
-import Control.Monad.State.Strict (State, evalState)
 import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, (.&.), (.<<.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
-import Data.STRef (newSTRef)
-import Data.STRef.Strict (STRef)
 import Data.Serialize (Serialize (..), decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.String (IsString (..))
 import Data.Word (Word64)
@@ -179,7 +175,14 @@ prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{λ_sec, n_p} s_p =
   proveWithRetry 0
  where
-  hashBounds = fromInteger $ λ_sec * λ_sec
+  λ_squared = λ_sec * λ_sec
+  λ_cubed = λ_sec * λ_squared
+
+  hashBounds =
+    fromIntegral $
+      if fromIntegral n_p <= λ_squared
+        then λ_squared
+        else λ_cubed
 
   (u, d, q) = computeParams params
 
@@ -189,23 +192,22 @@ prove params@Params{λ_sec, n_p} s_p =
   proveWithRetry retryCount
     | retryCount >= λ_sec = Left $ NoProof $ Retries retryCount
     | otherwise =
-        case round0 preHash $ start preHash of
-          Nothing -> proveWithRetry (retryCount + 1)
-          Just prf -> Right prf{retryCount}
+        let hashCount = length preHash * fromInteger d
+         in case start preHash hashCount (round0 preHash) of
+              Nothing -> proveWithRetry (retryCount + 1)
+              Just prf -> Right prf{retryCount}
    where
     preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
 
-  round0 :: [(Bytes, (Hash, Word64))] -> (Int -> [ProofStep] -> Maybe Proof) -> Maybe Proof
-  round0 preHash k =
-    k
-      (length preHash * fromInteger d)
-      [ ProofStep t [s_i] h_0 n_p0
-      | (s_i, (h, l)) <- preHash
-      , t <- [1 .. d]
-      , let !h_0 = hash t <> h
-      , let n_p0 = h_0 `oracle` n_p
-      , l == n_p0
-      ]
+  round0 :: [(Bytes, (Hash, Word64))] -> [ProofStep]
+  round0 preHash =
+    [ ProofStep t [s_i] h_0 n_p0
+    | (s_i, (h, l)) <- preHash
+    , t <- [1 .. d]
+    , let !h_0 = hash t <> h
+    , let n_p0 = h_0 `oracle` n_p
+    , l == n_p0
+    ]
 
   start :: [(Bytes, (Hash, Word64))] -> Int -> [ProofStep] -> Maybe Proof
   start preHash hashCount = \case

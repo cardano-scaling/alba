@@ -50,6 +50,7 @@ import Test.QuickCheck (
   cover,
   coverTable,
   forAll,
+  forAllBlind,
   forAllShrink,
   frequency,
   generate,
@@ -99,12 +100,14 @@ spec = do
   modifyMaxSuccess (const 30) $ do
     prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
     prop "stops retrying proof after λ attempts" prop_stopRetryingProof
-    prop "retries proof after number of hashes is above λ² given number of items lower than λ²" prop_retryProofOnHashBounds
+    prop "retries proof after number of hashes is above λ² given n_p is lower than λ²" prop_retryProofOnHashBounds
+    prop "does not retry proof given n_p is greater than λ³" prop_doesNoRetryProofOnHashBounds
 
 prop_retryProofOnHashBounds :: Property
 prop_retryProofOnHashBounds =
   forAll (choose (10, 20)) $ \λ ->
-    forAll (resize (fromIntegral $ λ * λ `div` 2) (genItems 10)) $ \items ->
+    -- we want n_p to be lower than λ² so we generate exactly λ² items
+    forAll (resize (fromIntegral $ λ * λ) (genItems 10)) $ \items ->
       let numItems = fromIntegral $ length items
           params = Params λ λ (numItems * 80 `div` 100) (numItems * 20 `div` 100)
        in case prove params items of
@@ -120,6 +123,23 @@ prop_retryProofOnHashBounds =
                 & cover 35 (retryCount > 0) "retried proof"
                 & checkCoverage
             Left (NoProof _) -> property True & label "no proof"
+
+prop_doesNoRetryProofOnHashBounds :: Property
+prop_doesNoRetryProofOnHashBounds =
+  forAll (choose (10, 20)) $ \λ ->
+    -- we want n_p to be greater than λ³ so we need to generate more items
+    forAllBlind (resize (fromIntegral $ λ * λ * λ * 6 `div` 5) (genItems 10)) $ \items ->
+      let numItems = fromIntegral $ length items
+          params = Params λ λ (numItems * 80 `div` 100) (numItems * 20 `div` 100)
+       in case prove params items of
+            Right Proof{retryCount} ->
+              property True
+                & label ("# prove run = " <> show (succ retryCount))
+                -- This bound is also empirical, the real target is for the average and max number of proof run to be 1.
+                -- It's not clear why the distribution is actually quite similar to the other retry-related test
+                & cover 65 (retryCount < 1) "no retry"
+                & checkCoverage
+            Left (NoProof _) -> property False
 
 prop_stopRetryingProof :: Property
 prop_stopRetryingProof =
