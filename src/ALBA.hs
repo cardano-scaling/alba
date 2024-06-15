@@ -43,12 +43,15 @@ where
 
 import Control.DeepSeq (NFData)
 import Control.Monad (unless)
+import Control.Monad.ST.Strict (ST, runST)
 import Control.Monad.State.Strict (State, evalState)
 import Data.Bits (FiniteBits, countLeadingZeros, finiteBitSize, (.&.), (.<<.))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import qualified Data.ByteString.Base16 as Hex
 import Data.ByteString.Internal (unsafeCreate)
+import Data.STRef (newSTRef)
+import Data.STRef.Strict (STRef)
 import Data.Serialize (Serialize (..), decode, encode, getWord64le, putWord64le, runGet, runPut)
 import Data.String (IsString (..))
 import Data.Word (Word64)
@@ -174,7 +177,7 @@ data ProofStep = ProofStep
 -- required length.
 prove :: Params -> [Bytes] -> Either NoProof Proof
 prove params@Params{λ_sec, n_p} s_p =
-  evalState (proveWithRetry 0) 0
+  runST $ newSTRef 0 >>= proveWithRetry 0
  where
   hashBounds = λ_sec * λ_sec
 
@@ -182,20 +185,20 @@ prove params@Params{λ_sec, n_p} s_p =
 
   prob_q = ceiling $ 1 / q
 
-  proveWithRetry :: Integer -> State Int (Either NoProof Proof)
-  proveWithRetry retryCount
+  proveWithRetry :: Integer -> STRef s Int -> ST s (Either NoProof Proof)
+  proveWithRetry retryCount hashCount
     | retryCount >= λ_sec = pure $ Left $ NoProof $ Retries retryCount
     | otherwise = do
-        step0 <- round0 preHash
-        stepn <- start preHash step0
+        step0 <- round0 preHash hashCount
+        stepn <- start hashCount preHash step0
         case stepn of
-          Nothing -> proveWithRetry (retryCount + 1)
+          Nothing -> proveWithRetry (retryCount + 1) hashCount
           Just prf -> pure $ Right prf{retryCount}
    where
     preHash = zip s_p $ map (\bs -> let h = hash retryCount <> hash bs in (h, h `oracle` n_p)) s_p
 
-  round0 :: [(Bytes, (Hash, Word64))] -> State Int [ProofStep]
-  round0 preHash =
+  round0 :: [(Bytes, (Hash, Word64))] -> STRef s Int -> ST s [ProofStep]
+  round0 preHash hashCount =
     pure
       [ ProofStep t [s_i] h_0 n_p0
       | (s_i, (h, l)) <- preHash
@@ -205,12 +208,13 @@ prove params@Params{λ_sec, n_p} s_p =
       , l == n_p0
       ]
 
-  start :: [(Bytes, (Hash, Word64))] -> [ProofStep] -> State Int (Maybe Proof)
-  start _ [] = pure Nothing
-  start preHash (element : elements) =
-    case go (fromInteger $ u - 2) preHash element of
-      Nothing -> start preHash elements
-      prf -> pure prf
+  start :: STRef s Int -> [(Bytes, (Hash, Word64))] -> [ProofStep] -> ST s (Maybe Proof)
+  start hashCount preHash = \case
+    [] -> pure Nothing
+    (element : elements) ->
+      case go (fromInteger $ u - 2) preHash element of
+        Nothing -> start hashCount preHash elements
+        prf -> pure prf
    where
     go :: Int -> [(Bytes, (Hash, Word64))] -> ProofStep -> Maybe Proof
     go 0 ((s_i, (h_si, _)) : rest) step@(ProofStep n acc h_j n_pj) =
