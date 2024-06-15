@@ -7,7 +7,24 @@
 
 module ALBASpec where
 
-import ALBA (Bytes (..), Hashable (..), NoProof (..), Params (..), Proof (..), Retries (..), Verification (..), computeParams, fromBytes, fromBytesLE, genItems, isPowerOf2, modBS, modPowerOf2, oracle, prove, toBytesLE, verify)
+import ALBA (
+  Bytes (..),
+  Hashable (..),
+  NoProof (..),
+  Params (..),
+  Proof (..),
+  Retries (..),
+  Verification (..),
+  computeParams,
+  fromBytesLE,
+  genItems,
+  isPowerOf2,
+  modPowerOf2,
+  oracle,
+  prove,
+  toBytesLE,
+  verify,
+ )
 import Data.Bits (Bits (..), countTrailingZeros)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -82,6 +99,23 @@ spec = do
   modifyMaxSuccess (const 30) $ do
     prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
     prop "stops retrying proof after λ attempts" prop_stopRetryingProof
+    prop "retries proof after number of hashes is above λ² given number of items lower than λ²" prop_retryProofOnHashBounds
+
+prop_retryProofOnHashBounds :: Property
+prop_retryProofOnHashBounds =
+  forAll (choose (10, 20)) $ \λ ->
+    forAll (resize (fromIntegral $ λ * λ `div` 2) (genItems 10)) $ \items ->
+      let numItems = fromIntegral $ length items
+          params = Params λ λ (numItems * 80 `div` 100) (numItems * 20 `div` 100)
+       in case prove params items of
+            Right Proof{retryCount} ->
+              retryCount >= 0 && retryCount <= λ
+                & counterexample ("retryCount = " <> show retryCount)
+                & counterexample ("numItems = " <> show numItems)
+                & label ("retryCount <= " <> show ((retryCount `div` 10 + 1) * 10))
+                & cover 60 (retryCount > 0) "retried proof"
+                & checkCoverage
+            Left (NoProof _) -> property True & label "no proof"
 
 prop_stopRetryingProof :: Property
 prop_stopRetryingProof =
