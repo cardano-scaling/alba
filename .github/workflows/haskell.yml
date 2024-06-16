@@ -1,9 +1,8 @@
 name: Haskell CI
 
 on:
-  push:
-    branches: [ "main" ]
   pull_request:
+  push:
     branches: [ "main" ]
 
 permissions:
@@ -67,3 +66,25 @@ jobs:
 
     - name: 🧪 Run tests
       run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
+
+  docs:
+    runs-on: ubuntu-latest
+#    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: ✅ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🪨 Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: '0.4.40'
+
+      - name: 📓 Build docs
+        run: mdbook build docs
+
+      - name: 🚀 Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          cname: alba.cardano-scaling.org
