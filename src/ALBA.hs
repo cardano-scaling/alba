@@ -105,7 +105,7 @@ newtype NoProof = NoProof Retries
   deriving stock (Show, Eq)
 
 newtype Retries = Retries Integer
-  deriving stock (Show, Eq)
+  deriving newtype (Show, Eq)
 
 newtype Hash where
   Hash :: ByteString -> Hash

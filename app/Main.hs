@@ -2,7 +2,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import ALBA (NoProof (..), Params (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
+import ALBA (NoProof (..), Params (..), Proof (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
 import Data.Word (Word64)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (..), exitSuccess, exitWith)
@@ -39,10 +39,11 @@ main = do
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Generating proof " <> show opts'
       case prove params bs of
-        Left NoProof -> putStrLn "No proof could be generated" >> exitWith (ExitFailure 1)
-        Right prf ->
+        Left (NoProof retries) ->
+          putStrLn ("No proof could be generated after " <> show retries <> " retries") >> exitWith (ExitFailure 1)
+        Right prf@Proof{retryCount} ->
           writeProof output prf >>= \n ->
-            putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes)")
+            putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes, " <> show retryCount <> " retries)")
     Verify opts@Options{size, len, params = pars@Params{n_p, n_f}, output} -> do
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Verifying proof with " <> show opts'
