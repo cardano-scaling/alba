@@ -68,6 +68,9 @@ jobs:
       run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
 
   docs:
+    permissions:
+      contents: write
+
     runs-on: ubuntu-latest
 #    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
