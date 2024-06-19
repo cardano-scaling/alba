@@ -242,6 +242,8 @@ computeParams :: Params -> (Integer, Integer, Double)
 computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   (u, d, q)
  where
+  λ_squared = λ_sec * λ_sec
+
   e = exp 1
 
   log_2 = logBase 2
@@ -252,16 +254,25 @@ computeParams Params{λ_rel, λ_sec, n_p, n_f} =
   log3 :: Double
   log3 = log_2 3
 
+  log12 :: Double
+  log12 = log_2 12
+
   u' =
-    (fromIntegral λ_sec + log_2 (fromIntegral λ_rel + log3) + 1 - log_2 loge)
+    (fromIntegral λ_sec + log_2 (fromIntegral λ_rel) + 5 - log_2 loge)
       / logBase 2 (fromIntegral n_p / fromIntegral n_f)
 
   u = ceiling u'
 
-  d = ceiling $ 16 * u' * (fromIntegral λ_rel + log3) / loge
+  (d, q) =
+    if fromIntegral n_p <= λ_squared
+      then (d_small, q_small)
+      else (d_large, q_large)
 
-  q :: Double
-  q = 2 * (fromIntegral λ_rel + log3) / (fromIntegral d * loge)
+  d_large = ceiling $ 16 * u' * (fromIntegral λ_rel + log3) / loge
+  q_large = 2 * (fromIntegral λ_rel + log3) / (fromIntegral d_large * loge)
+
+  d_small = ceiling $ 32 * u' * log12
+  q_small = 2 * (fromIntegral λ_rel + log12) / fromIntegral d_small
 
 fromBytesLE :: ByteString -> Word64
 fromBytesLE = either error id . runGet getWord64le . BS.take 8

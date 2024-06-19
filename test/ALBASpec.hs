@@ -86,22 +86,38 @@ spec = do
 
   describe "parameters" $ do
     mapM_
-      checkParameters
-      [ (Params 128 128 600 400, 232)
-      , (Params 128 128 660 330, 136)
+      checkParameterU
+      [ (Params 128 128 24000 16000, 239)
+      , (Params 128 128 600 400, 239)
+      , (Params 128 128 660 330, 140)
       , (Params 128 128 800 200, 68)
       ]
+
+    it "has significantly smaller d and larger q if n_p is smaller than λ²" $
+      let small_n_p = Params 128 128 16000 10666
+          large_n_p = Params 128 128 17000 11333
+          (u_small, d_small, q_small) = computeParams small_n_p
+          (u_large, d_large, q_large) = computeParams large_n_p
+       in conjoin
+            [ u_small === u_large
+            , d_small < d_large
+                & counterexample ("d (small) = " <> show d_small <> ", d (large) = " <> show d_large)
+            , q_small > q_large
+                & counterexample ("q (small) = " <> show q_small <> ", q (large) = " <> show q_large)
+            ]
 
   prop "can verify small proof is valid" $ prop_verifyValidProof 8 100
   prop "can verify large proof is valid" $ prop_verifyValidProof 400 1000
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
   prop "can roundtrip serialisation of proof" prop_roundtripProof
-  modifyMaxSuccess (const 30) $ do
-    prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
-    prop "stops retrying proof after λ attempts" prop_stopRetryingProof
-    prop "retries proof after number of hashes is above λ² given n_p is lower than λ²" prop_retryProofOnHashBounds
-    prop "does not retry proof given n_p is greater than λ³" prop_doesNoRetryProofOnHashBounds
+
+  modifyMaxSuccess (const 30) $
+    describe "Retry logic" $ do
+      prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
+      prop "stops retrying proof after λ attempts" prop_stopRetryingProof
+      prop "retries proof after number of hashes is above λ² given n_p is lower than λ²" prop_retryProofOnHashBounds
+      prop "does not retry proof given n_p is greater than λ³" prop_doesNoRetryProofOnHashBounds
 
 prop_retryProofOnHashBounds :: Property
 prop_retryProofOnHashBounds =
@@ -263,11 +279,12 @@ shrinkPowerOf2 n
   | n > 2 = [n `div` 2]
   | otherwise = []
 
-checkParameters :: (Params, Integer) -> SpecWith ()
-checkParameters (params, expected) =
+checkParameterU :: (Params, Integer) -> SpecWith ()
+checkParameterU (params, expected) =
   it ("check u = " <> show expected <> " for " <> show params) $
     let (u, _, _) = computeParams params
      in abs (u - expected) <= 3
+          & counterexample ("u = " <> show u)
 
 prop_hashBytestring :: ByteString -> ByteString -> Property
 prop_hashBytestring bytes1 bytes2 =
