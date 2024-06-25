@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
@@ -78,8 +79,10 @@ spec = do
   prop "compute power of 2 modulus" prop_modPowerOf2
   modifyMaxSuccess (const 1000) $
     prop "can generate uniform random number within bound" prop_randomOracle
-  prop "oracle distribution is uniform" prop_oracleDistributionIsUniform
-  describe "parameters w/in expected bounds" $
+  modifyMaxSuccess (const 100_000) $
+    prop "oracle distribution is uniform" prop_oracleDistributionIsUniform
+
+  describe "parameters" $ do
     mapM_
       checkParameters
       [ (Params 128 128 600 400, 232)
@@ -92,17 +95,17 @@ spec = do
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
 
 prop_oracleDistributionIsUniform :: Property
-prop_oracleDistributionIsUniform = do
+prop_oracleDistributionIsUniform =
   forAll (resize 100 arbitrary) $ \(bytes :: ByteString) -> do
-    let remainder = hash bytes `oracle` 10
-    remainder >= 0 && remainder < 10
-      & tabulate "distribution" [show remainder]
+    let remainder = hash bytes `oracle` 10_000_000
+    remainder >= 0 && remainder < 10_000_000
+      & tabulate "distribution" [show $ remainder `div` 1_000_000]
       & coverTable "distribution" (map (\r -> (show r, 10)) [0 .. 9])
       -- need to decrease tolerance of checkCoverage to 0.80 to pass
       -- not sure if this is ok, eg. a consequence of the way bytes are generated,
-      -- or a flaw in the impplementation of oracle that skews remainders towards
+      -- or a flaw in the implementation of oracle that skews remainders towards
       -- smaller values
-      & checkCoverageWith stdConfidence{tolerance = 0.80}
+      & checkCoverageWith stdConfidence{tolerance = 0.95}
 
 prop_rejectTamperedProof :: Property
 prop_rejectTamperedProof =

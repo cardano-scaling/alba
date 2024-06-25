@@ -84,7 +84,7 @@ parseCommand = \case
   ("--help" : _) ->
     usage >> exitSuccess
   other ->
-    exitWith (ExitFailure 1)
+    usage >> exitWith (ExitFailure 1)
 
 parseOptions = \case
   [] -> pure defaultOptions

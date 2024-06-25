@@ -1,0 +1,9 @@
+[book]
+authors = ["Arnaud Bailly"]
+language = "en"
+multilingual = false
+src = "src"
+title = "ALBA"
+
+[output.html]
+mathjax-support = true
