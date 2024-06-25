@@ -1,6 +1,8 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CApiFFI #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE ForeignFunctionInterface #-}
 {-# LANGUAGE GADTs #-}
@@ -53,6 +55,7 @@ import Data.String (IsString (..))
 import Data.Word (Word64)
 import Foreign (Ptr, Word8, castPtr, countTrailingZeros)
 import Foreign.C (errnoToIOError, getErrno)
+import GHC.Generics (Generic)
 import GHC.IO.Exception (ioException)
 import Test.QuickCheck (Gen, arbitrary, sized, vectorOf)
 
@@ -77,7 +80,8 @@ data Params = Params
   , n_f :: !Word64
   -- ^ Estimated size of "adversarial" parties set.
   }
-  deriving (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
 
 data Proof = Proof
   { index :: !Integer
@@ -87,7 +91,8 @@ data Proof = Proof
   , elements :: ![Bytes]
   -- ^ The set of elements witnessing knowledge of a set of size greater than $n_f$.
   }
-  deriving (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
 
 instance Serialize Proof where
   put Proof{index, retryCount, elements} = do
@@ -103,9 +108,10 @@ instance Serialize Proof where
 
 newtype NoProof = NoProof Retries
   deriving stock (Show, Eq)
+  deriving newtype (NFData)
 
 newtype Retries = Retries Integer
-  deriving newtype (Show, Eq)
+  deriving newtype (Show, Eq, NFData)
 
 newtype Hash where
   Hash :: ByteString -> Hash
@@ -147,7 +153,7 @@ instance (Hashable a, Hashable b) => Hashable (a, b) where
     hash a <> hash b
 
 newtype Bytes = Bytes ByteString
-  deriving newtype (Hashable, Eq, Serialize)
+  deriving newtype (Hashable, Eq, Serialize, NFData)
 
 instance Show Bytes where
   show (Bytes bs) = show $ Hex.encode bs
@@ -340,7 +346,8 @@ data Verification
   = Verified {proof :: !Proof, params :: !Params}
   | InvalidItem {proof :: !Proof, item :: !Bytes, level :: !Int}
   | InvalidLength {proof :: !Proof, expected :: !Int}
-  deriving (Show, Eq)
+  deriving stock (Show, Eq, Generic)
+  deriving anyclass (NFData)
 
 -- | Verify `Proof` that the set of elements known to the prover `s_p` has size greater than $n_f$.
 verify :: Params -> Proof -> Verification
