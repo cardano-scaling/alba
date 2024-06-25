@@ -10,15 +10,15 @@ module ALBASpec where
 import ALBA (
   Bytes (..),
   Hashable (..),
+  NoProof (..),
   Params (..),
   Proof (..),
+  Retries (..),
   Verification (..),
   computeParams,
-  fromBytes,
   fromBytesLE,
   genItems,
   isPowerOf2,
-  modBS,
   modPowerOf2,
   oracle,
   prove,
@@ -30,12 +30,13 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
 import Data.Function ((&))
 import qualified Data.List as List
-import Data.Serialize (encode)
-import Data.Word (Word64)
+import Data.Serialize (decode, encode)
+import Data.Word (Word64, Word8)
 import Debug.Trace
 import Test.Hspec (Spec, SpecWith, describe, it, shouldBe)
 import Test.Hspec.QuickCheck (modifyMaxSuccess, prop)
 import Test.QuickCheck (
+  Arbitrary,
   Gen,
   Large (..),
   Positive (..),
@@ -49,6 +50,7 @@ import Test.QuickCheck (
   cover,
   coverTable,
   forAll,
+  forAllBlind,
   forAllShrink,
   frequency,
   generate,
@@ -84,15 +86,105 @@ spec = do
 
   describe "parameters" $ do
     mapM_
-      checkParameters
-      [ (Params 128 128 600 400, 232)
-      , (Params 128 128 660 330, 136)
+      checkParameterU
+      [ (Params 128 128 24000 16000, 239)
+      , (Params 128 128 600 400, 239)
+      , (Params 128 128 660 330, 140)
       , (Params 128 128 800 200, 68)
       ]
+
+    it "has significantly smaller d and larger q if n_p is smaller than λ²" $
+      let small_n_p = Params 128 128 16000 10666
+          large_n_p = Params 128 128 17000 11333
+          (u_small, d_small, q_small) = computeParams small_n_p
+          (u_large, d_large, q_large) = computeParams large_n_p
+       in conjoin
+            [ u_small === u_large
+            , d_small < d_large
+                & counterexample ("d (small) = " <> show d_small <> ", d (large) = " <> show d_large)
+            , q_small > q_large
+                & counterexample ("q (small) = " <> show q_small <> ", q (large) = " <> show q_large)
+            ]
 
   prop "can verify small proof is valid" $ prop_verifyValidProof 8 100
   prop "can verify large proof is valid" $ prop_verifyValidProof 400 1000
   prop "can reject proof if items are tampered with" prop_rejectTamperedProof
+
+  prop "can roundtrip serialisation of proof" prop_roundtripProof
+
+  modifyMaxSuccess (const 30) $
+    describe "Retry logic" $ do
+      prop "needs to retry proving given number of elements is too small" prop_retryProofOnSmallSet
+      prop "stops retrying proof after λ attempts" prop_stopRetryingProof
+      prop "retries proof after number of hashes is above λ² given n_p is lower than λ²" prop_retryProofOnHashBounds
+      prop "does not retry proof given n_p is greater than λ³" prop_doesNoRetryProofOnHashBounds
+
+prop_retryProofOnHashBounds :: Property
+prop_retryProofOnHashBounds =
+  forAll (choose (10, 20)) $ \λ ->
+    -- we want n_p to be lower than λ² so we generate exactly λ² items
+    forAll (resize (fromIntegral $ λ * λ) (genItems 10)) $ \items ->
+      let numItems = fromIntegral $ length items
+          params = Params λ λ (numItems * 80 `div` 100) (numItems * 20 `div` 100)
+       in case prove params items of
+            Right Proof{retryCount} ->
+              retryCount >= 0 && retryCount <= λ
+                & counterexample ("retryCount = " <> show retryCount)
+                & counterexample ("numItems = " <> show numItems)
+                & label ("# prove run = " <> show (succ retryCount))
+                -- 35% is completely empirical, the real target is for
+                -- the average number of proof run to be around 2 but
+                -- QuickCheck does not provide an easy way to target
+                -- an average value
+                & cover 35 (retryCount > 0) "retried proof"
+                & checkCoverage
+            Left (NoProof _) -> property True & label "no proof"
+
+prop_doesNoRetryProofOnHashBounds :: Property
+prop_doesNoRetryProofOnHashBounds =
+  forAll (choose (10, 20)) $ \λ ->
+    -- we want n_p to be greater than λ³ so we need to generate more items
+    forAllBlind (resize (fromIntegral $ λ * λ * λ * 6 `div` 5) (genItems 10)) $ \items ->
+      let numItems = fromIntegral $ length items
+          params = Params λ λ (numItems * 80 `div` 100) (numItems * 20 `div` 100)
+       in case prove params items of
+            Right Proof{retryCount} ->
+              property True
+                & label ("# prove run = " <> show (succ retryCount))
+                -- This bound is also empirical, the real target is for the average and max number of proof run to be 1.
+                -- It's not clear why the distribution is actually quite similar to the other retry-related test
+                & cover 65 (retryCount < 1) "no retry"
+                & checkCoverage
+            Left (NoProof _) -> property False
+
+prop_stopRetryingProof :: Property
+prop_stopRetryingProof =
+  forAll (resize 100 (genItems 10)) $ \items ->
+    forAll (choose (16, 32)) $ \λ ->
+      let params = Params λ λ 80 20
+          fewerItems = drop 81 items
+       in prove params fewerItems === Left (NoProof $ Retries λ)
+
+prop_roundtripProof :: Proof -> Property
+prop_roundtripProof proof =
+  let bs = encode proof
+   in decode bs === Right proof
+
+prop_retryProofOnSmallSet :: Property
+prop_retryProofOnSmallSet =
+  forAll (resize 100 (genItems 10)) $ \items -> do
+    let params = Params 16 16 80 20
+        (u, _, q) = computeParams params
+        fewerItems = drop 70 items
+     in counterexample ("u = " <> show u <> ", q = " <> show q) $
+          case prove params fewerItems of
+            Left (NoProof _) -> property True & label "no proof"
+            Right proof@Proof{retryCount} ->
+              verify params proof == Verified{proof, params}
+                & label ("retryCount <= " <> show ((retryCount `div` 10 + 1) * 10))
+                & cover 60 (retryCount > 0) "retried proof"
+                & checkCoverage
+                & counterexample ("retryCount = " <> show retryCount)
 
 prop_oracleDistributionIsUniform :: Property
 prop_oracleDistributionIsUniform =
@@ -128,11 +220,13 @@ genModifiedProof :: Params -> Gen (Proof, Proof)
 genModifiedProof params = do
   items <- resize 100 (genItems 100)
   let (u, _, q) = computeParams params
-      proof@(Proof (n, bs)) = prove params items
-  frequency
-    [ (1, pure $ (proof, Proof (n + 1, bs)))
-    , (length items, ((proof,) . (Proof . (n,))) <$> flip1Bit bs)
-    ]
+   in case prove params items of
+        Left (NoProof _) -> genModifiedProof params
+        Right proof@(Proof n k bs) ->
+          frequency
+            [ (1, pure $ (proof, Proof (n + 1) k bs))
+            , (length items, (proof,) . Proof n k <$> flip1Bit bs)
+            ]
 
 prop_flip1Bit :: ByteString -> Property
 prop_flip1Bit bytes =
@@ -174,20 +268,23 @@ prop_verifyValidProof itemSize numItems =
   forAll (resize (fromIntegral numItems) (genItems itemSize)) $ \items -> do
     let params = Params 8 8 (numItems * 8 `div` 10) (numItems * 2 `div` 10)
         (u, _, q) = computeParams params
-        proof = prove params items
-    verify params proof === Verified{proof, params}
-      & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
+     in case prove params items of
+          Left (NoProof _) -> property False
+          Right proof ->
+            verify params proof === Verified{proof, params}
+              & counterexample ("u = " <> show u <> ", q = " <> show q <> ", proof = " <> show proof)
 
 shrinkPowerOf2 :: Integer -> [Integer]
 shrinkPowerOf2 n
   | n > 2 = [n `div` 2]
   | otherwise = []
 
-checkParameters :: (Params, Integer) -> SpecWith ()
-checkParameters (params, expected) =
+checkParameterU :: (Params, Integer) -> SpecWith ()
+checkParameterU (params, expected) =
   it ("check u = " <> show expected <> " for " <> show params) $
     let (u, _, _) = computeParams params
      in abs (u - expected) <= 3
+          & counterexample ("u = " <> show u)
 
 prop_hashBytestring :: ByteString -> ByteString -> Property
 prop_hashBytestring bytes1 bytes2 =
@@ -227,3 +324,10 @@ prop_isPowerOf2 =
 genPowerOf2 :: Gen Word64
 genPowerOf2 =
   arbitrary >>= \(Positive (Small k)) -> pure $ 2 ^ k
+
+instance Arbitrary Proof where
+  arbitrary = do
+    items <- genItems 100
+    n <- arbitrary
+    k <- arbitrary
+    pure $ Proof n k items
