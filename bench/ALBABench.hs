@@ -1,6 +1,8 @@
-import ALBA (Bytes (..), Params (..), Proof, hash, prove)
+import ALBA (Bytes (..), Params (..), Proof, hash, prove, verify)
+import Control.DeepSeq (rnf)
+import Control.Exception (evaluate)
 import Control.Monad (forM)
-import Criterion (Benchmark)
+import Criterion (Benchmark, perRunEnv)
 import Criterion.Main (bench, bgroup, defaultMain, nf, whnf)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as BS
@@ -11,7 +13,7 @@ main :: IO ()
 main = do
   benches <-
     forM
-      [(s_p, 256) | s_p <- [1000, 5000, 10000, 50000, 100000]]
+      [(s_p, 256) | s_p <- [1000, 5000, 10000]] -- , 50000, 100000]]
       genItems
   defaultMain
     [ bgroup "Hashing" [benchHash testBytes]
@@ -25,7 +27,27 @@ main = do
           , let mid = (high + low) `div` 2
           , s_p <- [low, mid, high]
           ]
+    , bgroup
+        "Proof Verification"
+        [ benchVerification (b, s_p, n_p)
+        | b <- benches
+        , n_p <- [60, 66, 80]
+        , let high = fromIntegral (length b)
+        , let low = high * n_p `div` 100
+        , let mid = (high + low) `div` 2
+        , s_p <- [low, mid, high]
+        ]
     ]
+
+benchVerification :: ([ByteString], Int, Int) -> Benchmark
+benchVerification (bytes, s_p, n_p) =
+  let coeff = fromIntegral $ length bytes
+      params = Params 128 128 (coeff * fromIntegral n_p `div` 100) (coeff * (100 - fromIntegral n_p) `div` 100)
+      label = "Verifiying s_p = " <> show s_p <> ", actual = " <> show coeff <> ", n_p = " <> show n_p <> "%"
+      mkProof = pure $ either (error . show) id $ prove params (Bytes <$> bytes)
+   in bench label $
+        perRunEnv mkProof $ \proof ->
+          evaluate $ rnf $ verify params proof
 
 benchHash :: ByteString -> Benchmark
 benchHash bytes =
@@ -37,7 +59,7 @@ benchProof :: ([ByteString], Int, Int) -> Benchmark
 benchProof (bytes, s_p, n_p) =
   let coeff = fromIntegral $ length bytes
       params = Params 128 128 (coeff * fromIntegral n_p `div` 100) (coeff * (100 - fromIntegral n_p) `div` 100)
-      label = show s_p <> "/" <> show coeff <> "/" <> show n_p <> "%"
+      label = "Proving s_p = " <> show s_p <> ", actual = " <> show coeff <> ", n_p = " <> show n_p <> "%"
    in bench label $
         whnf
           (uncurry prove)
