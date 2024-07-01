@@ -67,7 +67,7 @@ impl Setup {
             let u_f64 = (lambda_sec + log_2(lambda_rel) + 5.0 - logloge) / lognpnf;
             u = u_f64.ceil() as usize;
             r = params.lambda_rel;
-            b = 1000 * l2; // What about the episilon
+            b = 1000 * l2; // What about the epsilon
             let d_f64 = 32.0 * log12 * u_f64;
             d = d_f64.ceil() as usize;
             q = ((2.0 * log12) / d_f64).recip().ceil() as usize;
