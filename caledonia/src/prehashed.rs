@@ -222,47 +222,58 @@ impl Proof {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use rand_chacha::ChaCha20Rng;
+    use rand_core::{RngCore, SeedableRng};
 
     #[test]
     fn test_verify() {
-        let s_p = utils::gen_items(1_000);
-        let params = Params {
-            lambda_sec: 10,
-            lambda_rel: 10,
-            n_p: 800,
-            n_f: 2,
-        };
-        let setup = Setup::new(&params);
-        let proof = Proof::prove(&setup, &s_p);
-        assert!(Proof::verify(&setup, proof.clone()));
-        let proof_0 = Proof {
-            d: 0,
-            items: proof.items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_0));
-        let proof_d = Proof {
-            d: 1_000_000,
-            items: proof.items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_d));
-        let proof_item = Proof {
-            d: proof.d,
-            items: Vec::new(),
-        };
-        assert!(!Proof::verify(&setup, proof_item));
-        let mut wrong_items = proof.items.clone();
-        let _ = wrong_items.pop();
-        let proof_itembis = Proof {
-            d: proof.d,
-            items: wrong_items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_itembis));
-        wrong_items.push([0u8; 32]);
-        let proof_itembis = Proof {
-            d: proof.d,
-            items: wrong_items,
-        };
-        assert!(!Proof::verify(&setup, proof_itembis));
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let nb_tests = 1_000;
+        for _t in 0..nb_tests {
+            let seed = rng.next_u32().to_ne_bytes().to_vec();
+            let s_p = utils::gen_items(seed, 1_000);
+            let params = Params {
+                lambda_sec: 10,
+                lambda_rel: 10,
+                n_p: 800,
+                n_f: 2,
+            };
+            let setup = Setup::new(&params);
+            let proof = Proof::prove(&setup, &s_p);
+            assert!(Proof::verify(&setup, proof.clone()));
+            let proof_0 = Proof {
+                d: 0,
+                items: proof.items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_0));
+            let proof_d = Proof {
+                d: proof.d.wrapping_add(1),
+                items: proof.items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_d));
+            let proof_item = Proof {
+                d: proof.d,
+                items: Vec::new(),
+            };
+            assert!(!Proof::verify(&setup, proof_item));
+            let mut wrong_items = proof.items.clone();
+            let last_item = wrong_items.pop().unwrap();
+            let mut penultimate_item = wrong_items.pop().unwrap();
+            let proof_itembis = Proof {
+                d: proof.d,
+                items: wrong_items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_itembis));
+            // Modifying the penultimate item to check correctness of H1 check and not H2
+            penultimate_item[0] = penultimate_item[0].wrapping_add(1);
+            wrong_items.push(penultimate_item);
+            wrong_items.push(last_item);
+            let proof_itembis = Proof {
+                d: proof.d,
+                items: wrong_items,
+            };
+            assert!(!Proof::verify(&setup, proof_itembis));
+        }
     }
 
     #[test]
@@ -271,15 +282,18 @@ mod tests {
         let npnf = [(1_000, 8)];
         // Other working tests: (10_000, 2_000), (100_000, 60_000)
         let lambdas = [5, 10];
-        let nb_tests = 10;
+        let nb_tests = 100;
+        let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
         for (n_p, n_f) in npnf {
             let mut u = 0;
             let mut time_setup = 0;
             let mut time_prove = 0;
             let mut time_verify = 0;
             for lambda in lambdas {
-                let s_p: Vec<[u8; 32]> = utils::gen_items(n_p);
                 for _t in 0..nb_tests {
+                    let seed_u32 = rng.next_u32();
+                    let seed = seed_u32.to_ne_bytes().to_vec();
+                    let s_p: Vec<[u8; 32]> = utils::gen_items(seed, n_p);
                     let params = Params {
                         lambda_sec: lambda,
                         lambda_rel: lambda,

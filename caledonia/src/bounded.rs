@@ -315,67 +315,80 @@ impl Proof {
 
 #[cfg(test)]
 mod tests {
+
     use super::*;
+    use rand_chacha::ChaCha20Rng;
+    use rand_core::{RngCore, SeedableRng};
 
     #[test]
     fn test_verify() {
-        let s_p = utils::gen_items(100);
-        let params = Params {
-            lambda_sec: 10,
-            lambda_rel: 10,
-            n_p: 80,
-            n_f: 20,
-        };
-        let setup = Setup::new(&params);
-        let proof = Proof::prove(&setup, &s_p);
-        assert!(Proof::verify(&setup, proof.clone()));
-        let proof_0 = Proof {
-            r: proof.r,
-            d: 0,
-            items: proof.items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_0));
-        let proof_d = Proof {
-            r: proof.r,
-            d: 1_000_000,
-            items: proof.items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_d));
-        let proof_r = Proof {
-            r: 1_000_000,
-            d: proof.d,
-            items: proof.items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_r));
-        let proof_item = Proof {
-            r: proof.r,
-            d: proof.d,
-            items: Vec::new(),
-        };
-        assert!(!Proof::verify(&setup, proof_item));
-        let mut wrong_items = proof.items.clone();
-        let _ = wrong_items.pop();
-        let proof_itembis = Proof {
-            r: proof.r,
-            d: proof.d,
-            items: wrong_items.clone(),
-        };
-        assert!(!Proof::verify(&setup, proof_itembis));
-        wrong_items.push([0u8; 32]);
-        let proof_itembis = Proof {
-            r: proof.r,
-            d: proof.d,
-            items: wrong_items,
-        };
-        assert!(!Proof::verify(&setup, proof_itembis));
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let nb_tests = 1_000;
+        for _t in 0..nb_tests {
+            let seed = rng.next_u32().to_ne_bytes().to_vec();
+            let s_p = utils::gen_items(seed, 100);
+            let params = Params {
+                lambda_sec: 10,
+                lambda_rel: 10,
+                n_p: 80,
+                n_f: 20,
+            };
+            let setup = Setup::new(&params);
+            let proof = Proof::prove(&setup, &s_p);
+            assert!(Proof::verify(&setup, proof.clone()));
+            let proof_0 = Proof {
+                r: proof.r,
+                d: 0,
+                items: proof.items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_0));
+            let proof_d = Proof {
+                r: proof.r,
+                d: proof.d.wrapping_add(1),
+                items: proof.items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_d));
+            let proof_r = Proof {
+                r: proof.r.wrapping_add(1),
+                d: proof.d,
+                items: proof.items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_r));
+            let proof_item = Proof {
+                r: proof.r,
+                d: proof.d,
+                items: Vec::new(),
+            };
+            assert!(!Proof::verify(&setup, proof_item));
+            let mut wrong_items = proof.items.clone();
+            let last_item = wrong_items.pop().unwrap();
+            let mut penultimate_item = wrong_items.pop().unwrap();
+            let proof_itembis = Proof {
+                r: proof.r,
+                d: proof.d,
+                items: wrong_items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_itembis));
+            // Modifying the penultimate item to check correctness of H1 check and not H2
+            penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
+            wrong_items.push(penultimate_item);
+            wrong_items.push(last_item);
+            let proof_itembis = Proof {
+                r: proof.r,
+                d: proof.d,
+                items: wrong_items.clone(),
+            };
+            assert!(!Proof::verify(&setup, proof_itembis));
+        }
     }
 
     #[test]
     fn test_prove() {
         use std::time::Instant;
-        let nb_tests = 100;
         let npnf = [(100, 20), (1_000, 8), (1_000, 200)];
         let lambdas = [10, 20];
+        let nb_tests = 100;
+        let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
         for (n_p, n_f) in npnf {
             for lambda in lambdas {
                 let mut u = 0;
@@ -387,7 +400,9 @@ mod tests {
                 let mut max_retrial: usize = 0;
                 let mut mean_retrial: usize = 0;
                 for _t in 0..nb_tests {
-                    let s_p: Vec<[u8; 32]> = utils::gen_items(n_p);
+                    let seed_u32 = rng.next_u32();
+                    let seed = seed_u32.to_ne_bytes().to_vec();
+                    let s_p: Vec<[u8; 32]> = utils::gen_items(seed, n_p);
                     let params = Params {
                         lambda_sec: lambda,
                         lambda_rel: lambda,
