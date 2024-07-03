@@ -5,9 +5,9 @@ use std::cmp::min;
 // Helper functions
 fn mod_non_power_of_2(hash: &[u8], n: usize) -> usize {
     let epsilon_fail: usize = 1 << 40; // roughly 1 in 10 billion
-    let k = log_base2(n * epsilon_fail);
-    let k_prime = 1 << k;
-    let d = k_prime / n;
+    let k: usize = log_base2(n * epsilon_fail);
+    let k_prime: usize = 1 << k;
+    let d: usize = k_prime.div_ceil(n);
 
     let i = mod_power_of_2(hash, k_prime);
 
