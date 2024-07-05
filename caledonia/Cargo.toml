@@ -20,3 +20,7 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 [[bench]]
 name = "bounded_time"
 harness = false
+
+[[bench]]
+name = "bounded_step"
+harness = false
