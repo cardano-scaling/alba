@@ -17,7 +17,6 @@ rand = "0.8.5"
 rand_chacha = "0.3.1"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
-
 [[bench]]
-name = "bounded_bench"
+name = "bounded_time"
 harness = false
