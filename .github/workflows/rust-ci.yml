@@ -16,6 +16,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Change to Rust project directory
+        run: cd caledonia
+
       - name: Build
         run: cargo build --verbose
 
