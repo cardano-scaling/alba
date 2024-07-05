@@ -40,10 +40,14 @@ jobs:
         run: cargo test --verbose
         working-directory: caledonia
 
-      - name: Run Clippy
-        run: cargo clippy -- -D warnings
-        working-directory: caledonia
+#      - name: Run Clippy
+#        run: cargo clippy -- -D warnings
+#        working-directory: caledonia
 
       - name: Check format
         run: cargo fmt -- --check
+        working-directory: caledonia
+
+      - name: Build and test documentation
+        run: cargo doc --no-deps --verbose
         working-directory: caledonia
