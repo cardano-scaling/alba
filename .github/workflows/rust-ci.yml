@@ -16,6 +16,18 @@ jobs:
           toolchain: stable
           override: true
 
+      - name: Uninstall pre-installed tools
+        run: |
+          rm -f ~/.cargo/bin/rust-analyzer
+          rm -f ~/.cargo/bin/rustfmt
+          rm -f ~/.cargo/bin/cargo-fmt
+
+      - name: Update Rust toolchain and components
+        run: |
+          rustup update
+          rustup component add rustfmt
+          rustup component add clippy
+
       - name: Cache Cargo registry
         uses: actions/cache@v3
         with:
