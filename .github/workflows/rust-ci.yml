@@ -32,6 +32,11 @@ jobs:
         run: cargo build --verbose
         working-directory: caledonia
 
+      - name: Verify target directory exists
+        run: |
+          echo "Checking if target directory exists and is not empty"
+          ls -la caledonia/target
+
       - name: Run tests
         run: cargo test --verbose
         working-directory: caledonia
@@ -59,7 +64,7 @@ jobs:
       - name: Cache Cargo build
         uses: actions/cache@v3
         with:
-          path: target
+          path: caledonia/target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
