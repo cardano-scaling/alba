@@ -507,8 +507,14 @@ mod tests {
     #[test]
     fn test_prove() {
         use std::time::Instant;
-        let npnf = [(100, 20), (1_000, 8), (1_000, 200)];
-        let lambdas = [10, 20];
+        let npnf = [
+            (99_000, 1_000),  // high
+            (95_000, 5_000),  // medium
+            (80_000, 20_000), // low
+            (66_000, 34_000),
+            (60_000, 40_000),
+        ];
+        let lambdas = [80];
         let nb_tests = 100;
         let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
         for (n_p, n_f) in npnf {
