@@ -406,8 +406,8 @@ mod tests {
                     let params = Params {
                         lambda_sec: lambda,
                         lambda_rel: lambda,
-                        n_p: 80,
-                        n_f: 20,
+                        n_p,
+                        n_f,
                     };
                     // Setup
                     let start_setup = Instant::now();
