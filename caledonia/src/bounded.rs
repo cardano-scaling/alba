@@ -18,6 +18,45 @@ pub struct Params {
     /// Target lower bound
     pub n_f: usize,
 }
+pub enum Cases {
+    /// Case where u =< λ^2
+    Small,
+    /// Case where λ^2 < u < λ^3
+    Mid,
+    /// Case where u >= λ^3
+    High,
+}
+
+impl Params {
+    /// Returns information on which case corresponds some parameter
+    pub fn which_case(&self) -> (Cases, usize) {
+        let lsec = self.lambda_sec as f64;
+        let lrel = self.lambda_rel as f64;
+        let np = self.n_p as f64;
+        let nf = self.n_f as f64;
+        let loge = E.log2();
+
+        let lognpnf = (np / nf).log2();
+        let u_f64 = (lsec + lrel.log2() + 5.0 - loge.log2()) / lognpnf;
+        let u = u_f64.ceil() as u64;
+
+        let ratio = 9.0 * np * loge / ((17 * u).pow(2) as f64);
+        let s1 = ratio - 7.0;
+        let s2 = ratio - 2.0;
+
+        if s1 < 1.0 || s1 > lrel || s2 < 1.0 || s2 > lrel {
+            return (Cases::Small, u as usize);
+        }
+
+        let lrel2 = lrel.min(s2);
+        if (u as f64) < lrel2 {
+            return (Cases::Mid, u as usize);
+        } else {
+            return (Cases::High, u as usize);
+        }
+    }
+}
+
 /// Setup output parameters
 #[derive(Debug, Clone)]
 pub struct Setup {
@@ -37,61 +76,98 @@ pub struct Setup {
 impl Setup {
     /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
     pub fn new(params: &Params) -> Self {
-        // Misc values
-        let e = E;
-        let log_2 = |x: f64| x.log2();
-        let loge = log_2(e);
-        let logloge = log_2(loge);
-        let log3 = log_2(3.0);
-        let log12 = log_2(12.0);
+        // Misc values and functions
+        let loge = E.log2();
+        fn compute_w(u: f64, l: f64) -> f64 {
+            fn factorial_check(w: f64, l: f64) -> bool {
+                let bound = 0.5f64.powf(l);
+                let factors: Vec<u64> = (1..=(w as u64 + 1)).rev().collect();
+                let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
+                    / (E * (w + 2.0 - E.powf(1.0 / w)));
+
+                for f in factors {
+                    ratio /= f as f64;
+                    if ratio <= bound {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            let mut w: f64 = u;
+            while !factorial_check(w, l) {
+                w += 1.0;
+            }
+            w
+        }
 
         // Converting params to f64
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
-        let lognpnf = log_2(n_p_f64 / n_f_f64);
+        let lognpnf = (n_p_f64 / n_f_f64).log2();
         let lambda_rel = params.lambda_rel as f64;
-        let lambda_sec = (params.lambda_sec as f64) + log_2(lambda_rel) as f64;
+        let logrel = lambda_rel.log2();
+        let lambda_sec = (params.lambda_sec as f64) + logrel;
 
-        let l2 = (lambda_rel * lambda_rel).ceil() as usize; // Is it the right lambda?
-        let l3 = l2 * params.lambda_rel;
+        // Computing the proof size u
+        let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
+        let u = u_f64 as usize;
 
-        // Initialising output params
-        let u;
-        let r;
-        let d;
-        let q;
-        let b;
+        // Computing param depending on case
+        let ratio = 9.0 * n_p_f64 * loge / ((17 * u).pow(2) as f64);
+        let s1 = ratio - 7.0;
+        let s2 = ratio - 2.0;
 
-        // If $n_p$ < λ^3, we define the parameters accoding to Section 3.2.2, Theorem 12 and Corollary 3
-        if n_p_f64 < (l3 as f64) {
-            let u_f64 = (lambda_sec + log_2(lambda_rel) + 5.0 - logloge) / lognpnf;
-            u = u_f64.ceil() as usize;
-            r = params.lambda_rel;
-            b = 1000 * l2; // What about the epsilon
-            let d_f64 = 32.0 * log12 * u_f64;
-            d = d_f64.ceil() as usize;
-            q = ((2.0 * log12) / d_f64).recip().ceil() as usize;
-        } else {
-            // Otherwise, according to Section 3.2, Corrollary 2
-            let u_f64 = (lambda_sec + log_2(lambda_rel + log3) + 1.0 - logloge) / lognpnf;
-            u = u_f64.ceil() as usize;
-            r = 1;
-            b = 1000 * l3;
-            let d_f64 = 16.0 * u_f64 * (lambda_rel + log3) / loge;
-            d = d_f64.ceil() as usize;
-            q = (2.0 * (lambda_rel + log3) / (d_f64 * loge)).recip().ceil() as usize;
-
-            let check = ((d_f64 * d_f64 * loge) / (9.0 * (lambda_rel + log3))).ceil() as usize;
-            assert!(params.n_p >= check);
+        if s1 < 1.0 || s1 > lambda_rel || s2 < 1.0 || s2 > lambda_rel {
+            // Small case, ie n_p <= λ^2
+            let ln12 = (12f64).ln();
+            let d = (32.0 * ln12 * u_f64).ceil();
+            return Setup {
+                n_p: params.n_p,
+                u,
+                r: params.lambda_rel,
+                d: d as usize,
+                q: (2.0 * ln12 / d).recip().ceil() as usize,
+                b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as usize,
+            };
         }
+        let lambda_rel2 = lambda_rel.min(s2);
+        if u_f64 < lambda_rel2 {
+            // Case 3, Theorem 14, ie  n_p >= λ^3
+            let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
+            assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
+            return Setup {
+                n_p: params.n_p,
+                u,
+                r: (lambda_rel / lambda_rel2).ceil() as usize,
+                d: d as usize,
+                q: (2.0 * (lambda_rel2 + 2.0) / (d * loge)).recip().ceil() as usize,
+                b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
+                    * (3.0 * u_f64 * d / 4.0)
+                    + d
+                    + u_f64)
+                    .floor() as usize,
+            };
+        } else {
+            // Case 2, Theorem 13, ie λ^3 > n_p > λ^2
+            let lambda_rel1 = lambda_rel.min(s1);
+            let lbar = (lambda_rel1 + 7.0) / loge;
+            let d = (16.0 * u_f64 * lbar).ceil();
+            assert!(n_p_f64 >= d * d / (9.0 * lbar));
 
-        Setup {
+            let w = compute_w(u_f64, lambda_rel1);
+            return Setup {
             n_p: params.n_p,
             u,
-            r,
-            d,
-            q,
-            b,
+                r: (lambda_rel / lambda_rel1).ceil() as usize,
+                d: d as usize,
+                q: (2.0 * lbar / d).recip().ceil() as usize,
+                b: (((w * lbar) / d + 1.0)
+                    * E.powf(2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w)
+                    * d
+                    * u_f64
+                    + d)
+                    .floor() as usize,
+            };
         }
     }
 }
