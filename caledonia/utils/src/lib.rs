@@ -98,11 +98,10 @@ pub fn format_nb(x: usize) -> String {
     let mut s = String::new();
     let mut b = true;
     while y / 1000 != 0 {
-        s = if b {
-            (y % 1000).to_string()
-        } else {
-            (y % 1000).to_string() + &("_".to_string() + &s)
-        };
+        let to_add = (y % 1000).to_string();
+        let preppend = "0".repeat(3 - to_add.len()) + &to_add;
+        let append = if b { "" } else { &("_".to_string() + &s) };
+        s = preppend + append;
         b = false;
         y = y / 1000;
     }
