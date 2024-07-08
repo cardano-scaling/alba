@@ -2,7 +2,7 @@
 //! function.
 
 extern crate core;
-extern crate utils;
+use crate::utils;
 
 use std::f64::consts::E;
 
@@ -156,8 +156,8 @@ impl Setup {
 
             let w = compute_w(u_f64, lambda_rel1);
             return Setup {
-            n_p: params.n_p,
-            u,
+                n_p: params.n_p,
+                u,
                 r: (lambda_rel / lambda_rel1).ceil() as usize,
                 d: d as usize,
                 q: (2.0 * lbar / d).recip().ceil() as usize,

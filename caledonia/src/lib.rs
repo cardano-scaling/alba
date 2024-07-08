@@ -11,6 +11,7 @@
 //! lottery scheme is also introduced to support Alba in a decentralised
 //! settings as well as a modification to use PRF in the CRS settings instead of
 //! using the ROM.
+pub mod utils;
 
 pub mod bounded;
 pub mod prehashed;

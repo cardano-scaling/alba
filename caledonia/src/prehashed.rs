@@ -2,7 +2,7 @@
 //! function, working for big sets.
 
 extern crate core;
-extern crate utils;
+use crate::utils;
 
 use std::f64::consts::E;
 
