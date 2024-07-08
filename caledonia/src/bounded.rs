@@ -76,7 +76,6 @@ pub struct Setup {
 impl Setup {
     /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
     pub fn new(params: &Params) -> Self {
-        // Misc values and functions
         let loge = E.log2();
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
@@ -100,7 +99,6 @@ impl Setup {
             w
         }
 
-        // Converting params to f64
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
         let lognpnf = (n_p_f64 / n_f_f64).log2();
@@ -108,11 +106,9 @@ impl Setup {
         let logrel = lambda_rel.log2();
         let lambda_sec = (params.lambda_sec as f64) + logrel;
 
-        // Computing the proof size u
         let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
         let u = u_f64 as usize;
 
-        // Computing param depending on case
         let ratio = 9.0 * n_p_f64 * loge / ((17 * u).pow(2) as f64);
         let s1 = ratio - 7.0;
         let s2 = ratio - 2.0;
@@ -256,13 +252,11 @@ impl Proof {
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    // TODO: We also return hash(data) to follow the optimization presented in Section 3.3
     fn h0(setup: &Setup, v: usize, s: [u8; 32]) -> usize {
         let mut data = Vec::new();
         data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
         let digest = utils::combine_hashes(data);
-        // return (digest, utils::oracle(&digest, setup.n_p));
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -288,9 +282,7 @@ impl Proof {
         round: &Round,
         limit: &mut usize,
     ) -> Option<Proof> {
-        // If the round candidate is at the last iteration (len(round) == u)
         if round.s_list.len() == setup.u {
-            // if H2(t, x_0, ..., x_u) = true, return candidate as proof
             if Proof::h2(setup, round) {
                 let r = round.v;
                 let d = round.t;
@@ -300,7 +292,6 @@ impl Proof {
                 return None;
             }
         }
-        // Otherwise, update round candidate with all s in bins[H1(t, x_1, ..., x_i)] and continue
         let result = bins[round.h_usize].iter().find_map(|&s| {
             if *limit == 0 {
                 return None;
@@ -311,22 +302,17 @@ impl Proof {
         return result;
     }
 
-    /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Returns an empty proof if no suitable candidate is found.
+    /// Indexed proving algorithm, returns an empty proof if no suitable
+    /// candidate is found within the setup.b steps.
     fn prove_index(setup: &Setup, set: &Vec<[u8; 32]>, v: usize) -> (usize, Option<Proof>) {
-        // Initialising our n_p bins with all s ∈ Sp
         let mut bins: Vec<Vec<[u8; 32]>> = Vec::new();
         for _ in 1..(setup.n_p + 1) {
             bins.push(Vec::new());
         }
         for &s in set.iter() {
-            // TODO: add H1(s),
-            // let (hs, index_s) = Proof::h0(setup, s);
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        // Initialising max number of steps
         let mut limit = setup.b;
-        // Attempting to generate a proof for $d$ rounds
         for t in 1..(setup.d + 1) {
             if limit == 0 {
                 return (0, None);
@@ -338,37 +324,32 @@ impl Proof {
                 return (limit, res);
             }
         }
-        // If no proof found, return None
         return (limit, None);
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Returns an empty proof if no suitable candidate is found.
+    /// Calls up to setup.r times the prove_index function and returns an empty
+    /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &Vec<[u8; 32]>) -> Self {
-        // Initialising our n_p bins with all s ∈ Sp
         for v in 0..setup.r {
             if let (_, Some(proof)) = Proof::prove_index(setup, set, v) {
                 return proof;
             }
         }
-        // If no proof found, return empty proof
         return Proof::empty();
     }
 
-    /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Returns an empty proof if no suitable candidate is found.
+    /// Alba's proving algorithm used for benchmarking, returning a proof as
+    /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &Vec<[u8; 32]>) -> (usize, Self) {
-        // Initialising our n_p bins with all s ∈ Sp
         let mut nb_calls = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
-            // Adding nb of steps done in prove_index
             nb_calls += setup.b - steps;
             if let Some(proof) = opt {
                 return (nb_calls, proof);
             }
         }
-        // If no proof found, return empty proof
         return (nb_calls, Proof::empty());
     }
 
@@ -427,6 +408,38 @@ mod tests {
             }
         }
 
+        // println!("------------ verifying smalls");
+        // for (s, _) in smalls {
+        //     if s.n_p >= (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
+        //         println!("{:?} should be high", s);
+        //     } else {
+        //         if s.n_p > (s.lambda_rel * s.lambda_rel) {
+        //             println!("{:?} should be mid", s);
+        //         }
+        //     }
+        // }
+
+        // println!("\n------------ verifying mids");
+        // for (s, _) in mids {
+        //     if s.n_p >= (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
+        //         println!("{:?} should be high", s);
+        //     } else {
+        //         if s.n_p <= (s.lambda_rel * s.lambda_rel) {
+        //             println!("{:?} should be small", s);
+        //         }
+        //     }
+        // }
+
+        // println!("\n------------ verifying highs");
+        // for (s, _) in highs {
+        //     if s.n_p <= (s.lambda_rel * s.lambda_rel) {
+        //         println!("{:?} should be small", s);
+        //     } else {
+        //         if s.n_p < (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
+        //             println!("{:?} should be mid", s);
+        //         }
+        //     }
+        // }
 
         println!("------------ Small cases");
         for s in smalls {
@@ -575,5 +588,6 @@ mod tests {
                 );
             }
         }
+        assert!(false);
     }
 }

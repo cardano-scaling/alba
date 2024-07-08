@@ -33,14 +33,12 @@ pub struct Setup {
 impl Setup {
     /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
     pub fn new(params: &Params) -> Self {
-        // Misc values
         let e = E;
         let log_2 = |x: f64| x.log2();
         let loge = log_2(e);
         let logloge = log_2(loge);
         let log3 = log_2(3.0);
 
-        // Converting params to f64
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
         let lognpnf = log_2(n_p_f64 / n_f_f64);
@@ -138,7 +136,6 @@ impl Proof {
         let mut data = Vec::new();
         data.push(s.to_vec());
         let digest = utils::combine_hashes(data);
-        // return (digest, utils::oracle(&digest, setup.n_p));
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -158,9 +155,7 @@ impl Proof {
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(setup: &Setup, bins: &Vec<Vec<[u8; 32]>>, round: &Round) -> Option<Proof> {
-        // If the round candidate is at the last iteration (len(round) == u)
         if round.s_list.len() == setup.u {
-            // if H2(t, x_0, ..., x_u) = true, return candidate as proof
             if Proof::h2(setup, round) {
                 let d = round.t;
                 let items = round.s_list.clone();
@@ -169,7 +164,6 @@ impl Proof {
                 return None;
             }
         }
-        // Otherwise, update round candidate with all s in bins[H1(t, x_1, ..., x_i)] and continue
         let result = bins[round.h_usize]
             .iter()
             .find_map(|&s| Self::dfs(setup, bins, &Round::update(round, s)));
@@ -179,18 +173,14 @@ impl Proof {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Returns an empty proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &Vec<[u8; 32]>) -> Self {
-        // Initialising our n_p bins with all s ∈ Sp
         let mut bins: Vec<Vec<[u8; 32]>> = Vec::new();
         for _ in 1..(setup.n_p + 1) {
             bins.push(Vec::new());
         }
         for &s in set.iter() {
-            // TODO: add H1(s)
-            // let (hs, index_s) = Proof::h0(setup, s);
             bins[Proof::h0(setup, s)].push(s);
         }
 
-        // Attempting to generate a proof for $d$ rounds
         for t in 1..(setup.d + 1) {
             let round = Round::new(t, setup.n_p);
             if let Some(proof) = Proof::dfs(setup, &bins, &round) {
@@ -198,7 +188,6 @@ impl Proof {
             };
         }
 
-        // If no proof found, return empty proof
         return Proof {
             d: 0,
             items: Vec::new(),
