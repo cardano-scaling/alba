@@ -6,6 +6,12 @@ use crate::utils;
 
 use std::f64::consts::E;
 
+const DATA_LENGTH: usize = 32;
+const DIGEST_SIZE: usize = 32;
+
+type Data = [u8; DATA_LENGTH];
+type Hash = [u8; DIGEST_SIZE];
+
 /// Setup input parameters
 #[derive(Debug, Clone)]
 pub struct Params {
@@ -70,7 +76,7 @@ pub struct Round {
     /// Proof counter
     t: usize,
     // Round candidate tuple
-    s_list: Vec<[u8; 32]>,
+    s_list: Vec<Data>,
     /// Round candidate hash
     h: Vec<u8>,
     /// Round candidate hash mapped to [1, n_p]
@@ -82,7 +88,7 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(data: Vec<Vec<u8>>, n_p: usize) -> ([u8; 32], usize) {
+    fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
         let digest = utils::combine_hashes(data);
         return (digest, utils::oracle(&digest, n_p));
     }
@@ -103,7 +109,7 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: [u8; 32]) -> Round {
+    pub fn update(r: &Round, s: Data) -> Round {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let mut data = Vec::new();
@@ -126,16 +132,16 @@ pub struct Proof {
     /// Proof counter
     d: usize,
     /// Proof tuple
-    items: Vec<[u8; 32]>,
+    items: Vec<Data>,
 }
 
 impl Proof {
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     // TODO: We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h0(setup: &Setup, s: [u8; 32]) -> usize {
+    fn h0(setup: &Setup, s: Data) -> usize {
         let mut data = Vec::new();
         data.push(s.to_vec());
-        let digest = utils::combine_hashes(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -146,7 +152,7 @@ impl Proof {
         for s in &r.s_list {
             data.push(s.clone().to_vec());
         }
-        let digest = utils::combine_hashes(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.q) == 0;
     }
 
@@ -154,7 +160,7 @@ impl Proof {
     /// and returns first round candidate Round{t, x_1, ..., x_u)} such that:
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
-    fn dfs(setup: &Setup, bins: &Vec<Vec<[u8; 32]>>, round: &Round) -> Option<Proof> {
+    fn dfs(setup: &Setup, bins: &Vec<Vec<Data>>, round: &Round) -> Option<Proof> {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
                 let d = round.t;
@@ -172,8 +178,8 @@ impl Proof {
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Returns an empty proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &Vec<[u8; 32]>) -> Self {
-        let mut bins: Vec<Vec<[u8; 32]>> = Vec::new();
+    pub fn prove(setup: &Setup, set: &Vec<Data>) -> Self {
+        let mut bins: Vec<Vec<Data>> = Vec::new();
         for _ in 1..(setup.n_p + 1) {
             bins.push(Vec::new());
         }
@@ -218,9 +224,10 @@ mod tests {
     fn test_verify() {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
         let nb_tests = 1_000;
+        let set_size = 1_000;
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = utils::gen_items(seed, 1_000);
+            let s_p = utils::gen_items::<DATA_LENGTH>(seed, set_size);
             let params = Params {
                 lambda_sec: 10,
                 lambda_rel: 10,
@@ -282,7 +289,7 @@ mod tests {
                 for _t in 0..nb_tests {
                     let seed_u32 = rng.next_u32();
                     let seed = seed_u32.to_ne_bytes().to_vec();
-                    let s_p: Vec<[u8; 32]> = utils::gen_items(seed, n_p);
+                    let s_p: Vec<Data> = utils::gen_items::<DATA_LENGTH>(seed, n_p);
                     let params = Params {
                         lambda_sec: lambda,
                         lambda_rel: lambda,

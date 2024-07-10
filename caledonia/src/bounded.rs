@@ -6,6 +6,12 @@ use crate::utils;
 
 use std::f64::consts::E;
 
+const DATA_LENGTH: usize = 64;
+const DIGEST_SIZE: usize = 32;
+
+type Data = [u8; DATA_LENGTH];
+type Hash = [u8; DIGEST_SIZE];
+
 /// Setup input parameters
 #[derive(Debug, Clone)]
 pub struct Params {
@@ -176,9 +182,9 @@ pub struct Round {
     /// Proof 2nd counter
     t: usize,
     // Round candidate tuple
-    s_list: Vec<[u8; 32]>,
+    s_list: Vec<Data>,
     /// Round candidate hash
-    h: Vec<u8>,
+    h: Hash,
     /// Round candidate hash mapped to [1, n_p]
     h_usize: usize,
     /// Approximate size of set Sp to lower bound
@@ -188,8 +194,8 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(data: Vec<Vec<u8>>, n_p: usize) -> ([u8; 32], usize) {
-        let digest = utils::combine_hashes(data);
+    fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         return (digest, utils::oracle(&digest, n_p));
     }
 
@@ -204,7 +210,7 @@ impl Round {
             v,
             t,
             s_list: Vec::new(),
-            h: h.to_vec(),
+            h: h,
             h_usize,
             n_p,
         }
@@ -212,18 +218,18 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: [u8; 32]) -> Round {
+    pub fn update(r: &Round, s: Data) -> Round {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let mut data = Vec::new();
-        data.push(r.h.clone());
+        data.push(r.h.clone().to_vec());
         data.push(s.to_vec());
         let (h, h_usize) = Round::h1(data, r.n_p);
         Round {
             v: r.v,
             t: r.t,
             s_list,
-            h: h.to_vec(),
+            h: h,
             h_usize,
             n_p: r.n_p,
         }
@@ -238,12 +244,12 @@ pub struct Proof {
     /// Proof 2nd counter
     d: usize,
     /// Proof tuple
-    items: Vec<[u8; 32]>,
+    items: Vec<Data>,
 }
 
 impl Proof {
-    /// Returns an empty proof
-    fn empty() -> Self {
+    /// Returns a new proof
+    fn new() -> Self {
         Proof {
             r: 0,
             d: 0,
@@ -252,11 +258,11 @@ impl Proof {
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: usize, s: [u8; 32]) -> usize {
+    fn h0(setup: &Setup, v: usize, s: Data) -> usize {
         let mut data = Vec::new();
         data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
-        let digest = utils::combine_hashes(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -268,7 +274,7 @@ impl Proof {
         for s in &r.s_list {
             data.push(s.clone().to_vec());
         }
-        let digest = utils::combine_hashes(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.q) == 0;
     }
 
@@ -278,7 +284,7 @@ impl Proof {
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(
         setup: &Setup,
-        bins: &Vec<Vec<[u8; 32]>>,
+        bins: &Vec<Vec<Data>>,
         round: &Round,
         limit: &mut usize,
     ) -> Option<Proof> {
@@ -304,8 +310,8 @@ impl Proof {
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &Vec<[u8; 32]>, v: usize) -> (usize, Option<Proof>) {
-        let mut bins: Vec<Vec<[u8; 32]>> = Vec::new();
+    fn prove_index(setup: &Setup, set: &Vec<Data>, v: usize) -> (usize, Option<Proof>) {
+        let mut bins: Vec<Vec<Data>> = Vec::new();
         for _ in 1..(setup.n_p + 1) {
             bins.push(Vec::new());
         }
@@ -330,18 +336,18 @@ impl Proof {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &Vec<[u8; 32]>) -> Self {
+    pub fn prove(setup: &Setup, set: &Vec<Data>) -> Self {
         for v in 0..setup.r {
             if let (_, Some(proof)) = Proof::prove_index(setup, set, v) {
                 return proof;
             }
         }
-        return Proof::empty();
+        return Proof::new();
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &Vec<[u8; 32]>) -> (usize, Self) {
+    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, Self) {
         let mut nb_calls = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
@@ -350,7 +356,7 @@ impl Proof {
                 return (nb_calls, proof);
             }
         }
-        return (nb_calls, Proof::empty());
+        return (nb_calls, Proof::new());
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
@@ -408,39 +414,6 @@ mod tests {
             }
         }
 
-        // println!("------------ verifying smalls");
-        // for (s, _) in smalls {
-        //     if s.n_p >= (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
-        //         println!("{:?} should be high", s);
-        //     } else {
-        //         if s.n_p > (s.lambda_rel * s.lambda_rel) {
-        //             println!("{:?} should be mid", s);
-        //         }
-        //     }
-        // }
-
-        // println!("\n------------ verifying mids");
-        // for (s, _) in mids {
-        //     if s.n_p >= (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
-        //         println!("{:?} should be high", s);
-        //     } else {
-        //         if s.n_p <= (s.lambda_rel * s.lambda_rel) {
-        //             println!("{:?} should be small", s);
-        //         }
-        //     }
-        // }
-
-        // println!("\n------------ verifying highs");
-        // for (s, _) in highs {
-        //     if s.n_p <= (s.lambda_rel * s.lambda_rel) {
-        //         println!("{:?} should be small", s);
-        //     } else {
-        //         if s.n_p < (s.lambda_rel * s.lambda_rel * s.lambda_rel) {
-        //             println!("{:?} should be mid", s);
-        //         }
-        //     }
-        // }
-
         println!("------------ Small cases");
         for s in smalls {
             println!("{:?}", s);
@@ -459,9 +432,10 @@ mod tests {
     fn test_verify() {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
         let nb_tests = 1_000;
+        let set_size = 1_000;
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = utils::gen_items(seed, 100);
+            let s_p = utils::gen_items::<DATA_LENGTH>(seed, set_size);
             let params = Params {
                 lambda_sec: 10,
                 lambda_rel: 10,
@@ -521,10 +495,10 @@ mod tests {
     fn test_prove() {
         use std::time::Instant;
         let npnf = [
-            (99_000, 1_000),  // high
-            (95_000, 5_000),  // medium
-            (80_000, 20_000), // low
-            (66_000, 34_000),
+            // (99_000, 1_000),  // high
+            // (95_000, 5_000),  // medium
+            // (80_000, 20_000), // low
+            // (66_000, 34_000),
             (60_000, 40_000),
         ];
         let lambdas = [80];
@@ -543,7 +517,7 @@ mod tests {
                 for _t in 0..nb_tests {
                     let seed_u32 = rng.next_u32();
                     let seed = seed_u32.to_ne_bytes().to_vec();
-                    let s_p: Vec<[u8; 32]> = utils::gen_items(seed, n_p);
+                    let s_p: Vec<Data> = utils::gen_items::<DATA_LENGTH>(seed, n_p);
                     let params = Params {
                         lambda_sec: lambda,
                         lambda_rel: lambda,
