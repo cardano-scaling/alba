@@ -6,7 +6,7 @@ use crate::utils;
 
 use std::f64::consts::E;
 
-const DATA_LENGTH: usize = 64;
+const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
 
 type Data = [u8; DATA_LENGTH];
@@ -347,16 +347,16 @@ impl Proof {
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, Self) {
+    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, usize, Self) {
         let mut nb_steps = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
             nb_steps += steps;
             if let Some(proof) = opt {
-                return (nb_steps, proof);
+                return (nb_steps, proof.r, proof);
             }
         }
-        return (nb_steps, Proof::new());
+        return (nb_steps, setup.r, Proof::new());
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the

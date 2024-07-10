@@ -6,7 +6,7 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
 
 use caledonia::bounded::{Params, Setup};
-use utils::gen_items;
+use caledonia::utils::gen_items;
 
 // Helper functions
 pub fn setup_wrapper(
