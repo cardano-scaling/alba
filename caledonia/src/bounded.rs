@@ -286,7 +286,7 @@ impl Proof {
         setup: &Setup,
         bins: &Vec<Vec<Data>>,
         round: &Round,
-        limit: &mut usize,
+        nb_steps: &mut usize,
     ) -> Option<Proof> {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
@@ -299,11 +299,11 @@ impl Proof {
             }
         }
         let result = bins[round.h_usize].iter().find_map(|&s| {
-            if *limit == 0 {
+            if *nb_steps == setup.b {
                 return None;
             }
-            *limit -= 1;
-            Self::dfs(setup, bins, &Round::update(round, s), limit)
+            *nb_steps += 1;
+            Self::dfs(setup, bins, &Round::update(round, s), nb_steps)
         });
         return result;
     }
@@ -318,19 +318,19 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        let mut limit = setup.b;
+        let mut nb_steps = 0;
         for t in 1..(setup.d + 1) {
-            if limit == 0 {
+            if nb_steps == setup.b {
                 return (0, None);
             }
-            limit = limit - 1;
+            nb_steps += 1;
             let round = Round::new(v, t, setup.n_p);
-            let res = Proof::dfs(setup, &bins, &round, &mut limit);
+            let res = Proof::dfs(setup, &bins, &round, &mut nb_steps);
             if res.is_some() {
-                return (limit, res);
+                return (nb_steps, res);
             }
         }
-        return (limit, None);
+        return (nb_steps, None);
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
@@ -348,15 +348,15 @@ impl Proof {
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, Self) {
-        let mut nb_calls = 0;
+        let mut nb_steps = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
-            nb_calls += setup.b - steps;
+            nb_steps += steps;
             if let Some(proof) = opt {
-                return (nb_calls, proof);
+                return (nb_steps, proof);
             }
         }
-        return (nb_calls, Proof::new());
+        return (nb_steps, Proof::new());
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
