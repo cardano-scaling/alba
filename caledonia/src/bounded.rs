@@ -44,7 +44,7 @@ impl Params {
         let s1 = ratio - 7.0;
         let s2 = ratio - 2.0;
 
-        if s1 < 1.0 || s1 > lrel || s2 < 1.0 || s2 > lrel {
+        if s1 < 1.0 || s2 < 1.0 {
             return (Cases::Small, u as usize);
         }
 
@@ -113,7 +113,7 @@ impl Setup {
         let s1 = ratio - 7.0;
         let s2 = ratio - 2.0;
 
-        if s1 < 1.0 || s1 > lambda_rel || s2 < 1.0 || s2 > lambda_rel {
+        if s1 < 1.0 || s2 < 1.0 {
             // Small case, ie n_p <= λ^2
             let ln12 = (12f64).ln();
             let d = (32.0 * ln12 * u_f64).ceil();
