@@ -110,12 +110,12 @@ fn verify(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], _h
 
 fn prove_benches(c: &mut Criterion) {
     // prove(c, &[128], &[1000, 5000], &[60, 66, 80], 256);
-    prove(c, &[10], &[1000], &[60, 66, 80], 256);
+    prove(c, &[128], &[1_000_000], &[60, 66, 80], 256);
 }
 
 fn verify_benches(c: &mut Criterion) {
     // prove(c, &[128], &[1000, 5000], &[60, 66, 80], 256);
-    verify(c, &[10], &[1000], &[60, 66, 80], 256);
+    // verify(c, &[10], &[1000], &[60, 66, 80], 256);
 }
 
 criterion_group!(name = benches;

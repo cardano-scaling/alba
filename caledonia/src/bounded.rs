@@ -1,10 +1,13 @@
 //! Rust implementation of ALBA's bounded DFS scheme using Blake2b as hash
 //! function.
+use rayon::prelude::*;
+use std::sync::atomic::{self, AtomicUsize};
 
 extern crate core;
 use crate::utils;
 
 use std::f64::consts::E;
+use std::sync::{Arc, Mutex};
 
 const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
@@ -286,7 +289,8 @@ impl Proof {
         setup: &Setup,
         bins: &Vec<Vec<Data>>,
         round: &Round,
-        nb_steps: &mut usize,
+        // nb_steps: Arc<Mutex<usize>>,
+        nb_steps: Arc<AtomicUsize>,
     ) -> Option<Proof> {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
@@ -298,12 +302,15 @@ impl Proof {
                 return None;
             }
         }
-        let result = bins[round.h_usize].iter().find_map(|&s| {
-            if *nb_steps == setup.b {
+        let result = bins[round.h_usize].par_iter().find_map_first(|&s| {
+            // if *nb_steps.lock().unwrap() == setup.b {
+            if nb_steps.load(atomic::Ordering::Relaxed) == setup.d {
                 return None;
             }
-            *nb_steps += 1;
-            Self::dfs(setup, bins, &Round::update(round, s), nb_steps)
+
+            // *nb_steps.lock().unwrap() += 1;
+            nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
+            Self::dfs(setup, bins, &Round::update(round, s), nb_steps.clone())
         });
         return result;
     }
@@ -318,19 +325,24 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        let mut nb_steps = 0;
+        // let nb_steps = Arc::new(Mutex::new(0usize));
+        let nb_steps = Arc::new(AtomicUsize::new(0));
         for t in 1..(setup.d + 1) {
-            if nb_steps == setup.b {
+            // if *nb_steps.lock().unwrap()
+            if nb_steps.load(atomic::Ordering::Relaxed) == setup.b {
                 return (0, None);
             }
-            nb_steps += 1;
+            // *nb_steps.lock().unwrap() += 1;
+            nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
             let round = Round::new(v, t, setup.n_p);
-            let res = Proof::dfs(setup, &bins, &round, &mut nb_steps);
+            let res = Proof::dfs(setup, &bins, &round, nb_steps.clone());
             if res.is_some() {
-                return (nb_steps, res);
+                // return (*nb_steps.lock().unwrap(), res);
+                return (nb_steps.load(atomic::Ordering::Relaxed), res);
             }
         }
-        return (nb_steps, None);
+        // return (*nb_steps.lock().unwrap(), None);
+        return (nb_steps.load(atomic::Ordering::Relaxed), None);
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
