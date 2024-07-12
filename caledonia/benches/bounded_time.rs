@@ -114,7 +114,6 @@ fn prove_benches(c: &mut Criterion) {
 }
 
 fn verify_benches(c: &mut Criterion) {
-    // prove(c, &[128], &[1000, 5000], &[60, 66, 80], 256);
     // verify(c, &[10], &[1000], &[60, 66, 80], 256);
 }
 
