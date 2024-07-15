@@ -562,6 +562,5 @@ mod tests {
                 );
             }
         }
-        assert!(false);
     }
 }
