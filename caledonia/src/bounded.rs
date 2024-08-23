@@ -7,7 +7,7 @@ extern crate core;
 use crate::utils;
 
 use std::f64::consts::E;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
