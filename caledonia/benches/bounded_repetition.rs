@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use caledonia::bounded::Proof;
 
-mod utils;
+pub mod utils;
 
 fn prepetitions(
     c: &mut Criterion<utils::Repetitions>,
@@ -14,14 +14,14 @@ fn prepetitions(
     n_p: &[usize],
     _hash_size: usize,
 ) {
-    let mut group = c.benchmark_group("Alba".to_string());
+    let mut group = c.benchmark_group("Alba Bounded".to_string());
 
     fn prove_repetitions(l: usize, sp: usize, np: usize, truncate_size: usize, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_repetitions = 0;
         for _ in 0..n {
             // Setup
-            let (mut dataset, bench_setup) = utils::setup_wrapper(&mut rng, l, sp, np);
+            let (mut dataset, bench_setup) = utils::setup_bounded_wrapper(&mut rng, l, sp, np);
             dataset.truncate(truncate_size);
             // Bench
             black_box({
