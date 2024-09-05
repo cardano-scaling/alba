@@ -94,7 +94,8 @@ usage =
       , "--len <int>      : The length (in bytes) of each item in the input set (default: 8)"
       , "--honest-ratio <int>"
       , "                 : The assumed _percentage_ of \"honest\" items in the input set (default: 80)"
-      , "--output <file>  : The file containing proof to write or verify (default: alba.proof)"
+      , "--output <file>  : The file containing proof to write or verify, or the directory where to generate"
+      , "                   items in (default: alba.proof)"
       , "--input <dir>    : If set, reads the item to prove from the given directory instead of generating"
       , "                   them"
       ]
