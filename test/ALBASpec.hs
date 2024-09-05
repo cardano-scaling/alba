@@ -4,6 +4,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TupleSections #-}
+{-# OPTIONS_GHC -Wno-incomplete-uni-patterns #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module ALBASpec where
 
@@ -219,14 +221,13 @@ prop_rejectTamperedProof =
 genModifiedProof :: Params -> Gen (Proof, Proof)
 genModifiedProof params = do
   items <- resize 100 (genItems 100)
-  let (u, _, q) = computeParams params
-   in case prove params items of
-        Left (NoProof _) -> genModifiedProof params
-        Right proof@(Proof n k bs) ->
-          frequency
-            [ (1, pure $ (proof, Proof (n + 1) k bs))
-            , (length items, (proof,) . Proof n k <$> flip1Bit bs)
-            ]
+  case prove params items of
+    Left (NoProof _) -> genModifiedProof params
+    Right proof@(Proof n k bs) ->
+      frequency
+        [ (1, pure $ (proof, Proof (n + 1) k bs))
+        , (length items, (proof,) . Proof n k <$> flip1Bit bs)
+        ]
 
 prop_flip1Bit :: ByteString -> Property
 prop_flip1Bit bytes =
@@ -298,7 +299,6 @@ prop_randomOracle =
         let h = hash bytes
             o = h `oracle` n
             oracleBytes = BS.dropWhile (== 0) $ toBytesLE o
-            allButOneBytes = BS.reverse $ BS.drop 1 oracleBytes
          in o < n
               & counterexample ("fast oracle (as bytes): " <> show (BS.unpack oracleBytes))
               & counterexample ("fast oracle: " <> show o)

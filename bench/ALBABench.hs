@@ -16,14 +16,14 @@ main = do
   defaultMain
     [ bgroup
         "Proving"
-        $ [ benchProof (b, s_p, n_p)
-          | b <- benchSizes
-          , n_p <- [60, 66, 80]
-          , let high = fromIntegral b
-          , let low = high * n_p `div` 100
-          , let mid = (high + low) `div` 2
-          , s_p <- [low, mid, high]
-          ]
+        [ benchProof (b, s_p, n_p)
+        | b <- benchSizes
+        , n_p <- [60, 66, 80]
+        , let high = fromIntegral b
+        , let low = high * n_p `div` 100
+        , let mid = (high + low) `div` 2
+        , s_p <- [low, mid, high]
+        ]
     , bgroup
         "Verifying"
         [ benchVerification (b, n_p)
@@ -42,12 +42,6 @@ benchVerification (total, n_p) =
       env (mkProof <$> genItems (total, 710)) $ \proof ->
         bench label $
           nf (verify params) proof
-
-benchHash :: ByteString -> Benchmark
-benchHash bytes =
-  bench label $ nf hash bytes
- where
-  label = "hashing len=" <> show (BS.length bytes)
 
 benchProof :: (Int, Int, Int) -> Benchmark
 benchProof (total, s_p, n_p) =
