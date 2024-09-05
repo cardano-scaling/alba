@@ -2,21 +2,27 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
-import ALBA (NoProof (..), Params (..), Proof (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
+import ALBA (Bytes (..), NoProof (..), Params (..), Proof (..), Verification (Verified), genItems, prove, readProof, verify, writeProof)
+import Control.Monad (forM, forM_, unless)
+import qualified Data.ByteString as BS
 import Data.Word (Word64)
+import System.Directory (createDirectory, doesDirectoryExist)
 import System.Environment (getArgs)
 import System.Exit (ExitCode (..), exitSuccess, exitWith)
+import System.FilePath ((</>))
 import Test.QuickCheck (generate, resize)
 
 data Command
   = Prove !Options
   | Verify !Options
+  | Generate !Options
 
 data Options = Options
   { size :: Word64
   , bound :: Word64
   , len :: Int
   , params :: Params
+  , input :: Maybe FilePath
   , output :: FilePath
   }
   deriving (Show)
@@ -27,6 +33,7 @@ defaultOptions =
     , bound = 100
     , len = 8
     , params = Params 128 128 80 20
+    , input = Nothing
     , output = "proof.alba"
     }
 
@@ -34,13 +41,20 @@ main :: IO ()
 main = do
   opts <- getArgs >>= parseCommand
   case opts of
-    Prove opts@Options{size, len, params = pars@Params{n_p, n_f}, output} -> do
-      bs <- generate $ resize (fromIntegral size) $ genItems len
+    Prove opts@Options{size, len, params = pars@Params{n_p, n_f}, output, input} -> do
+      bs <- case input of
+        Just dir -> do
+          putStrLn $ "Reading items from " <> dir
+          forM [1 .. size] $ \idx ->
+            Bytes <$> BS.readFile (dir </> show idx)
+        Nothing -> do
+          putStrLn "Generating random items"
+          generate $ resize (fromIntegral size) $ genItems len
       let opts'@Options{params} = adjustForSize opts
       putStrLn $ "Generating proof " <> show opts'
       case prove params bs of
         Left (NoProof retries) ->
-          putStrLn ("No proof could be generated after " <> show retries <> " retries") >> exitWith (ExitFailure 1)
+          putStrLn ("No proof could be written after " <> show retries <> " retries") >> exitWith (ExitFailure 1)
         Right prf@Proof{retryCount} ->
           writeProof output prf >>= \n ->
             putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes, " <> show retryCount <> " retries)")
@@ -51,6 +65,15 @@ main = do
         case verify params prf of
           Verified{} -> putStrLn ("Verified proof " <> show prf)
           other -> putStrLn ("Cannot verify proof " <> show prf <> ", failure: " <> show other) >> exitWith (ExitFailure 1)
+    Generate opts@Options{output} -> do
+      let baseDir = output
+      putStrLn $ "Generating random items to " <> baseDir
+      exist <- doesDirectoryExist baseDir
+      unless exist $ createDirectory baseDir
+      bs <- generate $ resize (fromIntegral $ size opts) $ genItems (len opts)
+      forM_ (zip bs [1 ..]) $
+        \(Bytes bytes, idx) -> BS.writeFile (baseDir </> show idx) bytes
+      putStrLn $ "Generated " <> show (length bs) <> " items"
 
 usage :: IO ()
 usage =
@@ -59,9 +82,9 @@ usage =
       [ "alba: Command-line utility for creating and verifying ALBA proofs"
       , ""
       , "Usage:"
-      , "alba prove <options>  : Generate an ALBA proof file from a (random) set of items"
-      , "alba verify <options> : Verify an ALBA proof. Note that options must be consistent with"
-      , "                        the options used for proving"
+      , "alba prove <options>    : Generate an ALBA proof file from a (random) set of items"
+      , "alba verify <options>   : Verify an ALBA proof. Note that options must be consistent with"
+      , "alba generate <options> : Generate a set of random items to be used for proof generation"
       , ""
       , "Options:"
       , "--help           : Display this help text"
@@ -72,6 +95,8 @@ usage =
       , "--honest-ratio <int>"
       , "                 : The assumed _percentage_ of \"honest\" items in the input set (default: 80)"
       , "--output <file>  : The file containing proof to write or verify (default: alba.proof)"
+      , "--input <dir>    : If set, reads the item to prove from the given directory instead of generating"
+      , "                   them"
       ]
 
 adjustForSize :: Options -> Options
@@ -84,6 +109,8 @@ parseCommand = \case
     Prove <$> parseOptions rest
   ("verify" : rest) ->
     Verify <$> parseOptions rest
+  ("generate" : rest) ->
+    Generate <$> parseOptions rest
   ("--help" : _) ->
     usage >> exitSuccess
   other ->
@@ -92,7 +119,7 @@ parseCommand = \case
 parseOptions = \case
   [] -> pure defaultOptions
   ("--help" : _) ->
-    usage >> exitWith ExitSuccess
+    usage >> exitSuccess
   ("--security" : lam : rest) -> do
     let λ = read lam
     opts <- parseOptions rest
@@ -116,5 +143,8 @@ parseOptions = \case
   ("--output" : output : rest) -> do
     opts <- parseOptions rest
     pure $ opts{output}
+  ("--input" : input : rest) -> do
+    opts <- parseOptions rest
+    pure $ opts{input = Just input}
   other -> do
     usage >> exitWith (ExitFailure 2)

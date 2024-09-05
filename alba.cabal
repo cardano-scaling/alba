@@ -14,7 +14,17 @@ flag dump
   manual:  True
   default: True
 
+common warnings
+    ghc-options: -Wall -Wunused-packages -Werror
+                 -fno-warn-missing-pattern-synonym-signatures
+                 -fno-warn-missing-signatures
+                 -fno-warn-name-shadowing
+                 -fno-warn-type-defaults
+                 -fno-warn-unused-imports
+                 -fno-warn-unused-matches
+
 library
+  import:           warnings
   exposed-modules:    ALBA
   hs-source-dirs:     src
   build-depends:
@@ -27,7 +37,6 @@ library
 
   default-extensions: StrictData
   default-language:   Haskell2010
-  ghc-options:        -Wall -Wunused-packages
   extra-libraries:    sodium
   include-dirs:       cbits
   includes:           cbits/blake2b.h
@@ -37,41 +46,45 @@ library
     ghc-options: -ddump-simpl -ddump-stg-final -ddump-to-file
 
 executable alba
+  import:           warnings
   hs-source-dirs: app
   main-is:        Main.hs
   build-depends:
-    , alba
-    , base
-    , QuickCheck
+                      QuickCheck
+                , alba
+                , base
+                , bytestring
+                , directory
+                , filepath
 
   ghc-options:    -threaded -rtsopts
 
 test-suite test
+  import:           warnings
   default-language:   Haskell2010
   type:               exitcode-stdio-1.0
   hs-source-dirs:     test
   main-is:            Main.hs
   other-modules:      ALBASpec
   build-depends:
-    , alba
-    , base                  >=4.9 && <5
-    , base16-bytestring
-    , bytestring
-    , cereal
-    , hspec
-    , QuickCheck
-    , quickcheck-classes
-    , quickcheck-instances
+                  QuickCheck
+                , alba
+                , base                  >=4.9 && <5
+                , bytestring
+                , cereal
+                , directory
+                , hspec
+                , quickcheck-instances
 
   build-tool-depends: hspec-discover:hspec-discover
   ghc-options:        -rtsopts -threaded
 
 benchmark bench
+  import:           warnings
   hs-source-dirs: bench/
   main-is:        ALBABench.hs
   type:           exitcode-stdio-1.0
   build-depends:
-    , aeson
     , alba
     , base
     , bytestring
