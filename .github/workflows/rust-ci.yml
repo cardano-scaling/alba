@@ -1,0 +1,70 @@
+name: Rust CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Uninstall pre-installed tools
+        run: |
+          rm -f ~/.cargo/bin/rust-analyzer
+          rm -f ~/.cargo/bin/rustfmt
+          rm -f ~/.cargo/bin/cargo-fmt
+
+      - name: Update Rust toolchain and components
+        run: |
+          rustup update
+          rustup component add rustfmt
+          rustup component add clippy
+
+      - name: Build
+        run: cargo build --verbose
+        working-directory: caledonia
+
+      - name: Verify target directory exists
+        run: |
+          echo "Checking if target directory exists and is not empty"
+          ls -la caledonia/target
+
+      - name: Run tests
+        run: cargo test --verbose
+        working-directory: caledonia
+
+#      - name: Run Clippy
+#        run: cargo clippy -- -D warnings
+#        working-directory: caledonia
+
+      - name: Check format
+        run: cargo fmt -- --check
+        working-directory: caledonia
+
+      - name: Build and test documentation
+        run: cargo doc --no-deps --verbose
+        working-directory: caledonia
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache Cargo build
+        uses: actions/cache@v3
+        with:
+          path: caledonia/target
+          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-
