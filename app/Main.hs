@@ -19,7 +19,6 @@ data Command
 
 data Options = Options
   { size :: Word64
-  , bound :: Word64
   , len :: Int
   , params :: Params
   , input :: Maybe FilePath
@@ -30,7 +29,6 @@ data Options = Options
 defaultOptions =
   Options
     { size = 100
-    , bound = 100
     , len = 8
     , params = Params 128 128 80 20
     , input = Nothing
@@ -41,7 +39,7 @@ main :: IO ()
 main = do
   opts <- getArgs >>= parseCommand
   case opts of
-    Prove opts@Options{size, len, params = pars@Params{n_p, n_f}, output, input} -> do
+    Prove opts@Options{size, len, params, output, input} -> do
       bs <- case input of
         Just dir -> do
           putStrLn $ "Reading items from " <> dir
@@ -50,17 +48,15 @@ main = do
         Nothing -> do
           putStrLn "Generating random items"
           generate $ resize (fromIntegral size) $ genItems len
-      let opts'@Options{params} = adjustForSize opts
-      putStrLn $ "Generating proof " <> show opts'
+      putStrLn $ "Generating proof " <> show opts
       case prove params bs of
         Left (NoProof retries) ->
           putStrLn ("No proof could be written after " <> show retries <> " retries") >> exitWith (ExitFailure 1)
         Right prf@Proof{retryCount} ->
           writeProof output prf >>= \n ->
             putStrLn ("Written proof to '" <> output <> "' (" <> show n <> " bytes, " <> show retryCount <> " retries)")
-    Verify opts@Options{size, len, params = pars@Params{n_p, n_f}, output} -> do
-      let opts'@Options{params} = adjustForSize opts
-      putStrLn $ "Verifying proof with " <> show opts'
+    Verify opts@Options{size, len, params, output} -> do
+      putStrLn $ "Verifying proof with " <> show opts
       readProof output >>= \prf ->
         case verify params prf of
           Verified{} -> putStrLn ("Verified proof " <> show prf)
@@ -89,20 +85,15 @@ usage =
       , "Options:"
       , "--help           : Display this help text"
       , "--security <int> : The security level of the proof (default: 128)"
-      , "--size <int>     : The actual number of elements to build a proof for (default: bound * honest_ratio)"
-      , "--bound <int>    : The maximum number of elements in the input set (default: 100)"
+      , "--size <int>     : The actual number of elements to build a proof for (default: 100)"
+      , "--n-p <int>      : ALBA n_p parameter, e.g expected \"honest\" set size (default: 80)"
+      , "--n-f <int>      : ALBA n_f parameter, e.g expected \"faulty\" set size (default: 20)"
       , "--len <int>      : The length (in bytes) of each item in the input set (default: 8)"
-      , "--honest-ratio <int>"
-      , "                 : The assumed _percentage_ of \"honest\" items in the input set (default: 80)"
       , "--output <file>  : The file containing proof to write or verify, or the directory where to generate"
       , "                   items in (default: alba.proof)"
       , "--input <dir>    : If set, reads the item to prove from the given directory instead of generating"
       , "                   them"
       ]
-
-adjustForSize :: Options -> Options
-adjustForSize opts@Options{size, bound, params = pars@Params{n_p, n_f}} =
-  opts{params = pars{n_p = bound * n_p `div` 100, n_f = bound * n_f `div` 100}}
 
 parseCommand :: [String] -> IO Command
 parseCommand = \case
@@ -129,18 +120,18 @@ parseOptions = \case
     let size = read sz
     opts <- parseOptions rest
     pure $ opts{size}
-  ("--bound" : sz : rest) -> do
-    let bound = read sz
+  ("--n-p" : np : rest) -> do
+    let n_p = read np
     opts <- parseOptions rest
-    pure $ opts{bound}
+    pure $ opts{params = (params opts){n_p}}
+  ("--n-f" : nf : rest) -> do
+    let n_f = read nf
+    opts <- parseOptions rest
+    pure $ opts{params = (params opts){n_f}}
   ("--len" : ln : rest) -> do
     let len = read ln
     opts <- parseOptions rest
     pure $ opts{len}
-  ("--honest-ratio" : hn : rest) -> do
-    let rat = read hn
-    opts <- parseOptions rest
-    pure $ opts{params = (params opts){n_p = rat, n_f = 100 - rat}}
   ("--output" : output : rest) -> do
     opts <- parseOptions rest
     pure $ opts{output}
