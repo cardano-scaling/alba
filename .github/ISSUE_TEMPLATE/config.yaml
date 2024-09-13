@@ -1,0 +1,9 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Ask a Question
+    url: https://github.com/cardano-scaling/alba/discussions
+    about: If you have questions, please go to discussions instead of opening an issue.
+
+  - name: All issues
+    url: https://github.com/cardano-scaling/alba/issues
+    about: Check whether your issue is not already covered here.
