@@ -22,14 +22,15 @@ jobs:
     - name: 🌳 Environment
       uses: haskell-actions/setup@v2
       id: setup-haskell-cabal
+      working-directory: haskell
       with:
         ghc-version: '9.8.2'
         cabal-version: '3.10.1.0'
 
     - name: 🧊 Freeze
-      run: >
-        cabal freeze
-        --builddir=${{ env.cabal-build-dir }}
+      working-directory: haskell
+      run: |
+        cabal freeze --builddir=${{ env.cabal-build-dir }}
 
     - name: 🚪 Cache
       uses: actions/cache@v4
@@ -44,6 +45,7 @@ jobs:
           ${{ env.cabal-build-dir }}
 
     - name: ❄ Install libsodium
+      working-directory: haskell
       run: |
          git clone https://github.com/input-output-hk/libsodium
          cd libsodium
@@ -54,17 +56,20 @@ jobs:
          sudo make install
 
     - name: 🪨 Install dependencies
+      working-directory: haskell
       run: |
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
 
     - name: 🏠 Build
+      working-directory: haskell
       env:
         LD_LIBRARY_PATH: "/usr/local/lib:$LD_LIBRARY_PATH"
         PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
       run: cabal build --enable-tests --enable-benchmarks  --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
 
     - name: 🧪 Run tests
+      working-directory: haskell
       run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
 
   docs:
