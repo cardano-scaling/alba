@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ALBA Parameters</title>
+    <script type="text/javascript" id="MathJax-script" async
+	          src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="index.js"></script>
+    <link rel="stylesheet" href="alba.css" >
+  </head>
+
+  <body>
+    <div id="chart" class="row" style="width: 90vw; margin: auto;" >
+      <canvas id="main_chart"></canvas>
+    </div>
+
+    <div class="row g-3" style="width: 95%; margin: auto;">
+
+      <div class="col-md-2">
+	      <label for="n_p" class="form-label">\(n_p\)<span class="help" data-bs-toggle="tooltip" title="Expected number of honest set of items.">?</span></label>
+	      <input type="number" min="1" max="15" class="form-control" id="n_p" value="800">
+      </div>
+
+      <div class="col-md-2">
+	      <label for="n_f" class="form-label">\(n_f\)<span class="help" data-bs-toggle="tooltip" title="Expected number of faulty set of items.">?</span></label>
+	      <input type="number" min="1" max="15" class="form-control" id="n_f" value="200">
+      </div>
+
+      <div class="col-md-2">
+	      <label for="S_p" class="form-label">\(S_p\)<span class="help" data-bs-toggle="tooltip" title="Available set of items.">?</span></label>
+	      <input type="number" min="1" max="15" class="form-control" id="S_p" value="1000">
+      </div>
+    </div>
+
+  </body>
+
+</html>
