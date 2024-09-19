@@ -6,15 +6,19 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   const node = document.getElementById('main_chart');
+  const lam = 128;
 
-  function proabilityOfProof(S_p) {
-    const lam = 128;
-    const n_p = Number(document.getElementById('n_p').value);
-    const n_f = Number(document.getElementById('n_f').value);
+  const n_p = document.getElementById('n_p');
+  const n_f = document.getElementById('n_f');
+  const item = document.getElementById('item');
+  const proof_size = document.getElementById('proof_size');
 
+  function U(n_p, n_f) {
+    return Math.ceil((lam + Math.log2(lam) + 5 - Math.log2(Math.log2(Math.E))) / Math.log2(n_p / n_f));
+  };
+
+  function proabilityOfProof(u, n_p, n_f, S_p) {
     // from https://github.com/cardano-scaling/alba/discussions/17
-
-    const u = Math.ceil((lam + Math.log2(lam) + 5 - Math.log2(Math.log2(Math.E))) / Math.log2(n_p / n_f));
 
     S_1_bot = n_p / (17 ** 2 / (9 * Math.log2(Math.E)) * u ** 2) - 7 < 1;
     S_2_bot = n_p / (17 ** 2 / (9 * Math.log2(Math.E)) * u ** 2) - 2 < 1;
@@ -27,33 +31,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = 2 * Math.log(12) / d;
     const r = Math.ceil(lam);
 
-    console.log(`u = ${u}, d = ${d}, q = ${q}, r = ${r}`);
-
     return r * (S_p / n_p) ** u * d * q;
   };
 
-  Chart.register({
-    id: 'function-sampler',
-    beforeInit: function(chart, args, options) {
-      // We get the chart data
-      var data = chart.config.data;
+  // Returns updated labels and data
+  function updatedData() {
+    const data = [];
+    const labels = [];
+    const n_p_v = Number(n_p.value);
+    const n_f_v = Number(n_f.value);
+    const u = U(n_p_v, n_f_v);
+    // number of points
+    const length = (n_p_v - n_f_v) / 10;
 
-      // For every dataset ...
-      for (var i = 0; i < data.datasets.length; i++) {
-
-        // For every label ...
-        for (var j = 0; j < data.labels.length; j++) {
-
-          // We get the dataset's function and calculate the value
-          var fct = data.datasets[i].function,
-            x = data.labels[j],
-            y = fct(x);
-          // Then we add the value to the dataset data
-          data.datasets[i].data.push(y);
-        }
-      }
+    for (var i = 0; i < length; i++) {
+      const y = (i * 10) + n_f_v;
+      labels.push(y);
+      data.push(proabilityOfProof(u, n_p_v, n_f_v, y));
     }
-  });
+
+    return [labels, data];
+  }
+
+  const [labels, data] = updatedData();
 
   // throughput chart
   const chart = new Chart(node, {
@@ -63,12 +63,12 @@ document.addEventListener('DOMContentLoaded', () => {
     data: {
       // N.B.: Make sure colors are picked from an inclusive color palette.
       // See for instance: https://medium.com/@allieofisher/inclusive-color-palettes-for-the-web-bbfe8cf2410e
-      labels: Array.from({ length: 60 }, (_, i) => (i * 10) + 200),
+      labels,
       datasets: [
         {
           type: 'line',
           label: "proof probability",
-          data: [],
+          data,
           function: proabilityOfProof,
           backgroundColor: '#6FDE6E',
           borderColor: '#6FDE6E',
@@ -80,7 +80,11 @@ document.addEventListener('DOMContentLoaded', () => {
       scales: {
         y: {
           type: 'logarithmic',
+          min: 0,
+          max: 1,
           ticks: {
+            stepSize: 0.0001,
+            autoSkip: true,
             callback: (val) => (val.toExponential())
           }
         },
@@ -94,4 +98,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+
+  function updateProofSize() {
+    const n_p_v = Number(n_p.value);
+    const n_f_v = Number(n_f.value);
+    const single = Number(item.value);
+    const u = U(n_p_v, n_f_v);
+    proof_size.value = u * single;
+  }
+
+  function updateChart() {
+    const [labels, data] = updatedData();
+    chart.data.labels = labels;
+    chart.data.datasets[0].data = data;
+    chart.update();
+    updateProofSize();
+  };
+
+  n_p.addEventListener('change', updateChart);
+  n_f.addEventListener('change', updateChart);
+  item.addEventListener('change', updateChart);
 });

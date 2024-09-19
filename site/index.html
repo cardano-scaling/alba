@@ -22,17 +22,22 @@
 
       <div class="col-md-2">
 	      <label for="n_p" class="form-label">\(n_p\)<span class="help" data-bs-toggle="tooltip" title="Expected number of honest set of items.">?</span></label>
-	      <input type="number" min="1" max="15" class="form-control" id="n_p" value="800">
+	      <input type="number" step="10" class="form-control" id="n_p" value="800">
       </div>
 
       <div class="col-md-2">
 	      <label for="n_f" class="form-label">\(n_f\)<span class="help" data-bs-toggle="tooltip" title="Expected number of faulty set of items.">?</span></label>
-	      <input type="number" min="1" max="15" class="form-control" id="n_f" value="200">
+	      <input type="number" step="10" class="form-control" id="n_f" value="200">
       </div>
 
       <div class="col-md-2">
-	      <label for="S_p" class="form-label">\(S_p\)<span class="help" data-bs-toggle="tooltip" title="Available set of items.">?</span></label>
-	      <input type="number" min="1" max="15" class="form-control" id="S_p" value="1000">
+	      <label for="item" class="form-label">Item size<span class="help" data-bs-toggle="tooltip" title="Size of a single item.">?</span></label>
+	      <input type="number" step="10" class="form-control" id="item" value="600">
+      </div>
+
+      <div class="col-md-2">
+	      <label for="size" class="form-label">Proof size<span class="help" data-bs-toggle="tooltip" title="Total size of proof.">?</span></label>
+	      <input type="number" class="form-control" id="proof_size" disabled>
       </div>
     </div>
 
