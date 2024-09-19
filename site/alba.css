@@ -1,0 +1,9 @@
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: row;
+}
+
+.col-md-2 {
+    width: 16.66666667%;
+}
