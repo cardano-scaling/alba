@@ -1,13 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-
-  function sliceOf(slot) {
-    return Math.floor(slot / parameters._L);
-  }
+  const lam = 128;
+  const HASH_FACTOR = 1e8;
 
   const node = document.getElementById('main_chart');
-  const lam = 128;
-
   const n_p = document.getElementById('n_p');
   const n_f = document.getElementById('n_f');
   const item = document.getElementById('item');
@@ -20,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
     return Math.ceil((lam + Math.log2(lam) + 5 - Math.log2(Math.log2(Math.E))) / Math.log2(n_p / n_f));
   };
 
-  function proabilityOfProof(u, n_p, n_f, S_p) {
+  function probabilityOfProof(u, n_p, n_f, x) {
     // from https://github.com/cardano-scaling/alba/discussions/17
 
     S_1_bot = n_p / (17 ** 2 / (9 * Math.log2(Math.E)) * u ** 2) - 7 < 1;
@@ -34,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = 2 * Math.log(12) / d;
     const r = Math.ceil(lam);
 
-    return r * (S_p / n_p) ** u * d * q;
+    return r * (x / n_p) ** u * d * q;
   };
 
   // Returns updated labels and data
@@ -50,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
     for (var i = 0; i < length; i++) {
       const y = (i * 10) + n_f_v;
       labels.push(y);
-      data.push(proabilityOfProof(u, n_p_v, n_f_v, y));
+      data.push(probabilityOfProof(u, n_p_v, n_f_v, y));
     }
 
     return [labels, data];
@@ -72,7 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
           type: 'line',
           label: "proof probability",
           data,
-          function: proabilityOfProof,
+          function: probabilityOfProof,
           backgroundColor: '#6FDE6E',
           borderColor: '#6FDE6E',
           fill: false
@@ -84,7 +80,6 @@ document.addEventListener('DOMContentLoaded', () => {
         y: {
           type: 'logarithmic',
           min: 0,
-          max: 1,
           ticks: {
             stepSize: 0.0001,
             autoSkip: true,
@@ -116,8 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const s_p_v = Number(s_p.value);
     const cpu_v = Number(cpu.value);
     const u = U(n_p_v, n_f_v);
-    const proba = proabilityOfProof(u, n_p_v, n_f_v, s_p_v);
-    proof_time.value = (1 / proba / (cpu_v * 100000000)).toExponential(2);
+    const proba = probabilityOfProof(u, n_p_v, n_f_v, s_p_v);
+    // expected prover time is n_p + O (u^2), we neglect the n_p part here
+    proof_time.value = (u * u / proba / (cpu_v * HASH_FACTOR)).toExponential(2);
   }
 
   function updateChart() {
@@ -135,4 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
   cpu.addEventListener('change', updateProofTime);
   s_p.addEventListener('change', updateProofTime);
 
+  updateProofSize();
+  updateProofTime();
 });
