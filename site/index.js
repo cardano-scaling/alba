@@ -12,6 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const n_f = document.getElementById('n_f');
   const item = document.getElementById('item');
   const proof_size = document.getElementById('proof_size');
+  const s_p = document.getElementById('s_p');
+  const cpu = document.getElementById('cpu');
+  const proof_time = document.getElementById('proof_time');
 
   function U(n_p, n_f) {
     return Math.ceil((lam + Math.log2(lam) + 5 - Math.log2(Math.log2(Math.E))) / Math.log2(n_p / n_f));
@@ -85,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
           ticks: {
             stepSize: 0.0001,
             autoSkip: true,
-            callback: (val) => (val.toExponential())
+            callback: (val) => (val.toExponential(1))
           }
         },
         x: {
@@ -107,15 +110,29 @@ document.addEventListener('DOMContentLoaded', () => {
     proof_size.value = u * single;
   }
 
+  function updateProofTime() {
+    const n_p_v = Number(n_p.value);
+    const n_f_v = Number(n_f.value);
+    const s_p_v = Number(s_p.value);
+    const cpu_v = Number(cpu.value);
+    const u = U(n_p_v, n_f_v);
+    const proba = proabilityOfProof(u, n_p_v, n_f_v, s_p_v);
+    proof_time.value = (1 / proba / (cpu_v * 100000000)).toExponential(2);
+  }
+
   function updateChart() {
     const [labels, data] = updatedData();
     chart.data.labels = labels;
     chart.data.datasets[0].data = data;
     chart.update();
     updateProofSize();
+    updateProofTime();
   };
 
   n_p.addEventListener('change', updateChart);
   n_f.addEventListener('change', updateChart);
   item.addEventListener('change', updateChart);
+  cpu.addEventListener('change', updateProofTime);
+  s_p.addEventListener('change', updateProofTime);
+
 });

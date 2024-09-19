@@ -2,8 +2,22 @@
     display: flex;
     flex-wrap: wrap;
     flex-direction: row;
+    padding: 0.5em;
 }
 
 .col-md-2 {
     width: 16.66666667%;
+}
+
+.col-md-3 {
+    width: 25%;
+}
+
+.col-md-4 {
+    width: 33.33333333%;
+}
+
+input {
+    text-align: right;
+    font-family: monospace;
 }
