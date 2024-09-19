@@ -4,20 +4,42 @@
     flex-direction: row;
     padding: 0.5em;
 }
+.col {
+    display: flex;
+    flex-direction: column;
+    padding: 0.2em;
+}
 
 .col-md-2 {
-    width: 16.66666667%;
+    display: flex;
+    flex: 2;
 }
 
 .col-md-3 {
-    width: 25%;
+    display: flex;
+    flex: 3;
 }
 
 .col-md-4 {
-    width: 33.33333333%;
+    display: flex;
+    flex: 4;
+}
+
+.col-md-8 {
+    display: flex;
+    flex: 8;
+}
+
+label {
+    width: 100%;
+    display: block;
 }
 
 input {
     text-align: right;
     font-family: monospace;
+}
+
+.help {
+    display: none;
 }
