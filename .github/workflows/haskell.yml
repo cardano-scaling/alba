@@ -27,9 +27,9 @@ jobs:
         cabal-version: '3.10.1.0'
 
     - name: 🧊 Freeze
-      run: >
-        cabal freeze
-        --builddir=${{ env.cabal-build-dir }}
+      working-directory: haskell
+      run: |
+        cabal freeze --builddir=${{ env.cabal-build-dir }}
 
     - name: 🚪 Cache
       uses: actions/cache@v4
@@ -44,6 +44,7 @@ jobs:
           ${{ env.cabal-build-dir }}
 
     - name: ❄ Install libsodium
+      working-directory: haskell
       run: |
          git clone https://github.com/input-output-hk/libsodium
          cd libsodium
@@ -54,40 +55,18 @@ jobs:
          sudo make install
 
     - name: 🪨 Install dependencies
+      working-directory: haskell
       run: |
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
 
     - name: 🏠 Build
+      working-directory: haskell
       env:
         LD_LIBRARY_PATH: "/usr/local/lib:$LD_LIBRARY_PATH"
         PKG_CONFIG_PATH: "/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH"
       run: cabal build --enable-tests --enable-benchmarks  --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
 
     - name: 🧪 Run tests
+      working-directory: haskell
       run: cabal test   --extra-include-dirs=/usr/local/include  --extra-lib-dirs=/usr/local/lib all
-
-  docs:
-    permissions:
-      contents: write
-
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: ✅ Checkout
-        uses: actions/checkout@v4
-
-      - name: 🪨 Setup mdBook
-        uses: peaceiris/actions-mdbook@v2
-        with:
-          mdbook-version: '0.4.40'
-
-      - name: 📓 Build docs
-        run: mdbook build docs
-
-      - name: 🚀 Deploy
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/book
-          cname: alba.cardano-scaling.org

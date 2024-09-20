@@ -30,16 +30,14 @@ jobs:
 
       - name: Build
         run: cargo build --verbose
-        working-directory: caledonia
 
       - name: Verify target directory exists
         run: |
           echo "Checking if target directory exists and is not empty"
-          ls -la caledonia/target
+          ls -la target
 
       - name: Run tests
         run: cargo test --verbose
-        working-directory: caledonia
 
 #      - name: Run Clippy
 #        run: cargo clippy -- -D warnings
@@ -47,11 +45,9 @@ jobs:
 
       - name: Check format
         run: cargo fmt -- --check
-        working-directory: caledonia
 
       - name: Build and test documentation
         run: cargo doc --no-deps --verbose
-        working-directory: caledonia
 
       - name: Cache Cargo registry
         uses: actions/cache@v3
@@ -68,3 +64,28 @@ jobs:
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
+
+  docs:
+    permissions:
+      contents: write
+
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: ✅ Checkout
+        uses: actions/checkout@v4
+
+      - name: 🪨 Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: '0.4.40'
+
+      - name: 📓 Build docs
+        run: mdbook build docs
+
+      - name: 🚀 Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/book
+          cname: alba.cardano-scaling.org
