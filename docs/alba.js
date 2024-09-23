@@ -9,8 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const item = document.getElementById('item');
   const proof_size = document.getElementById('proof_size');
   const s_p = document.getElementById('s_p');
-  const cpu = document.getElementById('cpu');
-  const proof_time = document.getElementById('proof_time');
+  const proof_proba = document.getElementById('proof_proba');
 
   function U(n_p, n_f) {
     return Math.ceil((lam + Math.log2(lam) + 5 - Math.log2(Math.log2(Math.E))) / Math.log2(n_p / n_f));
@@ -105,15 +104,14 @@ document.addEventListener('DOMContentLoaded', () => {
     proof_size.value = u * single;
   }
 
-  function updateProofTime() {
+  function updateProofProba() {
     const n_p_v = Number(n_p.value);
     const n_f_v = Number(n_f.value);
     const s_p_v = Number(s_p.value);
-    const cpu_v = Number(cpu.value);
     const u = U(n_p_v, n_f_v);
     const proba = probabilityOfProof(u, n_p_v, n_f_v, s_p_v);
     // expected prover time is n_p + O (u^2), we neglect the n_p part here
-    proof_time.value = (u * u / proba / (cpu_v * HASH_FACTOR)).toExponential(2);
+    proof_proba.value = proba.toExponential(4);
   }
 
   function updateChart() {
@@ -122,15 +120,14 @@ document.addEventListener('DOMContentLoaded', () => {
     chart.data.datasets[0].data = data;
     chart.update();
     updateProofSize();
-    updateProofTime();
+    updateProofProba();
   };
 
   n_p.addEventListener('change', updateChart);
   n_f.addEventListener('change', updateChart);
   item.addEventListener('change', updateChart);
-  cpu.addEventListener('change', updateProofTime);
-  s_p.addEventListener('change', updateProofTime);
+  s_p.addEventListener('change', updateProofProba);
 
   updateProofSize();
-  updateProofTime();
+  updateProofProba();
 });
