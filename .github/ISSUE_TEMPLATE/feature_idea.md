@@ -1,6 +1,6 @@
 ---
 name: Feature idea
-about: Idea or request for some feature on the Mithril roadmap
+about: Idea or request for some feature on the Telescope-ALBA roadmap
 title: ""
 labels: ":thought_balloon: idea"
 assignees: ""
