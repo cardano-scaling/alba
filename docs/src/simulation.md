@@ -76,7 +76,7 @@ We also display two specific values:
         <input type="number" step="10" class="form-control" id="s_p" value="300">
     </div>
     <div class="col col-md-3">
-        <label for="proof_proba" class="form-label">Proof time (s)<span class="help" data-bs-toggle="tooltip" title="Probability of having a proof for some number of items.">?</span></label>
+        <label for="proof_proba" class="form-label">Proof probability<span class="help" data-bs-toggle="tooltip" title="Probability of having a proof for some number of items.">?</span></label>
         <input type="number" class="form-control" id="proof_proba" disabled>
     </div>
     <div class="col-md-3"/>
