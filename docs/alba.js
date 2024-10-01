@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
   const lam = 128;
-  const HASH_FACTOR = 1e8;
 
   const node = document.getElementById('main_chart');
   const n_p = document.getElementById('n_p');
