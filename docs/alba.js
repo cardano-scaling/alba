@@ -109,7 +109,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const s_p_v = Number(s_p.value);
     const u = U(n_p_v, n_f_v);
     const proba = probabilityOfProof(u, n_p_v, n_f_v, s_p_v);
-    // expected prover time is n_p + O (u^2), we neglect the n_p part here
     proof_proba.value = proba.toExponential(4);
   }
 
