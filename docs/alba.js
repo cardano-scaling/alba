@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const q = 2 * Math.log(12) / d;
     const r = Math.ceil(lam);
 
-    return r * (x / n_p) ** u * d * q;
+    return Math.min(r * (x / n_p) ** u * d * q, 1);
   };
 
   // Returns updated labels and data
