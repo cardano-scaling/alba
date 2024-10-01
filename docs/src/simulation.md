@@ -31,7 +31,7 @@ discussion](https://github.com/cardano-scaling/alba/discussions/17)
 is:
 
 \\[
- r \cdot {\left( \frac{|S_p|}{n_p} \right)}^u\cdot qd
+ r \cdot {\left( \frac{S_p}{n_p} \right)}^u\cdot qd
 \\]
 
 where _u_, _r_, _q_, and _d_ are defined in the aforementioned
