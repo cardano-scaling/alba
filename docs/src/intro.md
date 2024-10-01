@@ -2,7 +2,7 @@
 
 ## Definition
 
-_Approximate Lower Bound Arguments_ are a form of cryptographic certificates that allow a _prover_ to convince a _verifier_ they know some set of elements by providing only a small subset of those elements. More formally, given some set of _unique_ elements, and some bounds \\(n_p\\) and \\(n_f\\), where \\(n_p > n_f\\), about the size of this set, ALBA provides an algorithm that allows to build a _proof_ they know _at least_ \\(n_f\\) elements, where the proof size is a constant value derived from the \\(\frac{n_p}{n_f}\\) ratio.
+_Approximate Lower Bound Arguments_ are a form of cryptographic certificates that allow a _prover_ to convince a _verifier_ they know some set of elements by providing only a small subset of those elements. More formally, given some set of _unique_ elements, and some bounds \\(n_p\\) and \\(n_f\\), where \\(n_p > n_f\\), about the size of this set, ALBA provides an algorithm that allows to build a _proof_ they know _more than_ \\(n_f\\) elements, where the proof size is a constant value derived from the \\(\frac{n_p}{n_f}\\) ratio.
 
 The algorithm provides the following guarantees, given the prover has \\(S_p\\) elements and a security parameter \\(\lambda\\):
 
