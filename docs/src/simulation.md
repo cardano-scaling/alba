@@ -2,7 +2,7 @@
 
 ALBA provides strong security guarantees about the capability to generate a proof given some number of items \\(S_p\\):
 
-* a honest prover with more than \\(n_p\\) items has a probability of
+* a honest prover with at least \\(n_p\\) items has a probability of
   failing to generate a proof lower than \\(2^{-128}\\),
 * symetrically, a (dishonest) prover with less than \\(n_f\\) items
   has probability of succeeding to generate a proof lower than
