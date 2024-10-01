@@ -43,7 +43,7 @@ We also display two specific values:
   item size, which is given by the formula from section 3.2.2,
   Corollary 3, from the [ALBA
   paper](https://iohk.io/en/research/library/papers/approximate-lower-bound-arguments/),
-* the probability of having a proof for some specific number of \\(S_p\\) (computed.
+* the probability of having a proof for some specific number of \\(S_p\\) computed.
 
 
 <div class="col col-md-8">
