@@ -4,7 +4,7 @@ ALBA provides strong security guarantees about the capability to generate a proo
 
 * a honest prover with at least \\(n_p\\) items has a probability of
   failing to generate a proof lower than \\(2^{-128}\\),
-* symetrically, a (dishonest) prover with less than \\(n_f\\) items
+* symetrically, a (dishonest) prover with at most \\(n_f\\) items
   has probability of succeeding to generate a proof lower than
   \\(2^{-128}\\).
 
