@@ -24,7 +24,7 @@ One can define:
 * \\(S_p\\): The number of items actually available to an adversary, or put differently, how much adversarial stake should we expect.
 
 From these parameters, we display a chart showing the probability of
-an adversary being able to compute a single valid proof, given some
+an adversary being able to compute a valid proof, given some
 number of items \\(S_p\\) available between \\(n_p\\) and
 \\(n_f\\). The formula used, initially proposed in this [GitHub
 discussion](https://github.com/cardano-scaling/alba/discussions/17)
