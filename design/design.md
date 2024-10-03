@@ -74,7 +74,7 @@ distribution for the weighted ALBA will follow a simple but not well understood
 algorithm.
 
 How will parameters be chosen / computed?
-I propose that we separate parameter derivation for the actual ALBA code.
+I propose that we separate parameter derivation from the actual ALBA code.
 This means that converting user friendly parameters such as n_p, n_f, lambdas to
 algorithm specific parameters such as d, q should be done separately and ahead
 of time.
