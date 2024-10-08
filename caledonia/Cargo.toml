@@ -11,7 +11,17 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 [dependencies]
 blake2 = "0.10.6"
 rand_core = "0.6.4"
+rayon = "1.10.0"
 
 [dev-dependencies]
 rand = "0.8.5"
 rand_chacha = "0.3.1"
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "bounded_time"
+harness = false
+
+[[bench]]
+name = "bounded_step"
+harness = false

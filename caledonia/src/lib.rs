@@ -13,4 +13,5 @@
 //! using the ROM.
 pub mod utils;
 
+pub mod bounded;
 pub mod prehashed;
