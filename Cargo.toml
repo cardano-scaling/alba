@@ -22,6 +22,10 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 name = "centralised_time"
 harness = false
 
+[[bench]]
+name = "centralised_step"
+harness = false
+
 [lints.rust]
 missing_docs = "warn"
 unsafe_code = "warn"
