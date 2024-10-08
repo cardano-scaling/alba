@@ -27,6 +27,35 @@ pub fn setup_bounded_wrapper(
     (dataset, Setup::new(&params))
 }
 
+pub fn setup_decentralised_wrapper(
+    rng: &mut ChaCha20Rng,
+    l: usize,
+    sp: usize,
+    np: usize,
+) -> (Vec<[u8; 32]>, caledonia::decentralised::Setup) {
+    use caledonia::decentralised::*;
+    let seed_u32 = rng.next_u32();
+    let seed = seed_u32.to_ne_bytes().to_vec();
+    let mu = Params::min_mu(
+        l,
+        l,
+        (np * sp).div_ceil(100),
+        ((100 - np) * sp).div_ceil(100),
+    );
+    let params = Params::new(
+        l,
+        l,
+        (np * sp).div_ceil(100),
+        ((100 - np) * sp).div_ceil(100),
+        mu,
+    );
+    let dataset = gen_items(seed, sp)
+        .iter()
+        .filter_map(|&s| Proof::lottery(params.n_p, params.mu, s).then(|| s))
+        .collect();
+    (dataset, Setup::new(&params))
+}
+
 pub fn bench_id(bench_name: &str, pc: usize, l: usize, sp: usize, np: usize) -> BenchmarkId {
     BenchmarkId::new(
         bench_name,

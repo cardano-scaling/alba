@@ -14,4 +14,5 @@
 pub mod utils;
 
 pub mod bounded;
+pub mod decentralised;
 pub mod prehashed;

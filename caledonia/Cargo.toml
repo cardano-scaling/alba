@@ -25,3 +25,7 @@ harness = false
 [[bench]]
 name = "bounded_step"
 harness = false
+
+[[bench]]
+name = "decentralised_time"
+harness = false
