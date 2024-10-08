@@ -1,6 +1,6 @@
 //! Rust implementation of ALBA's bounded DFS scheme using Blake2b as hash
 //! function.
-use rayon::prelude::*;
+use crate::utils::ToBytes;
 use std::sync::atomic::{self, AtomicUsize};
 
 extern crate core;
@@ -9,10 +9,7 @@ use crate::utils;
 use std::f64::consts::E;
 use std::sync::Arc;
 
-const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
-
-type Data = [u8; DATA_LENGTH];
 type Hash = [u8; DIGEST_SIZE];
 
 /// Setup input parameters
@@ -179,13 +176,13 @@ impl Setup {
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round {
+pub struct Round<T> {
     /// Proof counter
     v: usize,
     /// Proof 2nd counter
     t: usize,
     // Round candidate tuple
-    s_list: Vec<Data>,
+    s_list: Vec<T>,
     /// Round candidate hash
     h: Hash,
     /// Round candidate hash mapped to [1, n_p]
@@ -194,21 +191,24 @@ pub struct Round {
     n_p: usize,
 }
 
-impl Round {
+impl<T> Round<T>
+where
+    T: Copy + Clone + ToBytes,
+{
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return (digest, utils::oracle(&digest, n_p));
     }
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: usize, t: usize, n_p: usize) -> Round {
+    pub fn new(v: usize, t: usize, n_p: usize) -> Self {
         let mut data = Vec::new();
-        data.push(v.to_ne_bytes().to_vec());
-        data.push(t.to_ne_bytes().to_vec());
-        let (h, h_usize) = Round::h1(data, n_p);
+        data.push(v.to_be_bytes().to_vec());
+        data.push(t.to_be_bytes().to_vec());
+        let (h, h_usize) = Self::h1(data, n_p);
         Round {
             v,
             t,
@@ -221,13 +221,13 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: Data) -> Round {
+    pub fn update(r: &Self, s: T) -> Self {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let mut data = Vec::new();
         data.push(r.h.clone().to_vec());
-        data.push(s.to_vec());
-        let (h, h_usize) = Round::h1(data, r.n_p);
+        data.push(s.to_be_bytes().as_ref().to_vec());
+        let (h, h_usize) = Self::h1(data, r.n_p);
         Round {
             v: r.v,
             t: r.t,
@@ -241,16 +241,19 @@ impl Round {
 
 #[derive(Debug, Clone)]
 /// Alba proof
-pub struct Proof {
+pub struct Proof<T> {
     /// Proof counter
     r: usize,
     /// Proof 2nd counter
     d: usize,
     /// Proof tuple
-    items: Vec<Data>,
+    items: Vec<T>,
 }
 
-impl Proof {
+impl<T> Proof<T>
+where
+    T: Copy + Clone + ToBytes,
+{
     /// Returns a new proof
     fn new() -> Self {
         Proof {
@@ -261,23 +264,23 @@ impl Proof {
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: usize, s: Data) -> usize {
+    fn h0(setup: &Setup, v: usize, s: T) -> usize {
         let mut data = Vec::new();
-        data.push(v.to_ne_bytes().to_vec());
-        data.push(s.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        data.push(v.to_be_bytes().to_vec());
+        data.push(s.to_be_bytes().as_ref().to_vec());
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.n_p);
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-    fn h2(setup: &Setup, r: &Round) -> bool {
+    fn h2(setup: &Setup, r: &Round<T>) -> bool {
         let mut data = Vec::new();
-        data.push(r.v.to_ne_bytes().to_vec());
-        data.push(r.t.to_ne_bytes().to_vec());
+        data.push(r.v.to_be_bytes().to_vec());
+        data.push(r.t.to_be_bytes().to_vec());
         for s in &r.s_list {
-            data.push(s.clone().to_vec());
+            data.push(s.clone().to_be_bytes().as_ref().to_vec());
         }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.q) == 0;
     }
 
@@ -287,13 +290,13 @@ impl Proof {
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(
         setup: &Setup,
-        bins: &Vec<Vec<Data>>,
-        round: &Round,
+        bins: &Vec<Vec<T>>,
+        round: &Round<T>,
         // nb_steps: Arc<Mutex<usize>>,
         nb_steps: Arc<AtomicUsize>,
-    ) -> Option<Proof> {
+    ) -> Option<Self> {
         if round.s_list.len() == setup.u {
-            if Proof::h2(setup, round) {
+            if Self::h2(setup, round) {
                 let r = round.v;
                 let d = round.t;
                 let items = round.s_list.clone();
@@ -302,7 +305,7 @@ impl Proof {
                 return None;
             }
         }
-        let result = bins[round.h_usize].par_iter().find_map_first(|&s| {
+        let result = bins[round.h_usize].iter().find_map(|&s| {
             // if *nb_steps.lock().unwrap() == setup.b {
             if nb_steps.load(atomic::Ordering::Relaxed) == setup.d {
                 return None;
@@ -310,20 +313,20 @@ impl Proof {
 
             // *nb_steps.lock().unwrap() += 1;
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
-            Self::dfs(setup, bins, &Round::update(round, s), nb_steps.clone())
+            Self::dfs(setup, bins, &Round::<T>::update(round, s), nb_steps.clone())
         });
         return result;
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &Vec<Data>, v: usize) -> (usize, Option<Proof>) {
-        let mut bins: Vec<Vec<Data>> = Vec::new();
+    fn prove_index(setup: &Setup, set: &Vec<T>, v: usize) -> (usize, Option<Self>) {
+        let mut bins: Vec<Vec<T>> = Vec::new();
         for _ in 1..(setup.n_p + 1) {
             bins.push(Vec::new());
         }
         for &s in set.iter() {
-            bins[Proof::h0(setup, v, s)].push(s);
+            bins[Self::h0(setup, v, s)].push(s);
         }
         // let nb_steps = Arc::new(Mutex::new(0usize));
         let nb_steps = Arc::new(AtomicUsize::new(0));
@@ -334,8 +337,8 @@ impl Proof {
             }
             // *nb_steps.lock().unwrap() += 1;
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
-            let round = Round::new(v, t, setup.n_p);
-            let res = Proof::dfs(setup, &bins, &round, nb_steps.clone());
+            let round = Round::<T>::new(v, t, setup.n_p);
+            let res = Self::dfs(setup, &bins, &round, nb_steps.clone());
             if res.is_some() {
                 // return (*nb_steps.lock().unwrap(), res);
                 return (nb_steps.load(atomic::Ordering::Relaxed), res);
@@ -348,43 +351,43 @@ impl Proof {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &Vec<Data>) -> Self {
+    pub fn prove(setup: &Setup, set: &Vec<T>) -> Self {
         for v in 0..setup.r {
-            if let (_, Some(proof)) = Proof::prove_index(setup, set, v) {
+            if let (_, Some(proof)) = Self::prove_index(setup, set, v) {
                 return proof;
             }
         }
-        return Proof::new();
+        return Self::new();
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, usize, Self) {
+    pub fn bench(setup: &Setup, set: &Vec<T>) -> (usize, usize, Self) {
         let mut nb_steps = 0;
         for v in 0..setup.r {
-            let (steps, opt) = Proof::prove_index(setup, set, v);
+            let (steps, opt) = Self::prove_index(setup, set, v);
             nb_steps += steps;
             if let Some(proof) = opt {
                 return (nb_steps, proof.r, proof);
             }
         }
-        return (nb_steps, setup.r, Proof::new());
+        return (nb_steps, setup.r, Self::new());
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
-    pub fn verify(setup: &Setup, proof: Proof) -> bool {
+    pub fn verify(setup: &Setup, proof: Self) -> bool {
         if proof.d == 0 || proof.d > setup.d || proof.r > setup.r || proof.items.len() != setup.u {
             return false;
         }
-        let r0 = Round::new(proof.r, proof.d, setup.n_p);
+        let r0 = Round::<T>::new(proof.r, proof.d, setup.n_p);
         let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
             (
-                b && r.h_usize == Proof::h0(setup, proof.r, s),
-                Round::update(&r, s),
+                b && r.h_usize == Self::h0(setup, proof.r, s),
+                Round::<T>::update(&r, s),
             )
         });
-        return b && Proof::h2(setup, &round);
+        return b && Self::h2(setup, &round);
     }
 }
 
@@ -446,8 +449,8 @@ mod tests {
         let nb_tests = 1_000;
         let set_size = 1_000;
         for _t in 0..nb_tests {
-            let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = utils::gen_items::<DATA_LENGTH>(seed, set_size);
+            let seed = rng.next_u32().to_be_bytes().to_vec();
+            let s_p = utils::gen_items::<32>(seed, set_size);
             let params = Params {
                 lambda_sec: 10,
                 lambda_rel: 10,
@@ -475,7 +478,7 @@ mod tests {
                 items: proof.items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_r));
-            let proof_item = Proof {
+            let proof_item: Proof<[u8; 32]> = Proof {
                 r: proof.r,
                 d: proof.d,
                 items: Vec::new(),

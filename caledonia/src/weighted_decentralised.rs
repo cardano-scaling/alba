@@ -24,7 +24,7 @@ impl IndexedData {
         let mut data = Vec::new();
         data.push(self.data.to_vec());
         data.push(self.index.to_be_bytes().to_vec());
-        return utils::combine_hashes::<DIGEST_SIZE>(data);
+        return utils::hash::<DIGEST_SIZE>(data);
     }
 }
 
@@ -77,7 +77,8 @@ pub fn prove_sortition(
 ) -> (VotingWeight, VrfProof) {
     let proof = VrfProof::generate(public_key, secret_key, &msg);
     // We hash to 64 bits as the largest float is f64
-    let hash = utils::hash_bytes::<8>(&proof.verify(public_key, &msg).unwrap());
+    let to_hash = vec![proof.verify(public_key, &msg).unwrap().to_vec()];
+    let hash = utils::hash::<8>(to_hash);
     let i = sortition_binomial_cdf_walk(
         voter_stake,
         expected_size as f64 / total_stake as f64,
@@ -96,7 +97,7 @@ pub fn verify_sortition(
     expected_size: usize,
 ) -> VotingWeight {
     let hash = match proof.verify(public_key, &msg) {
-        Ok(h) => utils::hash_bytes::<8>(&h),
+        Ok(h) => utils::hash::<8>(vec![h.to_vec()]),
         Err(_) => return 0,
     };
     return sortition_binomial_cdf_walk(
@@ -278,7 +279,7 @@ impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return (digest, utils::oracle(&digest, n_p));
     }
 
@@ -388,7 +389,7 @@ impl Proof {
         data.push(v.to_ne_bytes().to_vec());
         data.push(is.data.to_vec());
         data.push(is.index.to_be_bytes().to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -401,7 +402,7 @@ impl Proof {
             data.push(vd.indexed_data.data.to_vec());
             data.push(vd.indexed_data.index.to_be_bytes().to_vec());
         }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.q) == 0;
     }
 

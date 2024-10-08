@@ -89,7 +89,7 @@ impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
-        let digest = utils::combine_hashes(data);
+        let digest = utils::hash(data);
         return (digest, utils::oracle(&digest, n_p));
     }
 
@@ -141,7 +141,7 @@ impl Proof {
     fn h0(setup: &Setup, s: Data) -> usize {
         let mut data = Vec::new();
         data.push(s.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.n_p);
     }
 
@@ -152,7 +152,7 @@ impl Proof {
         for s in &r.s_list {
             data.push(s.clone().to_vec());
         }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::hash::<DIGEST_SIZE>(data);
         return utils::oracle(&digest, setup.q) == 0;
     }
 
