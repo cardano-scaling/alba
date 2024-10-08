@@ -21,3 +21,7 @@ criterion = { version = "0.5.1", features = ["html_reports"] }
 [[bench]]
 name = "centralised_time"
 harness = false
+
+[[bench]]
+name = "centralised_step"
+harness = false
