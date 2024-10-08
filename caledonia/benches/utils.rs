@@ -4,9 +4,13 @@ use criterion::{
 };
 
 use rand_chacha::ChaCha20Rng;
-use rand_core::RngCore;
+use rand_core::{RngCore, SeedableRng};
 
-use caledonia::utils::gen_items;
+use caledonia::{
+    utils::{gen_items, gen_weighted_items},
+    weighted_decentralised::VerifiableData,
+};
+use vrf_dalek::vrf::{PublicKey, SecretKey};
 
 pub fn setup_bounded_wrapper(
     rng: &mut ChaCha20Rng,
@@ -54,6 +58,49 @@ pub fn setup_decentralised_wrapper(
         .filter_map(|&s| Proof::lottery(params.n_p, params.mu, s).then(|| s))
         .collect();
     (dataset, Setup::new(&params))
+}
+
+pub fn setup_weighted_wrapper(
+    rng: &mut ChaCha20Rng,
+    l: usize,
+    sp: usize,
+    voters: usize,
+    np: usize,
+) -> (
+    Vec<VerifiableData>,
+    caledonia::weighted_decentralised::Setup,
+) {
+    use caledonia::weighted_decentralised::*;
+    let seed_u32 = rng.next_u32();
+    let seed = seed_u32.to_ne_bytes().to_vec();
+    let dataset = gen_weighted_items(seed, sp, voters);
+    let params = Params::new(
+        l,
+        l,
+        (np * sp).div_ceil(100),
+        ((100 - np) * sp).div_ceil(100),
+    );
+    let setup = Setup::new(&params);
+
+    let mut verifiable_set = Vec::new();
+    let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
+    for spi in dataset {
+        let ski = SecretKey::generate(&mut rng);
+        let pki = PublicKey::from(&ski);
+        let (data, stake) = spi;
+        let votes = Proof::prove_lottery(setup.n_p_lottery, setup.mu, data, &ski, &pki, stake);
+        for v in votes {
+            verifiable_set.push(v);
+        }
+    }
+
+    let params = Params::new(
+        l,
+        l,
+        (np * sp).div_ceil(100),
+        ((100 - np) * sp).div_ceil(100),
+    );
+    (verifiable_set, Setup::new(&params))
 }
 
 pub fn bench_id(bench_name: &str, pc: usize, l: usize, sp: usize, np: usize) -> BenchmarkId {
