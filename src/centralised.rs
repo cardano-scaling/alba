@@ -1,12 +1,16 @@
-//! Rust implementation of ALBA's bounded DFS scheme using Blake2b as hash
-//! function.
+//! ALBA's bounded DFS scheme using Blake2b as hash function.
+//! (c.f. Section 3.2.2 of Alba paper)
+
+use rayon::prelude::*;
+use std::sync::atomic::{self, AtomicUsize};
 
 extern crate core;
 use crate::utils;
 
 use std::f64::consts::E;
+use std::sync::Arc;
 
-const DATA_LENGTH: usize = 64;
+const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
 
 type Data = [u8; DATA_LENGTH];
@@ -286,7 +290,7 @@ impl Proof {
         setup: &Setup,
         bins: &Vec<Vec<Data>>,
         round: &Round,
-        nb_steps: &mut usize,
+        nb_steps: Arc<AtomicUsize>,
     ) -> Option<Proof> {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
@@ -298,12 +302,12 @@ impl Proof {
                 return None;
             }
         }
-        let result = bins[round.h_usize].iter().find_map(|&s| {
-            if *nb_steps == setup.b {
+        let result = bins[round.h_usize].par_iter().find_map_first(|&s| {
+            if nb_steps.load(atomic::Ordering::Relaxed) == setup.d {
                 return None;
             }
-            *nb_steps += 1;
-            Self::dfs(setup, bins, &Round::update(round, s), nb_steps)
+            nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
+            Self::dfs(setup, bins, &Round::update(round, s), nb_steps.clone())
         });
         return result;
     }
@@ -318,19 +322,19 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        let mut nb_steps = 0;
+        let nb_steps = Arc::new(AtomicUsize::new(0));
         for t in 1..(setup.d + 1) {
-            if nb_steps == setup.b {
+            if nb_steps.load(atomic::Ordering::Relaxed) == setup.b {
                 return (0, None);
             }
-            nb_steps += 1;
+            nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
             let round = Round::new(v, t, setup.n_p);
-            let res = Proof::dfs(setup, &bins, &round, &mut nb_steps);
+            let res = Proof::dfs(setup, &bins, &round, nb_steps.clone());
             if res.is_some() {
-                return (nb_steps, res);
+                return (nb_steps.load(atomic::Ordering::Relaxed), res);
             }
         }
-        return (nb_steps, None);
+        return (nb_steps.load(atomic::Ordering::Relaxed), None);
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
@@ -347,16 +351,16 @@ impl Proof {
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, Self) {
+    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, usize, Self) {
         let mut nb_steps = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
             nb_steps += steps;
             if let Some(proof) = opt {
-                return (nb_steps, proof);
+                return (nb_steps, proof.r, proof);
             }
         }
-        return (nb_steps, Proof::new());
+        return (nb_steps, setup.r, Proof::new());
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
@@ -488,79 +492,6 @@ mod tests {
                 items: wrong_items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_itembis));
-        }
-    }
-
-    #[test]
-    fn test_prove() {
-        use std::time::Instant;
-        let npnf = [
-            // (99_000, 1_000),  // high
-            // (95_000, 5_000),  // medium
-            // (80_000, 20_000), // low
-            // (66_000, 34_000),
-            (60_000, 40_000),
-        ];
-        let lambdas = [80];
-        let nb_tests = 100;
-        let mut rng = ChaCha20Rng::from_seed([0u8; 32]);
-        for (n_p, n_f) in npnf {
-            for lambda in lambdas {
-                let mut u = 0;
-                let mut time_setup = 0;
-                let mut time_prove = 0;
-                let mut time_verify = 0;
-                let mut max_bench: usize = 0;
-                let mut mean_bench: usize = 0;
-                let mut max_retrial: usize = 0;
-                let mut mean_retrial: usize = 0;
-                for _t in 0..nb_tests {
-                    let seed_u32 = rng.next_u32();
-                    let seed = seed_u32.to_ne_bytes().to_vec();
-                    let s_p: Vec<Data> = utils::gen_items::<DATA_LENGTH>(seed, n_p);
-                    let params = Params {
-                        lambda_sec: lambda,
-                        lambda_rel: lambda,
-                        n_p,
-                        n_f,
-                    };
-                    // Setup
-                    let start_setup = Instant::now();
-                    let setup = Setup::new(&params);
-                    let end_setup = start_setup.elapsed();
-                    time_setup += end_setup.as_nanos();
-                    u = setup.u;
-                    // Prove
-                    let start_prove = Instant::now();
-                    let (steps, proof) = Proof::bench(&setup, &s_p);
-                    let end_prove = start_prove.elapsed();
-                    time_prove += end_prove.as_nanos();
-                    max_bench = std::cmp::max(max_bench, steps);
-                    mean_bench += steps;
-                    max_retrial = std::cmp::max(max_retrial, proof.r);
-                    mean_retrial += proof.r;
-                    // Verify
-                    let start_verify = Instant::now();
-                    let b = Proof::verify(&setup, proof.clone());
-                    let end_verify = start_verify.elapsed();
-                    time_verify += end_verify.as_nanos();
-                    assert!(b);
-                }
-                println!(
-                    "(n_p={}, n_f={}, λ={}): \t u={}, \t setup:{}, \t prove:{}, \t verify:{}, \t max steps:{}, \t mean steps:{}, \t max retrial:{}, \t mean retrial:{}",
-                    utils::format_nb(n_p),
-                    utils::format_nb(n_f),
-                    utils::format_nb(lambda),
-                    utils::format_nb(u),
-                    utils::format_time(time_setup / nb_tests),
-                    utils::format_time(time_prove / nb_tests),
-                    utils::format_time(time_verify / nb_tests),
-                    utils::format_nb(max_bench),
-                    utils::format_nb((mean_bench as u128 / nb_tests) as usize),
-                    max_retrial,
-                    mean_retrial as u128 / nb_tests,
-                );
-            }
         }
     }
 }
