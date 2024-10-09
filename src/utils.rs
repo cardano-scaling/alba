@@ -41,27 +41,6 @@ fn mod_power_of_2(hash: &[u8], n: usize) -> usize {
     (n - 1) & r
 }
 
-/// Compute the Probability Mass Function (PMF) of a Binomial Distribution B(n,p)
-pub fn bin_pmf(n: usize, k: usize, p: f64) -> f64 {
-    // Compute the binomial coefficient (k out of n)
-    fn bin_coeff(n: usize, k: usize) -> usize {
-        if k == 0 {
-            return 1;
-        };
-        ((n as u128 * bin_coeff(n - 1, k - 1) as u128) / k as u128) as usize
-    }
-    let coeff = bin_coeff(n, k) as f64;
-    coeff * p.powi(k as i32) * (1f64 - p).powi((n - k) as i32)
-}
-
-/// Compute the discrete Cumulative Distribution Function (CDF) of a Binomial Distribution B(n,p)
-pub fn bin_cdf(n: usize, k: usize, p: f64) -> f64 {
-    if k == n {
-        return 1.0;
-    };
-    (0..=k).map(|i| bin_pmf(n, i, p)).sum()
-}
-
 // Hash helpers
 
 /// Return a N-byte long hash of the given data
