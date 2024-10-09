@@ -290,7 +290,6 @@ impl Proof {
         setup: &Setup,
         bins: &Vec<Vec<Data>>,
         round: &Round,
-        // nb_steps: Arc<Mutex<usize>>,
         nb_steps: Arc<AtomicUsize>,
     ) -> Option<Proof> {
         if round.s_list.len() == setup.u {
@@ -304,12 +303,9 @@ impl Proof {
             }
         }
         let result = bins[round.h_usize].par_iter().find_map_first(|&s| {
-            // if *nb_steps.lock().unwrap() == setup.b {
             if nb_steps.load(atomic::Ordering::Relaxed) == setup.d {
                 return None;
             }
-
-            // *nb_steps.lock().unwrap() += 1;
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
             Self::dfs(setup, bins, &Round::update(round, s), nb_steps.clone())
         });
@@ -326,23 +322,18 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        // let nb_steps = Arc::new(Mutex::new(0usize));
         let nb_steps = Arc::new(AtomicUsize::new(0));
         for t in 1..(setup.d + 1) {
-            // if *nb_steps.lock().unwrap()
             if nb_steps.load(atomic::Ordering::Relaxed) == setup.b {
                 return (0, None);
             }
-            // *nb_steps.lock().unwrap() += 1;
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
             let round = Round::new(v, t, setup.n_p);
             let res = Proof::dfs(setup, &bins, &round, nb_steps.clone());
             if res.is_some() {
-                // return (*nb_steps.lock().unwrap(), res);
                 return (nb_steps.load(atomic::Ordering::Relaxed), res);
             }
         }
-        // return (*nb_steps.lock().unwrap(), None);
         return (nb_steps.load(atomic::Ordering::Relaxed), None);
     }
 
