@@ -53,12 +53,12 @@ pub fn oracle_binomial(hash: &[u8], q: f64) -> bool {
         let difference = q - (x as f64 / y as f64);
         difference >= 1.0 / epsilon_fail as f64 || difference < 0.0
     } {
-        y = y * 2;
+        y *= 2;
         x = (q * (y as f64)).round() as usize;
     }
     // Output i in [0; y-1] from hash
     assert!(8 * hash.len() >= (y as f32).log2() as usize);
-    let i = from_bytes_le(&hash) & (y - 1);
+    let i = from_bytes_le(hash) & (y - 1);
     // Return true if i < x
     i < x
 }
@@ -105,8 +105,7 @@ pub fn combine_hashes<const N: usize>(hash_list: Vec<Vec<u8>>) -> [u8; N] {
 pub fn gen_items<const N: usize>(seed: Vec<u8>, set_size: usize) -> Vec<[u8; N]> {
     let mut s_p = Vec::with_capacity(set_size);
     for b in 0..set_size {
-        let mut data = Vec::new();
-        data.push(seed.clone());
+        let mut data = vec![seed.clone()];
         data.push(b.to_ne_bytes().to_vec());
         let item = combine_hashes::<N>(data);
         s_p.push(item);

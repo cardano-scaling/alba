@@ -60,9 +60,9 @@ impl Params {
 
         let lrel2 = lrel.min(s2);
         if (u as f64) < lrel2 {
-            return (Cases::Mid, u as usize);
+            (Cases::Mid, u as usize)
         } else {
-            return (Cases::High, u as usize);
+            (Cases::High, u as usize)
         }
     }
 }
@@ -100,7 +100,7 @@ impl Setup {
                         return true;
                     }
                 }
-                return false;
+                false
             }
             let mut w: f64 = u;
             while !factorial_check(w, l) {
@@ -141,7 +141,7 @@ impl Setup {
             // Case 3, Theorem 14, ie  n_p >= λ^3
             let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
             assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
-            return Setup {
+            Setup {
                 n_p: params.n_p,
                 u,
                 r: (lambda_rel / lambda_rel2).ceil() as usize,
@@ -152,7 +152,7 @@ impl Setup {
                     + d
                     + u_f64)
                     .floor() as usize,
-            };
+            }
         } else {
             // Case 2, Theorem 13, ie λ^3 > n_p > λ^2
             let lambda_rel1 = lambda_rel.min(s1);
@@ -161,7 +161,7 @@ impl Setup {
             assert!(n_p_f64 >= d * d / (9.0 * lbar));
 
             let w = compute_w(u_f64, lambda_rel1);
-            return Setup {
+            Setup {
                 n_p: params.n_p,
                 u,
                 r: (lambda_rel / lambda_rel1).ceil() as usize,
@@ -173,7 +173,7 @@ impl Setup {
                     * u_f64
                     + d)
                     .floor() as usize,
-            };
+            }
         }
     }
 }
@@ -200,21 +200,20 @@ impl Round {
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return (digest, utils::oracle_uniform(&digest, n_p));
+        (digest, utils::oracle_uniform(&digest, n_p))
     }
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
     pub fn new(v: usize, t: usize, n_p: usize) -> Round {
-        let mut data = Vec::new();
-        data.push(v.to_ne_bytes().to_vec());
+        let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(t.to_ne_bytes().to_vec());
         let (h, h_usize) = Round::h1(data, n_p);
         Round {
             v,
             t,
-            s_list: Vec::new(),
-            h: h,
+            s_list: vec![],
+            h,
             h_usize,
             n_p,
         }
@@ -225,15 +224,14 @@ impl Round {
     pub fn update(r: &Round, s: Data) -> Round {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let mut data = Vec::new();
-        data.push(r.h.clone().to_vec());
+        let mut data = vec![r.h.clone().to_vec()];
         data.push(s.to_vec());
         let (h, h_usize) = Round::h1(data, r.n_p);
         Round {
             v: r.v,
             t: r.t,
             s_list,
-            h: h,
+            h,
             h_usize,
             n_p: r.n_p,
         }
@@ -257,29 +255,28 @@ impl Proof {
         Proof {
             r: 0,
             d: 0,
-            items: Vec::new(),
+            items: vec![],
         }
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     fn h0(setup: &Setup, v: usize, s: Data) -> usize {
-        let mut data = Vec::new();
-        data.push(v.to_ne_bytes().to_vec());
+        let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return utils::oracle_uniform(&digest, setup.n_p);
+        utils::oracle_uniform(&digest, setup.n_p)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
     fn h2(setup: &Setup, r: &Round) -> bool {
-        let mut data = Vec::new();
+        let mut data = vec![];
         data.push(r.v.to_ne_bytes().to_vec());
         data.push(r.t.to_ne_bytes().to_vec());
         for s in &r.s_list {
             data.push(s.clone().to_vec());
         }
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return utils::oracle_binomial(&digest, setup.q);
+        utils::oracle_binomial(&digest, setup.q)
     }
 
     /// Depth-first search which goes through all potential round candidates
@@ -309,15 +306,15 @@ impl Proof {
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
             Self::dfs(setup, bins, &Round::update(round, s), nb_steps.clone())
         });
-        return result;
+        result
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &Vec<Data>, v: usize) -> (usize, Option<Proof>) {
-        let mut bins: Vec<Vec<Data>> = Vec::new();
+    fn prove_index(setup: &Setup, set: &[Data], v: usize) -> (usize, Option<Proof>) {
+        let mut bins: Vec<Vec<Data>> = vec![];
         for _ in 1..(setup.n_p + 1) {
-            bins.push(Vec::new());
+            bins.push(vec![]);
         }
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
@@ -334,24 +331,24 @@ impl Proof {
                 return (nb_steps.load(atomic::Ordering::Relaxed), res);
             }
         }
-        return (nb_steps.load(atomic::Ordering::Relaxed), None);
+        (nb_steps.load(atomic::Ordering::Relaxed), None)
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &Vec<Data>) -> Self {
+    pub fn prove(setup: &Setup, set: &[Data]) -> Self {
         for v in 0..setup.r {
             if let (_, Some(proof)) = Proof::prove_index(setup, set, v) {
                 return proof;
             }
         }
-        return Proof::new();
+        Proof::new()
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &Vec<Data>) -> (usize, usize, Self) {
+    pub fn bench(setup: &Setup, set: &[Data]) -> (usize, usize, Self) {
         let mut nb_steps = 0;
         for v in 0..setup.r {
             let (steps, opt) = Proof::prove_index(setup, set, v);
@@ -360,7 +357,7 @@ impl Proof {
                 return (nb_steps, proof.r, proof);
             }
         }
-        return (nb_steps, setup.r, Proof::new());
+        (nb_steps, setup.r, Proof::new())
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
@@ -376,7 +373,7 @@ impl Proof {
                 Round::update(&r, s),
             )
         });
-        return b && Proof::h2(setup, &round);
+        b && Proof::h2(setup, &round)
     }
 }
 
@@ -393,7 +390,7 @@ mod tests {
         let pows: Vec<u32> = (2..10).collect();
         let sps: Vec<usize> = pows.iter().map(|&i| 10_u32.pow(i) as usize).collect();
         let ratios = [60, 66, 80, 95, 99];
-        let mut params = Vec::new();
+        let mut params = vec![];
         for l in lambdas {
             for &sp in &sps {
                 for r in ratios {
@@ -407,9 +404,9 @@ mod tests {
             }
         }
 
-        let mut smalls = Vec::new();
-        let mut mids = Vec::new();
-        let mut highs = Vec::new();
+        let mut smalls = vec![];
+        let mut mids = vec![];
+        let mut highs = vec![];
         for p in params {
             match Params::which_case(&p) {
                 (Cases::Small, u) => smalls.push((p.clone(), u)),
@@ -470,7 +467,7 @@ mod tests {
             let proof_item = Proof {
                 r: proof.r,
                 d: proof.d,
-                items: Vec::new(),
+                items: vec![],
             };
             assert!(!Proof::verify(&setup, proof_item));
             let mut wrong_items = proof.items.clone();
