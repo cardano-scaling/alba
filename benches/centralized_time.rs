@@ -3,13 +3,13 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
 use std::time::{Duration, Instant};
 
-use caledonia::centralised::Proof;
+use alba::centralized::Proof;
 
 pub mod criterion_helpers;
 pub mod utils;
 
 fn prove(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], n_f: &[usize]) {
-    let mut group = c.benchmark_group("Centralised".to_string());
+    let mut group = c.benchmark_group("centralized".to_string());
 
     fn prove_duration(
         l: usize,
@@ -24,7 +24,7 @@ fn prove(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], n_f
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) =
-                utils::setup_centralised_wrapper(&mut rng, l, sp, np, nf);
+                utils::setup_centralized_wrapper(&mut rng, l, sp, np, nf);
             dataset.truncate(truncate_size);
             // Bench
             let start = Instant::now();
@@ -68,7 +68,7 @@ fn prove(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], n_f
 }
 
 fn verify(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], n_f: &[usize]) {
-    let mut group = c.benchmark_group("Centralised".to_string());
+    let mut group = c.benchmark_group("centralized".to_string());
 
     fn verify_duration(
         l: usize,
@@ -83,7 +83,7 @@ fn verify(c: &mut Criterion, lambdas: &[usize], s_p: &[usize], n_p: &[usize], n_
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) =
-                utils::setup_centralised_wrapper(&mut rng, l, sp, np, nf);
+                utils::setup_centralized_wrapper(&mut rng, l, sp, np, nf);
             dataset.truncate(truncate_size);
             // Prove
             let proof = Proof::prove(&bench_setup, &dataset);
