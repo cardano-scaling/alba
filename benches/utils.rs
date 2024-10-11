@@ -1,16 +1,16 @@
 use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
 
-use caledonia::utils::gen_items;
+use alba::utils::gen_items;
 
-pub fn setup_centralised_wrapper(
+pub fn setup_centralized_wrapper(
     rng: &mut ChaCha20Rng,
     l: usize,
     sp: usize,
     np: usize,
     nf: usize,
-) -> (Vec<[u8; 32]>, caledonia::centralised::Setup) {
-    use caledonia::centralised::*;
+) -> (Vec<[u8; 32]>, alba::centralized::Setup) {
+    use alba::centralized::*;
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
     let dataset: Vec<[u8; 32]> = gen_items(seed, sp);

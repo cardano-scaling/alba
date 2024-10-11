@@ -2,4 +2,4 @@
 //! (ALBA, <https://eprint.iacr.org/2023/1655.pdf>).
 pub mod utils;
 
-pub mod centralised;
+pub mod centralized;
