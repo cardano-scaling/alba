@@ -1,5 +1,5 @@
 [package]
-name = "caledonia"
+name = "alba"
 version = "0.1.0"
 edition = "2021"
 description = "A Rust implementation of Approximate Lower Bound Arguments (ALBAs)."
@@ -19,9 +19,9 @@ rand_chacha = "0.3.1"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]
-name = "centralised_time"
+name = "centralized_time"
 harness = false
 
 [[bench]]
-name = "centralised_step"
+name = "centralized_step"
 harness = false

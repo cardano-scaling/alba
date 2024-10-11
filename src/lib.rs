@@ -8,9 +8,9 @@
 //! The paper presents several schemes and optimizations. The basic scheme is
 //! enhanced in the "prehashed" version thanks to sorting Sp with a balls and
 //! bins sorting algorithm reducing the number of hashes done per round. A
-//! lottery scheme is also introduced to support Alba in a decentralised
+//! lottery scheme is also introduced to support Alba in a decentralized
 //! settings as well as a modification to use PRF in the CRS settings instead of
 //! using the ROM.
 pub mod utils;
 
-pub mod centralised;
+pub mod centralized;
