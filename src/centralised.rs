@@ -78,8 +78,8 @@ pub struct Setup {
     pub r: usize,
     /// Proof max 2nd counter
     pub d: usize,
-    /// Inverse of probability p_q
-    pub q: usize,
+    /// Probability q
+    pub q: f64,
     /// Computation bound
     pub b: usize,
 }
@@ -132,7 +132,7 @@ impl Setup {
                 u,
                 r: params.lambda_rel,
                 d: d as usize,
-                q: (2.0 * ln12 / d).recip().ceil() as usize,
+                q: (2.0 * ln12 / d),
                 b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as usize,
             };
         }
@@ -146,7 +146,7 @@ impl Setup {
                 u,
                 r: (lambda_rel / lambda_rel2).ceil() as usize,
                 d: d as usize,
-                q: (2.0 * (lambda_rel2 + 2.0) / (d * loge)).recip().ceil() as usize,
+                q: (2.0 * (lambda_rel2 + 2.0) / (d * loge)),
                 b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
                     * (3.0 * u_f64 * d / 4.0)
                     + d
@@ -166,7 +166,7 @@ impl Setup {
                 u,
                 r: (lambda_rel / lambda_rel1).ceil() as usize,
                 d: d as usize,
-                q: (2.0 * lbar / d).recip().ceil() as usize,
+                q: (2.0 * lbar / d).recip(),
                 b: (((w * lbar) / d + 1.0)
                     * E.powf(2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w)
                     * d
@@ -200,7 +200,7 @@ impl Round {
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return (digest, utils::oracle(&digest, n_p));
+        return (digest, utils::oracle_uniform(&digest, n_p));
     }
 
     /// Output a round from a proof counter and n_p
@@ -267,7 +267,7 @@ impl Proof {
         data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return utils::oracle(&digest, setup.n_p);
+        return utils::oracle_uniform(&digest, setup.n_p);
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
@@ -279,7 +279,7 @@ impl Proof {
             data.push(s.clone().to_vec());
         }
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        return utils::oracle(&digest, setup.q) == 0;
+        return utils::oracle_binomial(&digest, setup.q);
     }
 
     /// Depth-first search which goes through all potential round candidates
