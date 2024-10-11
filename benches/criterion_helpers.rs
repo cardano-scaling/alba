@@ -1,6 +1,6 @@
 use criterion::{
     measurement::{Measurement, ValueFormatter},
-    BenchmarkId, Throughput,
+    BenchmarkId, Criterion, Throughput,
 };
 
 // Criterion helpers
@@ -15,8 +15,49 @@ pub fn bench_id(
 ) -> BenchmarkId {
     BenchmarkId::new(
         bench_name,
-        format!("Security parameter: {l}, Sp:{sp} ({pc}%), n_p:{np}, n_f:{nf}"),
+        format!("(λ: {l}, Sp:{sp} ({pc}%), n_p:{np}, n_f:{nf})"),
     )
+}
+
+pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
+    c: &mut Criterion<T>,
+    lambdas: &[usize],
+    s_p: &[usize],
+    n_p: &[usize],
+    n_f: &[usize],
+    group_name: String,
+    bench_name: String,
+    f: &dyn Fn(usize, usize, usize, usize, usize, u64) -> V,
+) {
+    let mut group = c.benchmark_group(group_name);
+
+    for &l in lambdas {
+        for &sp in s_p {
+            for &np in n_p {
+                for &nf in n_f {
+                    // Benchmark where the prover only has access to np percent elements of Sp,
+                    // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
+                    let low = (sp * np).div_ceil(100);
+                    group.bench_function(bench_id(&bench_name, np, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, low, n))
+                    });
+
+                    // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
+                    let mean = (100 + np).div_ceil(2);
+                    let mid = (sp + low).div_ceil(2);
+                    group.bench_function(bench_id(&bench_name, mean, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, mid, n))
+                    });
+
+                    // Benchmark where the prover only has access to all elements of Sp
+                    group.bench_function(bench_id(&bench_name, 100, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, sp, n))
+                    });
+                }
+            }
+        }
+    }
+    group.finish();
 }
 
 // Measurements
