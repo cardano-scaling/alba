@@ -90,7 +90,7 @@ impl Setup {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = 0.5f64.powf(l);
-                let factors: Vec<u64> = (1..=(w as u64 + 1)).rev().collect();
+                let factors: Vec<u64> = (1..=(w as u64 + 2)).rev().collect();
                 let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
                     / (E * (w + 2.0 - E.powf(1.0 / w)));
 
@@ -313,19 +313,19 @@ impl Proof {
     /// candidate is found within the setup.b steps.
     fn prove_index(setup: &Setup, set: &[Data], v: usize) -> (usize, Option<Proof>) {
         let mut bins: Vec<Vec<Data>> = vec![];
-        for _ in 1..(setup.n_p + 1) {
+        for _ in 0..setup.n_p {
             bins.push(vec![]);
         }
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
         let nb_steps = Arc::new(AtomicUsize::new(0));
-        for t in 1..(setup.d + 1) {
+        for t in 0..setup.d {
             if nb_steps.load(atomic::Ordering::Relaxed) == setup.b {
                 return (0, None);
             }
             nb_steps.fetch_add(1, atomic::Ordering::Relaxed);
-            let round = Round::new(v, t, setup.n_p);
+            let round = Round::new(v, t + 1, setup.n_p);
             let res = Proof::dfs(setup, &bins, &round, nb_steps.clone());
             if res.is_some() {
                 return (nb_steps.load(atomic::Ordering::Relaxed), res);
@@ -339,7 +339,7 @@ impl Proof {
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Data]) -> Self {
         for v in 0..setup.r {
-            if let (_, Some(proof)) = Proof::prove_index(setup, set, v) {
+            if let (_, Some(proof)) = Proof::prove_index(setup, set, v + 1) {
                 return proof;
             }
         }
@@ -351,7 +351,7 @@ impl Proof {
     pub fn bench(setup: &Setup, set: &[Data]) -> (usize, usize, Self) {
         let mut nb_steps = 0;
         for v in 0..setup.r {
-            let (steps, opt) = Proof::prove_index(setup, set, v);
+            let (steps, opt) = Proof::prove_index(setup, set, v + 1);
             nb_steps += steps;
             if let Some(proof) = opt {
                 return (nb_steps, proof.r, proof);
@@ -363,7 +363,12 @@ impl Proof {
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
     pub fn verify(setup: &Setup, proof: Proof) -> bool {
-        if proof.d == 0 || proof.d > setup.d || proof.r > setup.r || proof.items.len() != setup.u {
+        if proof.r == 0
+            || proof.d == 0
+            || proof.d > setup.d
+            || proof.r > setup.r
+            || proof.items.len() != setup.u
+        {
             return false;
         }
         let r0 = Round::new(proof.r, proof.d, setup.n_p);
