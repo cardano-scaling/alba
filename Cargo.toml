@@ -27,3 +27,6 @@ path = "benches/centralized.rs"
 name = "centralized_step"
 harness = false
 path = "benches/centralized.rs"
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "./src/katex-header.html" ]
