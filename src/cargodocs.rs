@@ -3,16 +3,16 @@
 #![doc = include_str!("../cargodocs/intro.md")]
 
 #[doc = include_str!("../cargodocs/overview.md")]
-pub mod Overview{}
+pub mod overview {}
 
 #[doc = include_str!("../cargodocs/centralized.md")]
-pub mod Centralized{}
+pub mod centralized {}
 
 #[doc = include_str!("../cargodocs/lottery.md")]
-pub mod Lottery{}
+pub mod lottery {}
 
 #[doc = include_str!("../cargodocs/decentralized.md")]
-pub mod Decentralized{}
+pub mod decentralized {}
 
 #[doc = include_str!("../cargodocs/wdecentralized.md")]
-pub mod WeightedDecentralized{}
+pub mod weighted_decentralized {}
