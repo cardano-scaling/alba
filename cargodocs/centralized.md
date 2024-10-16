@@ -1,0 +1,1 @@
+Telescope construction with prehashing and bounded DFS scheme given in _Section 3.2.2_.
