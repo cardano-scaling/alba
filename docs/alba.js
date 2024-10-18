@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const n_f = document.getElementById('n_f');
   const item = document.getElementById('item');
   const proof_size = document.getElementById('proof_size');
-  const s_p = document.getElementById('s_p');
+  const n = document.getElementById('n');
   const proof_proba = document.getElementById('proof_proba');
 
   function U(n_p, n_f) {
@@ -87,7 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         x: {
           type: 'linear',
           title: {
-            text: 'S_p',
+            text: 'n',
             display: true
           },
         }
@@ -106,9 +106,10 @@ document.addEventListener('DOMContentLoaded', () => {
   function updateProofProba() {
     const n_p_v = Number(n_p.value);
     const n_f_v = Number(n_f.value);
-    const s_p_v = Number(s_p.value);
+    const n_v = Number(n.value);
     const u = U(n_p_v, n_f_v);
-    const proba = probabilityOfProof(u, n_p_v, n_f_v, s_p_v);
+    const proba = probabilityOfProof(u, n_p_v, n_f_v, n_v);
+    // expected prover time is n_p + O (u^2), we neglect the n_p part here
     proof_proba.value = proba.toExponential(4);
   }
 
@@ -124,7 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   n_p.addEventListener('change', updateChart);
   n_f.addEventListener('change', updateChart);
   item.addEventListener('change', updateChart);
-  s_p.addEventListener('change', updateProofProba);
+  n.addEventListener('change', updateProofProba);
 
   updateProofSize();
   updateProofProba();
