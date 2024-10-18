@@ -7,3 +7,5 @@ title = "ALBA"
 
 [output.html]
 mathjax-support = true
+additional-css = ["alba.css"]
+additional-js = ["alba.js", "chart.js"]
