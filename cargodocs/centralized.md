@@ -83,9 +83,3 @@ In some cases, $n_p$ may be small, which can affect the completeness and efficie
   - $r \leftarrow \lceil\lambda_{rel} / \lambda_{rel}^{(1)}\rceil$
   - $q \leftarrow \mathsf{recip}(2 \cdot \bar{\lambda} / d)$
   - $b \leftarrow ....$
-
-
-
-
-
-
