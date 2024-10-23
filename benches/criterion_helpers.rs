@@ -8,7 +8,7 @@ use criterion::{
 pub fn bench_id(
     bench_name: &str,
     pc: usize,
-    l: usize,
+    l: u32,
     sp: usize,
     np: usize,
     nf: usize,
@@ -21,13 +21,13 @@ pub fn bench_id(
 
 pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     c: &mut Criterion<T>,
-    lambdas: &[usize],
+    lambdas: &[u32],
     s_p: &[usize],
     n_p: &[usize],
     n_f: &[usize],
     group_name: String,
     bench_name: String,
-    f: &dyn Fn(usize, usize, usize, usize, usize, u64) -> V,
+    f: &dyn Fn(u32, usize, usize, usize, usize, u64) -> V,
 ) {
     let mut group = c.benchmark_group(group_name);
 

@@ -14,7 +14,7 @@ use criterion_helpers::{benchmarks, Repetitions, Steps};
 // Global variables
 const NAME: &str = "Centralized";
 // Benchmark parameters
-const L: &[usize] = &[50, 128]; // Security parameter
+const L: &[u32] = &[50, 128]; // Security parameter
 const SP: &[usize] = &[1_000]; // Size of set to lower bound
 const NP: &[usize] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
 const NF: &[usize] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
@@ -22,7 +22,7 @@ const NF: &[usize] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
 pub fn centralized_setup(
     rng: &mut ChaCha20Rng,
-    l: usize,
+    l: u32,
     sp: usize,
     np: usize,
     nf: usize,
@@ -42,7 +42,7 @@ pub fn centralized_setup(
 /// Bench the duration of both the proving and verifiying algorithm of Alba centralized
 fn time_benches(c: &mut Criterion) {
     fn prove_duration(
-        l: usize,
+        l: u32,
         sp: usize,
         np: usize,
         nf: usize,
@@ -67,7 +67,7 @@ fn time_benches(c: &mut Criterion) {
     }
 
     fn verify_duration(
-        l: usize,
+        l: u32,
         sp: usize,
         np: usize,
         nf: usize,
@@ -118,7 +118,7 @@ fn time_benches(c: &mut Criterion) {
 
 /// Bench the number of steps, i.e. DFS calls, of Alba centralized prover
 fn step_benches(c: &mut Criterion<Steps>) {
-    fn prove_steps(l: usize, sp: usize, np: usize, nf: usize, truncate_size: usize, n: u64) -> u64 {
+    fn prove_steps(l: u32, sp: usize, np: usize, nf: usize, truncate_size: usize, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_steps = 0;
         for _ in 0..n {
@@ -150,7 +150,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
 /// Bench the number of repetitions, i.e. the "r" parameter, of Alba centralized prover
 fn repetition_benches(c: &mut Criterion<Repetitions>) {
     fn prove_repetitions(
-        l: usize,
+        l: u32,
         sp: usize,
         np: usize,
         nf: usize,
