@@ -9,7 +9,7 @@ use std::{f32::consts::LOG2_E, f64::consts::E};
 const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
 
-type Data = [u8; DATA_LENGTH];
+type Element = [u8; DATA_LENGTH];
 type Hash = [u8; DIGEST_SIZE];
 
 /// Setup input parameters
@@ -182,7 +182,7 @@ pub struct Round {
     /// Proof 2nd counter
     t: usize,
     // Round candidate tuple
-    s_list: Vec<Data>,
+    s_list: Vec<Element>,
     /// Round candidate hash
     h: Hash,
     /// Round candidate hash mapped to [1, n_p]
@@ -217,7 +217,7 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: Data) -> Round {
+    pub fn update(r: &Round, s: Element) -> Round {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let mut data = vec![r.h.clone().to_vec()];
@@ -242,7 +242,7 @@ pub struct Proof {
     /// Proof 2nd counter
     d: usize,
     /// Proof tuple
-    items: Vec<Data>,
+    items: Vec<Element>,
 }
 
 impl Proof {
@@ -256,7 +256,7 @@ impl Proof {
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: u32, s: Data) -> usize {
+    fn h0(setup: &Setup, v: u32, s: Element) -> usize {
         let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
@@ -281,7 +281,7 @@ impl Proof {
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(
         setup: &Setup,
-        bins: &Vec<Vec<Data>>,
+        bins: &Vec<Vec<Element>>,
         round: &Round,
         limit: usize,
     ) -> (usize, Option<Proof>) {
@@ -311,8 +311,8 @@ impl Proof {
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &[Data], v: u32) -> (usize, Option<Proof>) {
-        let mut bins: Vec<Vec<Data>> = vec![];
+    fn prove_index(setup: &Setup, set: &[Element], v: u32) -> (usize, Option<Proof>) {
+        let mut bins: Vec<Vec<Element>> = vec![];
         for _ in 0..setup.n_p {
             bins.push(vec![]);
         }
@@ -337,7 +337,7 @@ impl Proof {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &[Data]) -> Self {
+    pub fn prove(setup: &Setup, set: &[Element]) -> Self {
         for v in 0..setup.r {
             if let (_, Some(proof)) = Proof::prove_index(setup, set, v + 1) {
                 return proof;
@@ -348,7 +348,7 @@ impl Proof {
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &[Data]) -> (usize, u32, Self) {
+    pub fn bench(setup: &Setup, set: &[Element]) -> (usize, u32, Self) {
         let mut limit = 0;
         for v in 0..setup.r {
             let (l, opt) = Proof::prove_index(setup, set, v + 1);
