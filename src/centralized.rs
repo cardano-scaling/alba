@@ -194,7 +194,11 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(data: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
+    fn h1(input: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
+        let mut data = vec!["Telescope-H1".as_bytes().to_vec()];
+        for i in input {
+            data.push(i);
+        }
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         (digest, utils::oracle_uniform(&digest, n_p))
     }
@@ -257,7 +261,8 @@ impl Proof {
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     fn h0(setup: &Setup, v: u32, s: Element) -> usize {
-        let mut data = vec![v.to_ne_bytes().to_vec()];
+        let mut data = vec!["Telescope-H0".as_bytes().to_vec()];
+        data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         utils::oracle_uniform(&digest, setup.n_p)
@@ -265,7 +270,7 @@ impl Proof {
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
     fn h2(setup: &Setup, r: &Round) -> bool {
-        let mut data = vec![];
+        let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
         data.push(r.v.to_ne_bytes().to_vec());
         data.push(r.t.to_ne_bytes().to_vec());
         for s in &r.s_list {
