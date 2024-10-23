@@ -283,31 +283,30 @@ impl Proof {
         setup: &Setup,
         bins: &Vec<Vec<Data>>,
         round: &Round,
-        nb_steps: usize,
+        limit: usize,
     ) -> (usize, Option<Proof>) {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
                 let r = round.v;
                 let d = round.t;
                 let items = round.s_list.clone();
-                return (nb_steps, Some(Proof { r, d, items }));
+                return (limit, Some(Proof { r, d, items }));
             } else {
-                return (nb_steps, None);
+                return (limit, None);
             }
         }
-        let mut dfs_steps = nb_steps;
+        let mut dfs_limit = limit;
         for &s in bins[round.h_usize].iter() {
-            if dfs_steps == setup.b {
-                return (dfs_steps, None);
+            if dfs_limit == setup.b {
+                return (dfs_limit, None);
             }
-            let (steps, proof_opt) =
-                Self::dfs(setup, bins, &Round::update(round, s), dfs_steps + 1);
+            let (l, proof_opt) = Self::dfs(setup, bins, &Round::update(round, s), dfs_limit + 1);
             if proof_opt.is_some() {
-                return (steps, proof_opt);
+                return (l, proof_opt);
             }
-            dfs_steps = steps;
+            dfs_limit = l;
         }
-        (dfs_steps, None)
+        (dfs_limit, None)
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
@@ -320,19 +319,19 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        let mut nb_steps = 0;
+        let mut limit = 0;
         for t in 0..setup.d {
-            if nb_steps == setup.b {
+            if limit == setup.b {
                 return (0, None);
             }
             let round = Round::new(v, t + 1, setup.n_p);
-            let (steps, res) = Proof::dfs(setup, &bins, &round, nb_steps + 1);
-            nb_steps = steps;
+            let (l, res) = Proof::dfs(setup, &bins, &round, limit + 1);
             if res.is_some() {
-                return (nb_steps, res);
+                return (l, res);
             }
+            limit = l;
         }
-        (nb_steps, None)
+        (limit, None)
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
@@ -350,15 +349,15 @@ impl Proof {
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &[Data]) -> (usize, usize, Self) {
-        let mut nb_steps = 0;
+        let mut limit = 0;
         for v in 0..setup.r {
-            let (steps, opt) = Proof::prove_index(setup, set, v + 1);
-            nb_steps += steps;
+            let (l, opt) = Proof::prove_index(setup, set, v + 1);
+            limit += l;
             if let Some(proof) = opt {
-                return (nb_steps, proof.r, proof);
+                return (limit, proof.r, proof);
             }
         }
-        (nb_steps, setup.r, Proof::new())
+        (limit, setup.r, Proof::new())
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
