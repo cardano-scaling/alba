@@ -4,7 +4,7 @@
 extern crate core;
 use crate::utils;
 
-use std::f64::consts::E;
+use std::{f32::consts::LOG2_E, f64::consts::E};
 
 const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
@@ -40,7 +40,7 @@ impl Params {
         let lrel = self.lambda_rel as f64;
         let np = self.n_p as f64;
         let nf = self.n_f as f64;
-        let loge = E.log2();
+        let loge = LOG2_E as f64;
 
         let lognpnf = (np / nf).log2();
         let u_f64 = (lsec + lrel.log2() + 5.0 - loge.log2()) / lognpnf;
@@ -82,7 +82,6 @@ pub struct Setup {
 impl Setup {
     /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
     pub fn new(params: &Params) -> Self {
-        let loge = E.log2();
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = 0.5f64.powf(l);
@@ -111,6 +110,7 @@ impl Setup {
         let lambda_rel = params.lambda_rel as f64;
         let logrel = lambda_rel.log2();
         let lambda_sec = (params.lambda_sec as f64) + logrel;
+        let loge = LOG2_E as f64;
 
         let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
         let u = u_f64 as usize;
