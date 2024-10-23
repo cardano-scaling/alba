@@ -16,9 +16,9 @@ type Hash = [u8; DIGEST_SIZE];
 #[derive(Debug, Clone)]
 pub struct Params {
     /// Soundness security parameter
-    pub lambda_sec: usize,
+    pub lambda_sec: u32,
     /// Completeness security parameter
-    pub lambda_rel: usize,
+    pub lambda_rel: u32,
     /// Approximate size of set Sp to lower bound
     pub n_p: usize,
     /// Target lower bound
@@ -71,7 +71,7 @@ pub struct Setup {
     /// Proof size (in Sp elements)
     pub u: usize,
     /// Proof max counter
-    pub r: usize,
+    pub r: u32,
     /// Proof max 2nd counter
     pub d: usize,
     /// Probability q
@@ -140,7 +140,7 @@ impl Setup {
             Setup {
                 n_p: params.n_p,
                 u,
-                r: (lambda_rel / lambda_rel2).ceil() as usize,
+                r: (lambda_rel / lambda_rel2).ceil() as u32,
                 d: d as usize,
                 q: (2.0 * (lambda_rel2 + 2.0) / (d * loge)),
                 b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
@@ -160,7 +160,7 @@ impl Setup {
             Setup {
                 n_p: params.n_p,
                 u,
-                r: (lambda_rel / lambda_rel1).ceil() as usize,
+                r: (lambda_rel / lambda_rel1).ceil() as u32,
                 d: d as usize,
                 q: (2.0 * lbar / d).recip(),
                 b: (((w * lbar) / d + 1.0)
@@ -178,7 +178,7 @@ impl Setup {
 #[derive(Debug, Clone)]
 pub struct Round {
     /// Proof counter
-    v: usize,
+    v: u32,
     /// Proof 2nd counter
     t: usize,
     // Round candidate tuple
@@ -201,7 +201,7 @@ impl Round {
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: usize, t: usize, n_p: usize) -> Round {
+    pub fn new(v: u32, t: usize, n_p: usize) -> Round {
         let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(t.to_ne_bytes().to_vec());
         let (h, h_usize) = Round::h1(data, n_p);
@@ -238,7 +238,7 @@ impl Round {
 /// Alba proof
 pub struct Proof {
     /// Proof counter
-    r: usize,
+    r: u32,
     /// Proof 2nd counter
     d: usize,
     /// Proof tuple
@@ -256,7 +256,7 @@ impl Proof {
     }
 
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: usize, s: Data) -> usize {
+    fn h0(setup: &Setup, v: u32, s: Data) -> usize {
         let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
@@ -311,7 +311,7 @@ impl Proof {
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &[Data], v: usize) -> (usize, Option<Proof>) {
+    fn prove_index(setup: &Setup, set: &[Data], v: u32) -> (usize, Option<Proof>) {
         let mut bins: Vec<Vec<Data>> = vec![];
         for _ in 0..setup.n_p {
             bins.push(vec![]);
@@ -348,7 +348,7 @@ impl Proof {
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &[Data]) -> (usize, usize, Self) {
+    pub fn bench(setup: &Setup, set: &[Data]) -> (usize, u32, Self) {
         let mut limit = 0;
         for v in 0..setup.r {
             let (l, opt) = Proof::prove_index(setup, set, v + 1);
