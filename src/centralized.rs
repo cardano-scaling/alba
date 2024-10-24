@@ -13,7 +13,7 @@ type Element = [u8; DATA_LENGTH];
 type Hash = [u8; DIGEST_SIZE];
 
 /// Setup input parameters
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Params {
     /// Soundness security parameter
     pub lambda_sec: u32,
@@ -393,51 +393,6 @@ mod tests {
     use super::*;
     use rand_chacha::ChaCha20Rng;
     use rand_core::{RngCore, SeedableRng};
-
-    #[test]
-    fn test_params() {
-        let lambdas = [10, 80, 100, 128];
-        let pows: Vec<u32> = (2..10).collect();
-        let sps: Vec<usize> = pows.iter().map(|&i| 10_u32.pow(i) as usize).collect();
-        let ratios = [60, 66, 80, 95, 99];
-        let mut params = vec![];
-        for l in lambdas {
-            for &sp in &sps {
-                for r in ratios {
-                    params.push(Params {
-                        lambda_sec: l,
-                        lambda_rel: l,
-                        n_p: (sp * r) / 100,
-                        n_f: (sp * (100 - r)) / 100,
-                    })
-                }
-            }
-        }
-
-        let mut smalls = vec![];
-        let mut mids = vec![];
-        let mut highs = vec![];
-        for p in params {
-            match Params::which_case(&p) {
-                (Cases::Small, u) => smalls.push((p.clone(), u)),
-                (Cases::Mid, u) => mids.push((p.clone(), u)),
-                (Cases::High, u) => highs.push((p.clone(), u)),
-            }
-        }
-
-        println!("------------ Small cases");
-        for s in smalls {
-            println!("{:?}", s);
-        }
-        println!("\n------------ Mid cases");
-        for s in mids {
-            println!("{:?}", s);
-        }
-        println!("\n------------ High cases");
-        for s in highs {
-            println!("{:?}", s);
-        }
-    }
 
     #[test]
     fn test_verify() {
