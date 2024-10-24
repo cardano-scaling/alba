@@ -3,4 +3,4 @@
 pub mod test_utils;
 pub mod utils;
 
-pub mod centralized;
+pub mod centralized_telescope;

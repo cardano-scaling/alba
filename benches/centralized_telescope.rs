@@ -4,7 +4,7 @@ use rand_core::{RngCore, SeedableRng};
 use std::time::{Duration, Instant};
 
 use alba::{
-    centralized::{Params, Proof, Setup},
+    centralized_telescope::{Params, Proof, Setup},
     test_utils::gen_items,
 };
 
@@ -187,22 +187,22 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
     );
 }
 
-criterion_group!(name = centralized_time;
+criterion_group!(name = centralized_telescope_time;
                  config = Criterion::default().measurement_time(Duration::from_secs(30));
                  targets = time_benches
 );
 
-criterion_group!(name = centralized_step;
+criterion_group!(name = centralized_telescope_step;
     config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30));
     targets = step_benches
 );
 
-criterion_group!(name = centralized_repetitions;
+criterion_group!(name = centralized_telescope_repetitions;
     config = Criterion::default().with_measurement(Repetitions).measurement_time(Duration::from_secs(30));
     targets = repetition_benches
 );
 
 criterion_main!(
-    centralized_time,
-    centralized_step, //centralized_repetitions
+    centralized_telescope_time,
+    centralized_telescope_step, // centralized_telescope_repetitions
 );
