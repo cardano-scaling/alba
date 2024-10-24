@@ -84,7 +84,7 @@ impl Setup {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = (-l).exp2();
-                let factors = (1..=(w as u64 + 2)).rev();
+                let factors = (1..=(w as u64 + 1)).rev();
                 let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
                     / (E * (w + 2.0 - E.powf(1.0 / w)));
 
