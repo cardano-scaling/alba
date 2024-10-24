@@ -127,7 +127,7 @@ impl Setup {
                 u,
                 r: params.lambda_rel,
                 d: d as usize,
-                q: (2.0 * ln12 / d),
+                q: 2.0 * ln12 / d,
                 b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as usize,
             };
         }
@@ -141,7 +141,7 @@ impl Setup {
                 u,
                 r: (lambda_rel / lambda_rel2).ceil() as u32,
                 d: d as usize,
-                q: (2.0 * (lambda_rel2 + 2.0) / (d * loge)),
+                q: 2.0 * (lambda_rel2 + 2.0) / (d * loge),
                 b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
                     * (3.0 * u_f64 * d / 4.0)
                     + d
@@ -161,7 +161,7 @@ impl Setup {
                 u,
                 r: (lambda_rel / lambda_rel1).ceil() as u32,
                 d: d as usize,
-                q: (2.0 * lbar / d).recip(),
+                q: 2.0 * lbar / d,
                 b: (((w * lbar) / d + 1.0)
                     * E.powf(2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w)
                     * d
