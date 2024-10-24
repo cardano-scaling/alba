@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 
 use alba::{
     centralized::{Params, Proof, Setup},
-    utils::gen_items,
+    test_utils::gen_items,
 };
 
 pub mod criterion_helpers;

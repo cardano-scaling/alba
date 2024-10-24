@@ -1,7 +1,6 @@
 //! ALBA's bounded DFS scheme using Blake2b as hash function.
 //! (c.f. Section 3.2.2 of Alba paper)
 
-extern crate core;
 use crate::utils;
 
 use std::{f32::consts::LOG2_E, f64::consts::E};
@@ -356,10 +355,10 @@ impl Proof {
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
     use rand_chacha::ChaCha20Rng;
     use rand_core::{RngCore, SeedableRng};
+    use crate::test_utils::gen_items;
 
     #[test]
     fn test_verify() {
@@ -368,7 +367,7 @@ mod tests {
         let set_size = 1_000;
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = utils::gen_items::<DATA_LENGTH>(seed, set_size);
+            let s_p = gen_items::<DATA_LENGTH>(seed, set_size);
             let params = Params {
                 lambda_sec: 10,
                 lambda_rel: 10,
