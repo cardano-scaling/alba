@@ -193,10 +193,10 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(input: Vec<Vec<u8>>, n_p: usize) -> (Hash, usize) {
+    fn h1(input: &[Vec<u8>], n_p: usize) -> (Hash, usize) {
         let mut data = vec!["Telescope-H1".as_bytes().to_vec()];
         for i in input {
-            data.push(i);
+            data.push(i.to_vec());
         }
         let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
         (digest, utils::sample_uniform(&digest, n_p))
@@ -207,7 +207,7 @@ impl Round {
     pub fn new(v: u32, t: usize, n_p: usize) -> Round {
         let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(t.to_ne_bytes().to_vec());
-        let (h, h_usize) = Round::h1(data, n_p);
+        let (h, h_usize) = Round::h1(&data, n_p);
         Round {
             v,
             t,
@@ -225,7 +225,7 @@ impl Round {
         s_list.push(s);
         let mut data = vec![r.h.clone().to_vec()];
         data.push(s.to_vec());
-        let (h, h_usize) = Round::h1(data, r.n_p);
+        let (h, h_usize) = Round::h1(&data, r.n_p);
         Round {
             v: r.v,
             t: r.t,
