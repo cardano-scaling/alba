@@ -313,7 +313,7 @@ impl Proof {
             if limit == setup.b {
                 return (0, None);
             }
-            let round = Round::new(v, t + 1, setup.n_p);
+            let round = Round::new(v, t, setup.n_p);
             let (l, res) = Proof::dfs(setup, &bins, &round, limit + 1);
             if res.is_some() {
                 return (l, res);
@@ -328,7 +328,7 @@ impl Proof {
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
         (0..setup.r).find_map(|v| {
-            let (_, proof_opt) = Proof::prove_index(setup, set, v + 1);
+            let (_, proof_opt) = Proof::prove_index(setup, set, v);
             proof_opt
         })
     }
@@ -349,12 +349,7 @@ impl Proof {
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
     pub fn verify(setup: &Setup, proof: Proof) -> bool {
-        if proof.r == 0
-            || proof.d == 0
-            || proof.d > setup.d
-            || proof.r > setup.r
-            || proof.items.len() != setup.u
-        {
+        if proof.d >= setup.d || proof.r >= setup.r || proof.items.len() != setup.u {
             return false;
         }
         let r0 = Round::new(proof.r, proof.d, setup.n_p);
@@ -392,12 +387,6 @@ mod tests {
             let setup = Setup::new(&params);
             let proof = Proof::prove(&setup, &s_p).unwrap();
             assert!(Proof::verify(&setup, proof.clone()));
-            let proof_0 = Proof {
-                r: proof.r,
-                d: 0,
-                items: proof.items.clone(),
-            };
-            assert!(!Proof::verify(&setup, proof_0));
             let proof_d = Proof {
                 r: proof.r,
                 d: proof.d.wrapping_add(1),
