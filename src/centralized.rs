@@ -241,9 +241,9 @@ impl Round {
 /// Alba proof
 pub struct Proof {
     /// Proof counter
-    r: u32,
+    v: u32,
     /// Proof 2nd counter
-    d: usize,
+    t: usize,
     /// Proof tuple
     items: Vec<Element>,
 }
@@ -278,10 +278,10 @@ impl Proof {
     ) -> (usize, Option<Proof>) {
         if round.s_list.len() == setup.u {
             if Proof::h2(setup, round) {
-                let r = round.v;
-                let d = round.t;
+                let v = round.v;
+                let t = round.t;
                 let items = round.s_list.clone();
-                return (limit, Some(Proof { r, d, items }));
+                return (limit, Some(Proof { v, t, items }));
             } else {
                 return (limit, None);
             }
@@ -339,13 +339,13 @@ impl Proof {
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
     pub fn verify(setup: &Setup, proof: Proof) -> bool {
-        if proof.d >= setup.d || proof.r >= setup.r || proof.items.len() != setup.u {
+        if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() != setup.u {
             return false;
         }
-        let r0 = Round::new(proof.r, proof.d, setup.n_p);
+        let r0 = Round::new(proof.v, proof.t, setup.n_p);
         let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
             (
-                b && r.h_usize == Proof::h0(setup, proof.r, s),
+                b && r.h_usize == Proof::h0(setup, proof.v, s),
                 Round::update(&r, s),
             )
         });
@@ -356,9 +356,9 @@ impl Proof {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::test_utils::gen_items;
     use rand_chacha::ChaCha20Rng;
     use rand_core::{RngCore, SeedableRng};
-    use crate::test_utils::gen_items;
 
     #[test]
     fn test_verify() {
@@ -378,20 +378,20 @@ mod tests {
             let proof = Proof::prove(&setup, &s_p).unwrap();
             assert!(Proof::verify(&setup, proof.clone()));
             let proof_d = Proof {
-                r: proof.r,
-                d: proof.d.wrapping_add(1),
+                v: proof.v,
+                t: proof.t.wrapping_add(1),
                 items: proof.items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_d));
             let proof_r = Proof {
-                r: proof.r.wrapping_add(1),
-                d: proof.d,
+                v: proof.v.wrapping_add(1),
+                t: proof.t,
                 items: proof.items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_r));
             let proof_item = Proof {
-                r: proof.r,
-                d: proof.d,
+                v: proof.v,
+                t: proof.t,
                 items: vec![],
             };
             assert!(!Proof::verify(&setup, proof_item));
@@ -399,8 +399,8 @@ mod tests {
             let last_item = wrong_items.pop().unwrap();
             let mut penultimate_item = wrong_items.pop().unwrap();
             let proof_itembis = Proof {
-                r: proof.r,
-                d: proof.d,
+                v: proof.v,
+                t: proof.t,
                 items: wrong_items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_itembis));
@@ -409,8 +409,8 @@ mod tests {
             wrong_items.push(penultimate_item);
             wrong_items.push(last_item);
             let proof_itembis = Proof {
-                r: proof.r,
-                d: proof.d,
+                v: proof.v,
+                t: proof.t,
                 items: wrong_items.clone(),
             };
             assert!(!Proof::verify(&setup, proof_itembis));
