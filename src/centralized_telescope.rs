@@ -108,7 +108,7 @@ impl Setup {
         let lognpnf = (n_p_f64 / n_f_f64).log2();
         let lambda_rel = params.lambda_rel as f64;
         let logrel = lambda_rel.log2();
-        let lambda_sec = (params.lambda_sec as f64) + logrel;
+        let lambda_sec = params.lambda_sec as f64;
         let loge = LOG2_E as f64;
 
         let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
