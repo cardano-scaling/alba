@@ -250,15 +250,6 @@ pub struct Proof {
 }
 
 impl Proof {
-    /// Returns a new proof
-    fn new() -> Self {
-        Proof {
-            r: 0,
-            d: 0,
-            items: vec![],
-        }
-    }
-
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     fn h0(setup: &Setup, v: u32, s: Element) -> usize {
         let mut data = vec!["Telescope-H0".as_bytes().to_vec()];
@@ -335,27 +326,24 @@ impl Proof {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
-    pub fn prove(setup: &Setup, set: &[Element]) -> Self {
-        for v in 0..setup.r {
-            if let (_, Some(proof)) = Proof::prove_index(setup, set, v + 1) {
-                return proof;
-            }
-        }
-        Proof::new()
+    pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
+        (0..setup.r).find_map(|v| {
+            let (_, proof_opt) = Proof::prove_index(setup, set, v + 1);
+            proof_opt
+        })
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &[Element]) -> (usize, u32, Self) {
-        let mut limit = 0;
-        for v in 0..setup.r {
-            let (l, opt) = Proof::prove_index(setup, set, v + 1);
-            limit += l;
-            if let Some(proof) = opt {
-                return (limit, proof.r, proof);
+    pub fn bench(setup: &Setup, set: &[Element]) -> (usize, u32, Option<Self>) {
+        (0..setup.r).fold((0, setup.r, None), |acc, v| {
+            if acc.2.is_some() {
+                acc
+            } else {
+                let (l, opt) = Proof::prove_index(setup, set, v + 1);
+                (acc.0 + l, acc.1, opt)
             }
-        }
-        (limit, setup.r, Proof::new())
+        })
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
@@ -402,7 +390,7 @@ mod tests {
                 n_f: 20,
             };
             let setup = Setup::new(&params);
-            let proof = Proof::prove(&setup, &s_p);
+            let proof = Proof::prove(&setup, &s_p).unwrap();
             assert!(Proof::verify(&setup, proof.clone()));
             let proof_0 = Proof {
                 r: proof.r,
