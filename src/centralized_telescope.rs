@@ -199,7 +199,7 @@ impl Round {
             data.push(i);
         }
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        (digest, utils::oracle_uniform(&digest, n_p))
+        (digest, utils::sample_uniform(&digest, n_p))
     }
 
     /// Output a round from a proof counter and n_p
@@ -255,7 +255,7 @@ impl Proof {
         data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        utils::oracle_uniform(&digest, setup.n_p)
+        utils::sample_uniform(&digest, setup.n_p)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
@@ -263,7 +263,7 @@ impl Proof {
         let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
         data.push(r.h.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        utils::oracle_bernouilli(&digest, setup.q)
+        utils::sample_bernouilli(&digest, setup.q)
     }
 
     /// Depth-first search which goes through all potential round candidates
