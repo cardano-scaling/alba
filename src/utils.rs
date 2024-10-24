@@ -4,8 +4,9 @@ use std::cmp::min;
 
 // Oracles
 
-/// Takes as input a hash and inverse probability $np$ and returns a
-/// uniformly distributed integer in [1, np] (c.f. Appendix B, Alba paper).
+/// Takes as input a hash and range $n$ and samples an integer from Unif(0, n).
+/// We do so by interpreting the hash as a random number an returns it modulo n
+/// (c.f. Appendix B, Alba paper).
 pub fn oracle_uniform(hash: &[u8], n: usize) -> usize {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
