@@ -264,7 +264,7 @@ impl Proof {
         let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
         data.push(r.h.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
-        utils::oracle_binomial(&digest, setup.q)
+        utils::oracle_bernouilli(&digest, setup.q)
     }
 
     /// Depth-first search which goes through all potential round candidates
