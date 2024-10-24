@@ -198,7 +198,7 @@ impl Round {
         for i in input {
             data.push(i);
         }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
         (digest, utils::sample_uniform(&digest, n_p))
     }
 
@@ -254,7 +254,7 @@ impl Proof {
         let mut data = vec!["Telescope-H0".as_bytes().to_vec()];
         data.push(v.to_ne_bytes().to_vec());
         data.push(s.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
         utils::sample_uniform(&digest, setup.n_p)
     }
 
@@ -262,7 +262,7 @@ impl Proof {
     fn h2(setup: &Setup, r: &Round) -> bool {
         let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
         data.push(r.h.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
+        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
         utils::sample_bernouilli(&digest, setup.q)
     }
 
@@ -272,7 +272,7 @@ impl Proof {
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(
         setup: &Setup,
-        bins: &Vec<Vec<Element>>,
+        bins: &[Vec<Element>],
         round: &Round,
         limit: usize,
     ) -> (usize, Option<Proof>) {
