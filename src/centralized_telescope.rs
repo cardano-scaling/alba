@@ -135,7 +135,7 @@ impl Setup {
         if u_f64 < lambda_rel2 {
             // Case 3, Theorem 14, ie  n_p >= λ^3
             let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
-            assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
+            debug_assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
             Setup {
                 n_p: params.n_p,
                 u,
@@ -153,7 +153,7 @@ impl Setup {
             let lambda_rel1 = lambda_rel.min(s1);
             let lbar = (lambda_rel1 + 7.0) / loge;
             let d = (16.0 * u_f64 * lbar).ceil();
-            assert!(n_p_f64 >= d * d / (9.0 * lbar));
+            debug_assert!(n_p_f64 >= d * d / (9.0 * lbar));
 
             let w = compute_w(u_f64, lambda_rel1);
             Setup {
