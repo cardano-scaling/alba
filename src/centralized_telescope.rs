@@ -83,8 +83,8 @@ impl Setup {
     pub fn new(params: &Params) -> Self {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
-                let bound = 0.5f64.powf(l);
-                let factors: Vec<u64> = (1..=(w as u64 + 2)).rev().collect();
+                let bound = (-l).exp2();
+                let factors = (1..=(w as u64 + 2)).rev();
                 let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
                     / (E * (w + 2.0 - E.powf(1.0 / w)));
 
@@ -162,8 +162,8 @@ impl Setup {
                 r: (lambda_rel / lambda_rel1).ceil() as u32,
                 d: d as usize,
                 q: 2.0 * lbar / d,
-                b: (((w * lbar) / d + 1.0)
-                    * E.powf(2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w)
+                b: ((w * lbar / d + 1.0)
+                    * (2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w).exp()
                     * d
                     * u_f64
                     + d)
