@@ -89,9 +89,8 @@ pub fn hash_bytes<const N: usize>(data: &[u8]) -> [u8; N] {
 /// Return a N-byte long hash of the given list of data
 pub fn combine_hashes<const N: usize>(hash_list: &[Vec<u8>]) -> [u8; N] {
     let mut hasher = Blake2bVar::new(N).expect("Failed to construct hasher!");
-    for data in hash_list.iter() {
-        hasher.update(data);
-    }
+    hash_list.iter().for_each(|h| hasher.update(h));
+
     let mut buf = [0u8; N];
     hasher
         .finalize_variable(&mut buf)
