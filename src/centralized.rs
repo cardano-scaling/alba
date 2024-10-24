@@ -271,11 +271,7 @@ impl Proof {
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
     fn h2(setup: &Setup, r: &Round) -> bool {
         let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
-        data.push(r.v.to_ne_bytes().to_vec());
-        data.push(r.t.to_ne_bytes().to_vec());
-        for s in &r.s_list {
-            data.push(s.clone().to_vec());
-        }
+        data.push(r.h.to_vec());
         let digest = utils::combine_hashes::<DIGEST_SIZE>(data);
         utils::oracle_binomial(&digest, setup.q)
     }
