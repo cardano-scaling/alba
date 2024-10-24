@@ -19,11 +19,11 @@ rand_chacha = "0.3.1"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]
-name = "centralized_time"
+name = "centralized_telescope_time"
 harness = false
-path = "benches/centralized.rs"
+path = "benches/centralized_telescope.rs"
 
 [[bench]]
-name = "centralized_step"
+name = "centralized_telescope_step"
 harness = false
-path = "benches/centralized.rs"
+path = "benches/centralized_telescope.rs"
