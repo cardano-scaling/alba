@@ -287,18 +287,16 @@ impl Proof {
                 return (limit, None);
             }
         }
-        let mut dfs_limit = limit;
-        for &s in bins[round.h_usize].iter() {
-            if dfs_limit == setup.b {
-                return (dfs_limit, None);
-            }
-            let (l, proof_opt) = Self::dfs(setup, bins, &Round::update(round, s), dfs_limit + 1);
-            if proof_opt.is_some() {
-                return (l, proof_opt);
-            }
-            dfs_limit = l;
-        }
-        (dfs_limit, None)
+
+        bins[round.h_usize]
+            .iter()
+            .fold((limit, None), |(l, proof_opt), &s| {
+                if proof_opt.is_some() || l == setup.b {
+                    (l, proof_opt)
+                } else {
+                    Self::dfs(setup, bins, &Round::update(round, s), l + 1)
+                }
+            })
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
@@ -308,40 +306,33 @@ impl Proof {
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
-        let mut limit = 0;
-        for t in 0..setup.d {
-            if limit == setup.b {
-                return (0, None);
+
+        (0..setup.d).fold((0, None), |(limit, proof_opt), t| {
+            if proof_opt.is_some() || limit == setup.b {
+                (limit, proof_opt)
+            } else {
+                let round = Round::new(v, t, setup.n_p);
+                Proof::dfs(setup, &bins, &round, limit + 1)
             }
-            let round = Round::new(v, t, setup.n_p);
-            let (l, res) = Proof::dfs(setup, &bins, &round, limit + 1);
-            if res.is_some() {
-                return (l, res);
-            }
-            limit = l;
-        }
-        (limit, None)
+        })
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
-        (0..setup.r).find_map(|v| {
-            let (_, proof_opt) = Proof::prove_index(setup, set, v);
-            proof_opt
-        })
+        (0..setup.r).find_map(|v| Proof::prove_index(setup, set, v).1)
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &[Element]) -> (usize, u32, Option<Self>) {
-        (0..setup.r).fold((0, setup.r, None), |acc, v| {
-            if acc.2.is_some() {
-                acc
+        (0..setup.r).fold((0, setup.r, None), |(limit, r, proof_opt), v| {
+            if proof_opt.is_some() {
+                (limit, r, proof_opt)
             } else {
                 let (l, opt) = Proof::prove_index(setup, set, v + 1);
-                (acc.0 + l, acc.1, opt)
+                (limit + l, r, opt)
             }
         })
     }
