@@ -82,13 +82,15 @@ fn time_benches(c: &mut Criterion) {
             // Truncate the dataset to give truncate_size elements to the prover
             dataset.truncate(truncate_size);
             // Prove
-            let proof = Proof::prove(&bench_setup, &dataset);
+            let proof_opt = Proof::prove(&bench_setup, &dataset);
             // Bench
-            let start = Instant::now();
-            black_box({
-                Proof::verify(&bench_setup, proof);
-            });
-            total_duration = total_duration.saturating_add(start.elapsed());
+            if proof_opt.is_some() {
+                let start = Instant::now();
+                black_box({
+                    Proof::verify(&bench_setup, proof_opt.unwrap());
+                });
+                total_duration = total_duration.saturating_add(start.elapsed());
+            }
         }
         total_duration
     }
