@@ -14,18 +14,18 @@ use criterion_helpers::{benchmarks, Repetitions, Steps};
 // Global variables
 const NAME: &str = "Centralized";
 // Benchmark parameters
-const L: &[u32] = &[50, 128]; // Security parameter
-const SP: &[usize] = &[1_000]; // Size of set to lower bound
-const NP: &[usize] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
-const NF: &[usize] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
+const L: &[f64] = &[50.0, 128.0]; // Security parameter
+const SP: &[u64] = &[1_000]; // Size of set to lower bound
+const NP: &[u64] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
+const NF: &[u64] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
 
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
 pub fn centralized_setup(
     rng: &mut ChaCha20Rng,
-    l: u32,
-    sp: usize,
-    np: usize,
-    nf: usize,
+    l: f64,
+    sp: u64,
+    np: u64,
+    nf: u64,
 ) -> (Vec<[u8; 32]>, Setup) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
@@ -41,21 +41,14 @@ pub fn centralized_setup(
 
 /// Bench the duration of both the proving and verifiying algorithm of Alba centralized
 fn time_benches(c: &mut Criterion) {
-    fn prove_duration(
-        l: u32,
-        sp: usize,
-        np: usize,
-        nf: usize,
-        truncate_size: usize,
-        n: u64,
-    ) -> Duration {
+    fn prove_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
             // Truncate the dataset to give truncate_size elements to the prover
-            dataset.truncate(truncate_size);
+            dataset.truncate(truncate_size as usize);
             // Bench
             let start = Instant::now();
             black_box({
@@ -66,21 +59,14 @@ fn time_benches(c: &mut Criterion) {
         total_duration
     }
 
-    fn verify_duration(
-        l: u32,
-        sp: usize,
-        np: usize,
-        nf: usize,
-        truncate_size: usize,
-        n: u64,
-    ) -> Duration {
+    fn verify_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
             // Truncate the dataset to give truncate_size elements to the prover
-            dataset.truncate(truncate_size);
+            dataset.truncate(truncate_size as usize);
             // Prove
             let proof_opt = Proof::prove(&bench_setup, &dataset);
             // Bench
@@ -120,14 +106,14 @@ fn time_benches(c: &mut Criterion) {
 
 /// Bench the number of steps, i.e. DFS calls, of Alba centralized prover
 fn step_benches(c: &mut Criterion<Steps>) {
-    fn prove_steps(l: u32, sp: usize, np: usize, nf: usize, truncate_size: usize, n: u64) -> u64 {
+    fn prove_steps(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_steps = 0;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
             // Truncate the dataset to give truncate_size elements to the prover
-            dataset.truncate(truncate_size);
+            dataset.truncate(truncate_size as usize);
             // Bench
             black_box({
                 let (steps, _, _) = Proof::bench(&bench_setup, &dataset);
@@ -151,21 +137,14 @@ fn step_benches(c: &mut Criterion<Steps>) {
 
 /// Bench the number of repetitions, i.e. the "r" parameter, of Alba centralized prover
 fn repetition_benches(c: &mut Criterion<Repetitions>) {
-    fn prove_repetitions(
-        l: u32,
-        sp: usize,
-        np: usize,
-        nf: usize,
-        truncate_size: usize,
-        n: u64,
-    ) -> u64 {
+    fn prove_repetitions(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_repetitions = 0;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
             // Truncate the dataset to give truncate_size elements to the prover
-            dataset.truncate(truncate_size);
+            dataset.truncate(truncate_size as usize);
             // Bench
             black_box({
                 let (_, r, _) = Proof::bench(&bench_setup, &dataset);
