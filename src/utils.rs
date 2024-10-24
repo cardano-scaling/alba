@@ -7,17 +7,17 @@ use std::cmp::min;
 /// Takes as input a hash and range $n$ and samples an integer from Unif(0, n).
 /// We do so by interpreting the hash as a random number an returns it modulo n
 /// (c.f. Appendix B, Alba paper).
-pub fn sample_uniform(hash: &[u8], n: usize) -> usize {
+pub fn sample_uniform(hash: &[u8], n: u64) -> u64 {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
-    fn mod_non_power_of_2(hash: &[u8], n: usize) -> usize {
-        fn log_base2(x: usize) -> usize {
-            usize::BITS as usize - x.leading_zeros() as usize - 1
+    fn mod_non_power_of_2(hash: &[u8], n: u64) -> u64 {
+        fn log_base2(x: u64) -> u64 {
+            u64::BITS as u64 - x.leading_zeros() as u64 - 1u64
         }
-        let epsilon_fail: usize = 1 << 40; // roughly 1 trillion
-        let k: usize = log_base2(n * epsilon_fail);
-        let k_prime: usize = 1 << k;
-        let d: usize = k_prime.div_ceil(n);
+        let epsilon_fail: u64 = 1 << 40; // roughly 1 trillion
+        let k = log_base2(n * epsilon_fail);
+        let k_prime: u64 = 1 << k;
+        let d = k_prime.div_ceil(n);
 
         let i = mod_power_of_2(hash, k_prime);
 
@@ -29,8 +29,8 @@ pub fn sample_uniform(hash: &[u8], n: usize) -> usize {
     }
     // Computes the integer reprensation of hash* modulo n when n is a power of
     // two. *(up to 8 bytes, in little endian)
-    fn mod_power_of_2(hash: &[u8], n: usize) -> usize {
-        assert!(8 * hash.len() >= (n as f32).log2() as usize);
+    fn mod_power_of_2(hash: &[u8], n: u64) -> u64 {
+        assert!(8 * hash.len() as u32 >= n.ilog2());
         from_bytes_le(hash) & (n - 1)
     }
 
@@ -47,18 +47,18 @@ pub fn sample_uniform(hash: &[u8], n: usize) -> usize {
 pub fn sample_bernouilli(hash: &[u8], q: f64) -> bool {
     // For error parameter ɛ̝, find an approximation x/y of q with (x,y) in N²
     // such that 0 < q - x/y <= ɛ̝
-    let epsilon_fail: usize = 1 << 40; // roughly 1 trillion
-    let mut x: usize = q.ceil() as usize;
-    let mut y: usize = 1;
+    let epsilon_fail: u64 = 1 << 40; // roughly 1 trillion
+    let mut x: u64 = q.ceil() as u64;
+    let mut y: u64 = 1;
     while {
         let difference = q - (x as f64 / y as f64);
         difference >= 1.0 / epsilon_fail as f64 || difference < 0.0
     } {
         y *= 2;
-        x = (q * (y as f64)).round() as usize;
+        x = (q * (y as f64)).round() as u64;
     }
     // Output i in [0; y-1] from hash
-    assert!(8 * hash.len() >= (y as f32).log2() as usize);
+    assert!(8.0 * hash.len() as f32 >= (y as f32).log2());
     let i = from_bytes_le(hash) & (y - 1);
     // Return true if i < x
     i < x
@@ -66,11 +66,11 @@ pub fn sample_bernouilli(hash: &[u8], q: f64) -> bool {
 
 // Returns the integer representation of, up to the 8 first bytes of, the
 // input bytes in little endian
-fn from_bytes_le(bytes: &[u8]) -> usize {
+fn from_bytes_le(bytes: &[u8]) -> u64 {
     let mut array = [0u8; 8];
     let bytes = &bytes[..min(8, bytes.len())];
     array[..bytes.len()].copy_from_slice(bytes);
-    usize::from_le_bytes(array)
+    u64::from_le_bytes(array)
 }
 
 // Hash helpers
