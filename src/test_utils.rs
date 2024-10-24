@@ -9,7 +9,7 @@ pub fn gen_items<const N: usize>(seed: Vec<u8>, set_size: usize) -> Vec<[u8; N]>
     for b in 0..set_size {
         let mut data = vec![seed.clone()];
         data.push(b.to_ne_bytes().to_vec());
-        let item = utils::combine_hashes::<N>(data);
+        let item = utils::combine_hashes::<N>(&data);
         s_p.push(item);
     }
     s_p
