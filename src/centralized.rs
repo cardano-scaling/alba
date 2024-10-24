@@ -313,10 +313,7 @@ impl Proof {
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
     fn prove_index(setup: &Setup, set: &[Element], v: u32) -> (usize, Option<Proof>) {
-        let mut bins: Vec<Vec<Element>> = vec![];
-        for _ in 0..setup.n_p {
-            bins.push(vec![]);
-        }
+        let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p];
         for &s in set.iter() {
             bins[Proof::h0(setup, v, s)].push(s);
         }
