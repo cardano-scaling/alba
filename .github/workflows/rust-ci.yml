@@ -60,7 +60,7 @@ jobs:
       - name: Cache Cargo build
         uses: actions/cache@v3
         with:
-          path: caledonia/target
+          path: target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-
