@@ -1,3 +1,4 @@
+
 use criterion::{
     measurement::{Measurement, ValueFormatter},
     BenchmarkId, Criterion, Throughput,
@@ -5,14 +6,7 @@ use criterion::{
 
 // Criterion helpers
 
-pub fn bench_id(
-    bench_name: &str,
-    pc: usize,
-    l: usize,
-    sp: usize,
-    np: usize,
-    nf: usize,
-) -> BenchmarkId {
+pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) -> BenchmarkId {
     BenchmarkId::new(
         bench_name,
         format!("(λ: {l}, Sp:{sp} ({pc}%), n_p:{np}, n_f:{nf})"),
@@ -21,13 +15,13 @@ pub fn bench_id(
 
 pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     c: &mut Criterion<T>,
-    lambdas: &[usize],
-    s_p: &[usize],
-    n_p: &[usize],
-    n_f: &[usize],
+    lambdas: &[f64],
+    s_p: &[u64],
+    n_p: &[u64],
+    n_f: &[u64],
     group_name: String,
     bench_name: String,
-    f: &dyn Fn(usize, usize, usize, usize, usize, u64) -> V,
+    f: &dyn Fn(f64, u64, u64, u64, u64, u64) -> V,
 ) {
     let mut group = c.benchmark_group(group_name);
 
