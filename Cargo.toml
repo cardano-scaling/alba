@@ -7,6 +7,3 @@ categories = ["cryptography"]
 include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[lints.clippy]
-too_many_arguments = "deny"
