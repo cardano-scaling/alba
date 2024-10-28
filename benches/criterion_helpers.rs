@@ -1,4 +1,3 @@
-
 use criterion::{
     measurement::{Measurement, ValueFormatter},
     BenchmarkId, Criterion, Throughput,
