@@ -16,6 +16,6 @@
 // using the ROM.
 pub mod utils;
 
-pub mod centralized;
+pub mod centralized_telescope;
 
 pub mod cargodocs;
