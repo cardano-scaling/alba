@@ -264,10 +264,10 @@ impl Proof {
         for &s in &bins[round.h_u64 as usize] {
             if let Some(r) = Round::update(round, s) {
                 let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l + 1);
-            if proof_opt.is_some() {
-                return (l_dfs, proof_opt);
-            }
-            l = l_dfs;
+                if proof_opt.is_some() {
+                    return (l_dfs, proof_opt);
+                }
+                l = l_dfs;
             }
         }
         (l, None)
@@ -293,10 +293,10 @@ impl Proof {
             }
             if let Some(r) = Round::new(v, t, setup.n_p) {
                 let (l, proof_opt) = Proof::dfs(setup, &bins, &r, limit + 1);
-            if proof_opt.is_some() {
-                return (l, proof_opt);
-            }
-            limit = l;
+                if proof_opt.is_some() {
+                    return (l, proof_opt);
+                }
+                limit = l;
             }
         }
         (limit, None)
