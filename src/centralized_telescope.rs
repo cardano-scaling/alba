@@ -260,15 +260,15 @@ impl Proof {
             return (limit, proof_opt);
         }
 
-        bins[round.h_u64 as usize]
-            .iter()
-            .fold((limit, None), |(l, proof_opt), &s| {
-                if proof_opt.is_some() || l == setup.b {
-                    (l, proof_opt)
-                } else {
-                    Self::dfs(setup, bins, &Round::update(round, s), l + 1)
-                }
-            })
+        let mut l = limit;
+        for &s in &bins[round.h_u64 as usize] {
+            let (l_dfs, proof_opt) = Self::dfs(setup, bins, &Round::update(round, s), l + 1);
+            if proof_opt.is_some() {
+                return (l_dfs, proof_opt);
+            }
+            l = l_dfs;
+        }
+        (l, None)
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
@@ -279,14 +279,19 @@ impl Proof {
             bins[Proof::h0(setup, v, s) as usize].push(s);
         }
 
-        (0..setup.d).fold((0, None), |(limit, proof_opt), t| {
-            if proof_opt.is_some() || limit == setup.b {
-                (limit, proof_opt)
-            } else {
-                let round = Round::new(v, t, setup.n_p);
-                Proof::dfs(setup, &bins, &round, limit + 1)
+        let mut limit = 0;
+        for t in 0..setup.d {
+            if limit == setup.b {
+                return (limit, None);
             }
-        })
+            let round = Round::new(v, t, setup.n_p);
+            let (l, proof_opt) = Proof::dfs(setup, &bins, &round, limit + 1);
+            if proof_opt.is_some() {
+                return (l, proof_opt);
+            }
+            limit = l;
+        }
+        (limit, None)
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
