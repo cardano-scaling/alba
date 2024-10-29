@@ -32,36 +32,6 @@ pub enum Cases {
     High,
 }
 
-impl Params {
-    /// Returns information on which case corresponds some parameter
-    pub fn which_case(&self) -> (Cases, u64) {
-        let lsec = self.lambda_sec as f64;
-        let lrel = self.lambda_rel as f64;
-        let np = self.n_p as f64;
-        let nf = self.n_f as f64;
-        let loge = LOG2_E as f64;
-
-        let lognpnf = (np / nf).log2();
-        let u_f64 = (lsec + lrel.log2() + 5.0 - loge.log2()) / lognpnf;
-        let u = u_f64.ceil() as u64;
-
-        let ratio = 9.0 * np * loge / ((17.0 * u_f64).powi(2));
-        let s1 = ratio - 7.0;
-        let s2 = ratio - 2.0;
-
-        if s1 < 1.0 || s2 < 1.0 {
-            return (Cases::Small, u);
-        }
-
-        let lrel2 = lrel.min(s2);
-        if (u as f64) < lrel2 {
-            (Cases::Mid, u)
-        } else {
-            (Cases::High, u)
-        }
-    }
-}
-
 /// Setup output parameters
 #[derive(Debug, Clone)]
 pub struct Setup {
