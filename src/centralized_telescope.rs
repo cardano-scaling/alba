@@ -371,25 +371,25 @@ mod tests {
             };
             let setup = Setup::new(&params);
             let proof = Proof::prove(&setup, &s_p).unwrap();
-            assert!(Proof::verify(&setup, proof.clone()));
+            assert!(Proof::verify(&setup, &proof.clone()));
             let proof_d = Proof {
                 v: proof.v,
                 t: proof.t.wrapping_add(1),
                 items: proof.items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_d));
+            assert!(!Proof::verify(&setup, &proof_d));
             let proof_r = Proof {
                 v: proof.v.wrapping_add(1),
                 t: proof.t,
                 items: proof.items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_r));
+            assert!(!Proof::verify(&setup, &proof_r));
             let proof_item = Proof {
                 v: proof.v,
                 t: proof.t,
                 items: vec![],
             };
-            assert!(!Proof::verify(&setup, proof_item));
+            assert!(!Proof::verify(&setup, &proof_item));
             let mut wrong_items = proof.items.clone();
             let last_item = wrong_items.pop().unwrap();
             let mut penultimate_item = wrong_items.pop().unwrap();
@@ -398,7 +398,7 @@ mod tests {
                 t: proof.t,
                 items: wrong_items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_itembis));
+            assert!(!Proof::verify(&setup, &proof_itembis));
             // Modifying the penultimate item to check correctness of H1 check and not H2
             penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
             wrong_items.push(penultimate_item);
@@ -408,7 +408,7 @@ mod tests {
                 t: proof.t,
                 items: wrong_items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_itembis));
+            assert!(!Proof::verify(&setup, &proof_itembis));
         }
     }
 }
