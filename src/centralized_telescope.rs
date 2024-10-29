@@ -76,11 +76,9 @@ impl Setup {
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
         let lognpnf = (n_p_f64 / n_f_f64).log2();
-        let lambda_rel = params.lambda_rel as f64;
-        let logrel = lambda_rel.log2();
-        let lambda_sec = params.lambda_sec as f64;
         let loge = LOG2_E as f64;
 
+        let u_f64 =
             ((params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2()) / lognpnf).ceil();
         let u = u_f64 as u64;
 
@@ -101,7 +99,7 @@ impl Setup {
                 b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as u64,
             };
         }
-        let lambda_rel2 = lambda_rel.min(s2);
+        let lambda_rel2 = params.lambda_rel.min(s2);
         if u_f64 < lambda_rel2 {
             // Case 3, Theorem 14, ie  n_p >= λ^3
             let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
@@ -109,7 +107,7 @@ impl Setup {
             Setup {
                 n_p: params.n_p,
                 u,
-                r: (lambda_rel / lambda_rel2).ceil() as u64,
+                r: (params.lambda_rel / lambda_rel2).ceil() as u64,
                 d: d as u64,
                 q: 2.0 * (lambda_rel2 + 2.0) / (d * loge),
                 b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
@@ -120,7 +118,7 @@ impl Setup {
             }
         } else {
             // Case 2, Theorem 13, ie λ^3 > n_p > λ^2
-            let lambda_rel1 = lambda_rel.min(s1);
+            let lambda_rel1 = params.lambda_rel.min(s1);
             let lbar = (lambda_rel1 + 7.0) / loge;
             let d = (16.0 * u_f64 * lbar).ceil();
             debug_assert!(n_p_f64 >= d * d / (9.0 * lbar));
@@ -129,7 +127,7 @@ impl Setup {
             Setup {
                 n_p: params.n_p,
                 u,
-                r: (lambda_rel / lambda_rel1).ceil() as u64,
+                r: (params.lambda_rel / lambda_rel1).ceil() as u64,
                 d: d as u64,
                 q: 2.0 * lbar / d,
                 b: ((w * lbar / d + 1.0)
