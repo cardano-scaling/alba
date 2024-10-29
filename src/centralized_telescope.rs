@@ -248,14 +248,16 @@ impl Proof {
         limit: u64,
     ) -> (u64, Option<Proof>) {
         if round.s_list.len() as u64 == setup.u {
-            if Proof::h2(setup, round) {
-                let v = round.v;
-                let t = round.t;
-                let items = round.s_list.clone();
-                return (limit, Some(Proof { v, t, items }));
+            let proof_opt = if Proof::h2(setup, round) {
+                Some(Proof {
+                    v: round.v,
+                    t: round.t,
+                    items: round.s_list.clone(),
+                })
             } else {
-                return (limit, None);
-            }
+                None
+            };
+            return (limit, proof_opt);
         }
 
         bins[round.h_u64 as usize]
