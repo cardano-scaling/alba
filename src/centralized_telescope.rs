@@ -23,14 +23,6 @@ pub struct Params {
     /// Target lower bound
     pub n_f: u64,
 }
-pub enum Cases {
-    /// Case where u =< λ^2
-    Small,
-    /// Case where λ^2 < u < λ^3
-    Mid,
-    /// Case where u >= λ^3
-    High,
-}
 
 /// Setup output parameters
 #[derive(Debug, Clone)]
