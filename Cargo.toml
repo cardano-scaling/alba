@@ -17,8 +17,19 @@ rand = "0.8.5"
 rand_chacha = "0.3.1"
 
 [lints.rust]
+missing-copy-implementations = "warn"
+missing-debug-implementations = "warn"
 missing_docs = "warn"
+non-ascii-idents = "forbid"
+redundant-imports = "warn"
+redundant-lifetimes = "warn"
+unit-bindings = "warn"
+unnameable-types = "warn"
 unsafe_code = "warn"
+unused_crate_dependencies = "warn"
+unused-import-braces = "warn"
+unused-lifetimes = "warn"
+unused-qualifications = "warn"
 
 [lints.clippy]
 pedantic = { level = "warn", priority = -1 }
