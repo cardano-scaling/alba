@@ -1,5 +1,3 @@
-use blake2::digest::{Update, VariableOutput};
-use blake2::Blake2bVar;
 use std::cmp::min;
 
 // Oracles
@@ -71,29 +69,4 @@ fn from_bytes_le(bytes: &[u8]) -> u64 {
     let bytes = &bytes[..min(8, bytes.len())];
     array[..bytes.len()].copy_from_slice(bytes);
     u64::from_le_bytes(array)
-}
-
-// Hash helpers
-
-/// Return a N-byte long hash of the given data
-pub fn hash_bytes<const N: usize>(data: &[u8]) -> [u8; N] {
-    let mut hasher = Blake2bVar::new(N).expect("Failed to construct hasher!");
-    hasher.update(data);
-    let mut buf = [0u8; N];
-    hasher
-        .finalize_variable(&mut buf)
-        .expect("Failed to finalize hashing");
-    buf
-}
-
-/// Return a N-byte long hash of the given list of data
-pub fn combine_hashes<const N: usize>(hash_list: &[Vec<u8>]) -> [u8; N] {
-    let mut hasher = Blake2bVar::new(N).expect("Failed to construct hasher!");
-    hash_list.iter().for_each(|h| hasher.update(h));
-
-    let mut buf = [0u8; N];
-    hasher
-        .finalize_variable(&mut buf)
-        .expect("Failed to finalize hashing");
-    buf
 }

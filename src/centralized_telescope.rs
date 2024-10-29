@@ -2,7 +2,7 @@
 //! (c.f. Section 3.2.2 of Alba paper)
 
 use crate::utils;
-
+use blake2::{Blake2s256, Digest};
 use std::{f32::consts::LOG2_E, f64::consts::E};
 
 const DATA_LENGTH: usize = 32;
@@ -162,11 +162,12 @@ impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(input: &[Vec<u8>], n_p: u64) -> (Hash, u64) {
-        let mut data = vec!["Telescope-H1".as_bytes().to_vec()];
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H1");
         for i in input {
-            data.push(i.to_vec());
+            hasher.update(i);
         }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
+        let digest: Hash = hasher.finalize().into();
         (digest, utils::sample_uniform(&digest, n_p))
     }
 
@@ -219,18 +220,20 @@ pub struct Proof {
 impl Proof {
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     fn h0(setup: &Setup, v: u64, s: Element) -> u64 {
-        let mut data = vec!["Telescope-H0".as_bytes().to_vec()];
-        data.push(v.to_ne_bytes().to_vec());
-        data.push(s.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H0");
+        hasher.update(v.to_be_bytes());
+        hasher.update(s);
+        let digest: Hash = hasher.finalize().into();
         utils::sample_uniform(&digest, setup.n_p)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
     fn h2(setup: &Setup, r: &Round) -> bool {
-        let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
-        data.push(r.h.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H2");
+        hasher.update(r.h);
+        let digest: Hash = hasher.finalize().into();
         utils::sample_bernouilli(&digest, setup.q)
     }
 
