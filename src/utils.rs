@@ -1,3 +1,5 @@
+//! Helper functions for Alba primitives
+
 use std::cmp::min;
 
 // Oracles
@@ -10,26 +12,30 @@ pub fn sample_uniform(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {
     // power of two. *(up to 8 bytes, in little endian)
     fn mod_non_power_of_2(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {
         fn log_base2(x: u64) -> u64 {
-            u64::BITS as u64 - x.leading_zeros() as u64 - 1u64
+            u64::from(
+                u64::BITS
+                    .saturating_sub(x.leading_zeros())
+                    .saturating_sub(1),
+            )
         }
         let epsilon_fail: u64 = 1 << sec_param;
-        let k = log_base2(n * epsilon_fail);
+        let k = log_base2(n.saturating_mul(epsilon_fail));
         let k_prime: u64 = 1 << k;
         let d = k_prime.div_ceil(n);
 
         let i = mod_power_of_2(hash, k_prime);
 
-        if i >= d * n {
+        if i >= d.saturating_mul(n) {
             None
         } else {
-            Some(i % n)
+            Some(i.rem_euclid(n))
         }
     }
     // Computes the integer reprensation of hash* modulo n when n is a power of
     // two. *(up to 8 bytes, in little endian)
     fn mod_power_of_2(hash: &[u8], n: u64) -> u64 {
-        assert!(8 * hash.len() as u32 >= n.ilog2());
-        from_bytes_le(hash) & (n - 1)
+        debug_assert!(8u32.saturating_mul(hash.len() as u32) >= n.ilog2());
+        from_bytes_le(hash) & n.saturating_sub(1)
     }
 
     if n.is_power_of_two() {
@@ -52,12 +58,12 @@ pub fn sample_bernouilli(hash: &[u8], q: f64, sec_param: u64) -> bool {
         let difference = q - (x as f64 / y as f64);
         difference >= 1.0 / epsilon_fail as f64 || difference < 0.0
     } {
-        y *= 2;
+        y = y.saturating_mul(2);
         x = (q * (y as f64)).round() as u64;
     }
     // Output i in [0; y-1] from hash
-    assert!(8.0 * hash.len() as f32 >= (y as f32).log2());
-    let i = from_bytes_le(hash) & (y - 1);
+    debug_assert!(8.0 * hash.len() as f32 >= (y as f32).log2());
+    let i = from_bytes_le(hash) & y.saturating_sub(1);
     // Return true if i < x
     i < x
 }

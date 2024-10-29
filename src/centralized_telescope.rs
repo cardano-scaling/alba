@@ -48,7 +48,7 @@ impl Setup {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = (-l).exp2();
-                let factors = (1..=(w as u64 + 1)).rev();
+                let factors = (1..=((w as u64).saturating_add(1))).rev();
                 let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
                     / (E * (w + 2.0 - E.powf(1.0 / w)));
 
@@ -70,7 +70,7 @@ impl Setup {
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
         let lognpnf = (n_p_f64 / n_f_f64).log2();
-        let loge = LOG2_E as f64;
+        let loge = f64::from(LOG2_E);
 
         let u_f64 =
             ((params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2()) / lognpnf).ceil();
@@ -260,7 +260,7 @@ impl Proof {
         let mut l = limit;
         for &s in &bins[round.h_u64 as usize] {
             if let Some(r) = Round::update(round, s, setup.sec_param) {
-                let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l + 1);
+                let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l.saturating_add(1));
                 if proof_opt.is_some() {
                     return (l_dfs, proof_opt);
                 }
@@ -274,7 +274,7 @@ impl Proof {
     /// candidate is found within the setup.b steps.
     fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
         let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p as usize];
-        for &s in set.iter() {
+        for &s in set {
             match Proof::h0(setup, v, s) {
                 Some(h) => {
                     bins[h as usize].push(s);
@@ -289,7 +289,7 @@ impl Proof {
                 return (limit, None);
             }
             if let Some(r) = Round::new(v, t, setup.n_p, setup.sec_param) {
-                let (l, proof_opt) = Proof::dfs(setup, &bins, &r, limit + 1);
+                let (l, proof_opt) = Proof::dfs(setup, &bins, &r, limit.saturating_add(1));
                 if proof_opt.is_some() {
                     return (l, proof_opt);
                 }
@@ -304,11 +304,9 @@ impl Proof {
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
         // Take only up to 2*np elements for efficiency
-        let truncated_set = if set.len() >= 2 * setup.n_p as usize {
-            &set.iter()
-                .take(setup.n_p as usize)
-                .copied()
-                .collect::<Vec<Element>>()
+        let two_np = setup.n_p.saturating_mul(2) as usize;
+        let truncated_set = if set.len() >= two_np {
+            &set.iter().take(two_np).copied().collect::<Vec<Element>>()
         } else {
             set
         };
@@ -322,8 +320,8 @@ impl Proof {
             if proof_opt.is_some() {
                 (limit, r, proof_opt)
             } else {
-                let (l, opt) = Proof::prove_index(setup, set, v + 1);
-                (limit + l, r, opt)
+                let (l, opt) = Proof::prove_index(setup, set, v.saturating_add(1));
+                (limit.saturating_add(l), r, opt)
             }
         })
     }
@@ -359,7 +357,7 @@ mod tests {
         let set_size = 1_000;
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = gen_items::<DATA_LENGTH>(seed, set_size);
+            let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
             let params = Params {
                 lambda_sec: 10.0,
                 lambda_rel: 10.0,
