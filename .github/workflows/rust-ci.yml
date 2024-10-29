@@ -32,7 +32,7 @@ jobs:
           rustup component add clippy
 
       - name: Build
-        run: cargo build --verbose
+        run: RUSTFLAGS=-Dwarnings cargo build --all-features --all-targets --verbose
 
       - name: Verify target directory exists
         run: |
