@@ -316,7 +316,7 @@ impl Proof {
 
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
-    pub fn verify(setup: &Setup, proof: Proof) -> bool {
+    pub fn verify(setup: &Setup, proof: &Proof) -> bool {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
