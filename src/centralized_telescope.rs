@@ -298,7 +298,16 @@ impl Proof {
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
-        (0..setup.r).find_map(|v| Proof::prove_index(setup, set, v).1)
+        // Take only up to 2*np elements for efficiency
+        let truncated_set = if set.len() >= 2 * setup.n_p as usize {
+            &set.iter()
+                .take(setup.n_p as usize)
+                .map(|&x| x)
+                .collect::<Vec<Element>>()
+        } else {
+            set
+        };
+        (0..setup.r).find_map(|v| Proof::prove_index(setup, &truncated_set, v).1)
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
