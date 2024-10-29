@@ -81,7 +81,7 @@ impl Setup {
         let lambda_sec = params.lambda_sec as f64;
         let loge = LOG2_E as f64;
 
-        let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
+            ((params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2()) / lognpnf).ceil();
         let u = u_f64 as u64;
 
         let ratio = 9.0 * n_p_f64 * loge / ((17.0 * u_f64).powi(2));
