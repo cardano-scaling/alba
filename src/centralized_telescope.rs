@@ -161,7 +161,7 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(input: &[Vec<u8>], n_p: u64) -> (Hash, u64) {
+    fn h1(input: &[Vec<u8>], n_p: u64) -> (Hash, Option<u64>) {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-H1");
         for i in input {
@@ -173,36 +173,36 @@ impl Round {
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: u64, t: u64, n_p: u64) -> Round {
+    pub fn new(v: u64, t: u64, n_p: u64) -> Option<Round> {
         let mut data = vec![v.to_ne_bytes().to_vec()];
         data.push(t.to_ne_bytes().to_vec());
-        let (h, h_u64) = Round::h1(&data, n_p);
-        Round {
+        let (h, h_u64_opt) = Round::h1(&data, n_p);
+        h_u64_opt.map(|h_u64| Round {
             v,
             t,
             s_list: vec![],
             h,
             h_u64,
             n_p,
-        }
+        })
     }
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: Element) -> Round {
+    pub fn update(r: &Round, s: Element) -> Option<Round> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let mut data = vec![r.h.clone().to_vec()];
         data.push(s.to_vec());
-        let (h, h_u64) = Round::h1(&data, r.n_p);
-        Round {
+        let (h, h_u64_opt) = Round::h1(&data, r.n_p);
+        h_u64_opt.map(|h_u64| Round {
             v: r.v,
             t: r.t,
             s_list,
             h,
             h_u64,
             n_p: r.n_p,
-        }
+        })
     }
 }
 
@@ -219,7 +219,7 @@ pub struct Proof {
 
 impl Proof {
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: u64, s: Element) -> u64 {
+    fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-H0");
         hasher.update(v.to_be_bytes());
@@ -262,11 +262,13 @@ impl Proof {
 
         let mut l = limit;
         for &s in &bins[round.h_u64 as usize] {
-            let (l_dfs, proof_opt) = Self::dfs(setup, bins, &Round::update(round, s), l + 1);
+            if let Some(r) = Round::update(round, s) {
+                let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l + 1);
             if proof_opt.is_some() {
                 return (l_dfs, proof_opt);
             }
             l = l_dfs;
+            }
         }
         (l, None)
     }
@@ -276,7 +278,12 @@ impl Proof {
     fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
         let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p as usize];
         for &s in set.iter() {
-            bins[Proof::h0(setup, v, s) as usize].push(s);
+            match Proof::h0(setup, v, s) {
+                Some(h) => {
+                    bins[h as usize].push(s);
+                }
+                None => return (0, None),
+            }
         }
 
         let mut limit = 0;
@@ -284,12 +291,13 @@ impl Proof {
             if limit == setup.b {
                 return (limit, None);
             }
-            let round = Round::new(v, t, setup.n_p);
-            let (l, proof_opt) = Proof::dfs(setup, &bins, &round, limit + 1);
+            if let Some(r) = Round::new(v, t, setup.n_p) {
+                let (l, proof_opt) = Proof::dfs(setup, &bins, &r, limit + 1);
             if proof_opt.is_some() {
                 return (l, proof_opt);
             }
             limit = l;
+            }
         }
         (limit, None)
     }
@@ -329,11 +337,11 @@ impl Proof {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
-        let r0 = Round::new(proof.v, proof.t, setup.n_p);
+        let r0 = Round::new(proof.v, proof.t, setup.n_p).unwrap();
         let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
             (
-                b && r.h_u64 == Proof::h0(setup, proof.v, s),
-                Round::update(&r, s),
+                b && r.h_u64 == Proof::h0(setup, proof.v, s).unwrap(),
+                Round::update(&r, s).unwrap(),
             )
         });
         b && Proof::h2(setup, &round)

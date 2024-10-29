@@ -5,10 +5,10 @@ use std::cmp::min;
 /// Takes as input a hash and range $n$ and samples an integer from Unif(0, n).
 /// We do so by interpreting the hash as a random number an returns it modulo n
 /// (c.f. Appendix B, Alba paper).
-pub fn sample_uniform(hash: &[u8], n: u64) -> u64 {
+pub fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
-    fn mod_non_power_of_2(hash: &[u8], n: u64) -> u64 {
+    fn mod_non_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
         fn log_base2(x: u64) -> u64 {
             u64::BITS as u64 - x.leading_zeros() as u64 - 1u64
         }
@@ -20,9 +20,9 @@ pub fn sample_uniform(hash: &[u8], n: u64) -> u64 {
         let i = mod_power_of_2(hash, k_prime);
 
         if i >= d * n {
-            panic!("failed: i = {}, d = {}, n = {}, k = {}", i, d, n, k);
+            None
         } else {
-            i % n
+            Some(i % n)
         }
     }
     // Computes the integer reprensation of hash* modulo n when n is a power of
@@ -33,7 +33,7 @@ pub fn sample_uniform(hash: &[u8], n: u64) -> u64 {
     }
 
     if n.is_power_of_two() {
-        mod_power_of_2(hash, n)
+        Some(mod_power_of_2(hash, n))
     } else {
         mod_non_power_of_2(hash, n)
     }
