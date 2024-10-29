@@ -310,12 +310,12 @@ impl Proof {
         let truncated_set = if set.len() >= 2 * setup.n_p as usize {
             &set.iter()
                 .take(setup.n_p as usize)
-                .map(|&x| x)
+                .copied()
                 .collect::<Vec<Element>>()
         } else {
             set
         };
-        (0..setup.r).find_map(|v| Proof::prove_index(setup, &truncated_set, v).1)
+        (0..setup.r).find_map(|v| Proof::prove_index(setup, truncated_set, v).1)
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
