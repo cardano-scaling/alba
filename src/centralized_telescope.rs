@@ -185,12 +185,9 @@ impl Round {
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
     pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
-        let (h, h_u64_opt) = Self::h1(
-            v.to_be_bytes().as_ref(),
-            t.to_be_bytes().as_ref(),
-            n_p,
-            sec_param,
-        );
+        let v_bytes: [u8; 8] = v.to_be_bytes();
+        let t_bytes: [u8; 8] = t.to_be_bytes();
+        let (h, h_u64_opt) = Self::h1(v_bytes.as_ref(), t_bytes.as_ref(), n_p, sec_param);
         h_u64_opt.map(|h_u64| Self {
             v,
             t,
@@ -232,9 +229,10 @@ pub struct Proof {
 impl Proof {
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
     fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
+        let v_bytes: [u8; 8] = v.to_be_bytes();
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-H0");
-        hasher.update(v.to_be_bytes());
+        hasher.update(v_bytes);
         hasher.update(s);
         let digest: Hash = hasher.finalize().into();
         utils::sample_uniform(&digest, setup.n_p, setup.sec_param)
