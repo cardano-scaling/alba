@@ -8,16 +8,16 @@ pub mod overview {}
 #[doc = include_str!("../cargodocs/centralized/main.md")]
 pub mod centralized {
     #[doc = include_str!("../cargodocs/centralized/structs.md")]
-    pub mod structs{}
+    pub mod structs {}
 
     #[doc = include_str!("../cargodocs/centralized/setup.md")]
-    pub mod setup{}
+    pub mod setup {}
 
     #[doc = include_str!("../cargodocs/centralized/prover.md")]
-    pub mod prover{}
+    pub mod prover {}
 
     #[doc = include_str!("../cargodocs/centralized/verifier.md")]
-    pub mod verifier{}
+    pub mod verifier {}
 }
 
 #[doc = include_str!("../cargodocs/lottery.md")]
