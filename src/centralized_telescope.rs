@@ -191,7 +191,7 @@ impl Round {
         h_u64_opt.map(|h_u64| Self {
             v,
             t,
-            s_list: vec![],
+            s_list: Vec::new(),
             h,
             h_u64,
             n_p,
@@ -281,7 +281,10 @@ impl Proof {
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
     fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Self>) {
-        let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p as usize];
+        let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.n_p as usize);
+        for _ in 0..setup.n_p {
+            bins.push(Vec::new());
+        }
         for &s in set {
             match Self::h0(setup, v, s) {
                 Some(h) => {
@@ -391,7 +394,7 @@ mod tests {
             let proof_item = Proof {
                 v: proof.v,
                 t: proof.t,
-                items: vec![],
+                items: Vec::new(),
             };
             assert!(!Proof::verify(&setup, &proof_item));
             let mut wrong_items = proof.items.clone();
