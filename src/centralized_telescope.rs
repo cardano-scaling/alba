@@ -2,7 +2,7 @@
 //! (c.f. Section 3.2.2 of Alba paper)
 
 use crate::utils;
-
+use blake2::{Blake2s256, Digest};
 use std::{f32::consts::LOG2_E, f64::consts::E};
 
 const DATA_LENGTH: usize = 32;
@@ -23,48 +23,12 @@ pub struct Params {
     /// Target lower bound
     pub n_f: u64,
 }
-pub enum Cases {
-    /// Case where u =< λ^2
-    Small,
-    /// Case where λ^2 < u < λ^3
-    Mid,
-    /// Case where u >= λ^3
-    High,
-}
-
-impl Params {
-    /// Returns information on which case corresponds some parameter
-    pub fn which_case(&self) -> (Cases, u64) {
-        let lsec = self.lambda_sec as f64;
-        let lrel = self.lambda_rel as f64;
-        let np = self.n_p as f64;
-        let nf = self.n_f as f64;
-        let loge = LOG2_E as f64;
-
-        let lognpnf = (np / nf).log2();
-        let u_f64 = (lsec + lrel.log2() + 5.0 - loge.log2()) / lognpnf;
-        let u = u_f64.ceil() as u64;
-
-        let ratio = 9.0 * np * loge / ((17.0 * u_f64).powi(2));
-        let s1 = ratio - 7.0;
-        let s2 = ratio - 2.0;
-
-        if s1 < 1.0 || s2 < 1.0 {
-            return (Cases::Small, u);
-        }
-
-        let lrel2 = lrel.min(s2);
-        if (u as f64) < lrel2 {
-            (Cases::Mid, u)
-        } else {
-            (Cases::High, u)
-        }
-    }
-}
 
 /// Setup output parameters
 #[derive(Debug, Clone)]
 pub struct Setup {
+    /// Security parameter
+    pub sec_param: u64,
     /// Approximate size of set Sp to lower bound
     pub n_p: u64,
     /// Proof size (in Sp elements)
@@ -79,12 +43,41 @@ pub struct Setup {
     pub b: u64,
 }
 impl Setup {
-    /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
-    pub fn new(params: &Params) -> Self {
+    fn param_small_case(params: &Params, u_f64: f64, sec_param: u64) -> Self {
+        let ln12 = (12f64).ln();
+        let d = (32.0 * ln12 * u_f64).ceil();
+        Self {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: params.lambda_rel as u64,
+            d: d as u64,
+            q: 2.0 * ln12 / d,
+            b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as u64,
+        }
+    }
+
+    fn param_high_case(params: &Params, u_f64: f64, lambda_rel2: f64, sec_param: u64) -> Self {
+        let loge = f64::from(LOG2_E);
+        let l2 = lambda_rel2 + 2.0;
+        let d = (16.0 * u_f64 * l2 / loge).ceil();
+        debug_assert!(params.n_p as f64 >= d * d * loge / (9.0 * l2));
+        Self {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: (params.lambda_rel / lambda_rel2).ceil() as u64,
+            d: d as u64,
+            q: 2.0 * l2 / (d * loge),
+            b: (((l2 + u_f64.log2()) / l2) * (3.0 * u_f64 * d / 4.0) + d + u_f64).floor() as u64,
+        }
+    }
+
+    fn param_mid_case(params: &Params, u_f64: f64, s1: f64, sec_param: u64) -> Self {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = (-l).exp2();
-                let factors = (1..=(w as u64 + 1)).rev();
+                let factors = (1..=((w as u64).saturating_add(1))).rev();
                 let mut ratio = (14.0 * w * w * (w + 2.0) * E.powf((w + 1.0) / w))
                     / (E * (w + 2.0 - E.powf(1.0 / w)));
 
@@ -102,72 +95,53 @@ impl Setup {
             }
             w
         }
+        let lambda_rel1 = params.lambda_rel.min(s1);
+        let lbar = (lambda_rel1 + 7.0) / f64::from(LOG2_E);
+        let d = (16.0 * u_f64 * lbar).ceil();
+        let lbar_over_d = lbar / d;
+        debug_assert!(params.n_p as f64 >= d * d / (9.0 * lbar));
 
+        let w = compute_w(u_f64, lambda_rel1);
+        let exponential = (2.0 * u_f64 * w * lbar / params.n_p as f64 + 7.0 * u_f64 / w).exp();
+        Self {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: (params.lambda_rel / lambda_rel1).ceil() as u64,
+            d: d as u64,
+            q: 2.0 * lbar_over_d,
+            b: ((w * lbar_over_d + 1.0) * exponential * d * u_f64 + d).floor() as u64,
+        }
+    }
+
+    /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
+    pub fn new(params: &Params) -> Self {
+        let sec_param = params.lambda_rel.max(params.lambda_sec).ceil() as u64;
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
-        let lognpnf = (n_p_f64 / n_f_f64).log2();
-        let lambda_rel = params.lambda_rel as f64;
-        let logrel = lambda_rel.log2();
-        let lambda_sec = params.lambda_sec as f64;
-        let loge = LOG2_E as f64;
+        let loge = f64::from(LOG2_E);
 
-        let u_f64 = ((lambda_sec + logrel + 5.0 - loge.log2()) / lognpnf).ceil();
-        let u = u_f64 as u64;
+        let u_f64 = {
+            let numerator = params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2();
+            let denominator = (n_p_f64 / n_f_f64).log2();
+            (numerator / denominator).ceil()
+        };
 
         let ratio = 9.0 * n_p_f64 * loge / ((17.0 * u_f64).powi(2));
         let s1 = ratio - 7.0;
         let s2 = ratio - 2.0;
 
         if s1 < 1.0 || s2 < 1.0 {
-            // Small case, ie n_p <= λ^2
-            let ln12 = (12f64).ln();
-            let d = (32.0 * ln12 * u_f64).ceil();
-            return Setup {
-                n_p: params.n_p,
-                u,
-                r: params.lambda_rel as u64,
-                d: d as u64,
-                q: 2.0 * ln12 / d,
-                b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as u64,
-            };
-        }
-        let lambda_rel2 = lambda_rel.min(s2);
-        if u_f64 < lambda_rel2 {
-            // Case 3, Theorem 14, ie  n_p >= λ^3
-            let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
-            debug_assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
-            Setup {
-                n_p: params.n_p,
-                u,
-                r: (lambda_rel / lambda_rel2).ceil() as u64,
-                d: d as u64,
-                q: 2.0 * (lambda_rel2 + 2.0) / (d * loge),
-                b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
-                    * (3.0 * u_f64 * d / 4.0)
-                    + d
-                    + u_f64)
-                    .floor() as u64,
-            }
+            // Small case, i.e. n_p <= λ^2
+            Self::param_small_case(params, u_f64, sec_param)
         } else {
-            // Case 2, Theorem 13, ie λ^3 > n_p > λ^2
-            let lambda_rel1 = lambda_rel.min(s1);
-            let lbar = (lambda_rel1 + 7.0) / loge;
-            let d = (16.0 * u_f64 * lbar).ceil();
-            debug_assert!(n_p_f64 >= d * d / (9.0 * lbar));
-
-            let w = compute_w(u_f64, lambda_rel1);
-            Setup {
-                n_p: params.n_p,
-                u,
-                r: (lambda_rel / lambda_rel1).ceil() as u64,
-                d: d as u64,
-                q: 2.0 * lbar / d,
-                b: ((w * lbar / d + 1.0)
-                    * (2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w).exp()
-                    * d
-                    * u_f64
-                    + d)
-                    .floor() as u64,
+            let lambda_rel2 = params.lambda_rel.min(s2);
+            if u_f64 < lambda_rel2 {
+                // Case 3, Theorem 14, i.e.  n_p >= λ^3
+                Self::param_high_case(params, u_f64, lambda_rel2, sec_param)
+            } else {
+                // Case 2, Theorem 13, i.e. λ^3 > n_p > λ^2
+                Self::param_mid_case(params, u_f64, s1, sec_param)
             }
         }
     }
@@ -193,47 +167,53 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(input: &[Vec<u8>], n_p: u64) -> (Hash, u64) {
-        let mut data = vec!["Telescope-H1".as_bytes().to_vec()];
-        for i in input {
-            data.push(i.to_vec());
-        }
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
-        (digest, utils::sample_uniform(&digest, n_p))
+    fn h1(
+        first_input: &[u8],
+        second_input: &[u8],
+        n_p: u64,
+        sec_param: u64,
+    ) -> (Hash, Option<u64>) {
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H1");
+        hasher.update(first_input);
+        hasher.update(second_input);
+        let digest: Hash = hasher.finalize().into();
+        (digest, utils::sample_uniform(&digest, n_p, sec_param))
     }
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: u64, t: u64, n_p: u64) -> Round {
-        let mut data = vec![v.to_ne_bytes().to_vec()];
-        data.push(t.to_ne_bytes().to_vec());
-        let (h, h_u64) = Round::h1(&data, n_p);
-        Round {
+    pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
+        let (h, h_u64_opt) = Self::h1(
+            v.to_be_bytes().as_ref(),
+            t.to_be_bytes().as_ref(),
+            n_p,
+            sec_param,
+        );
+        h_u64_opt.map(|h_u64| Self {
             v,
             t,
             s_list: vec![],
             h,
             h_u64,
             n_p,
-        }
+        })
     }
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: Element) -> Round {
+    pub fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let mut data = vec![r.h.clone().to_vec()];
-        data.push(s.to_vec());
-        let (h, h_u64) = Round::h1(&data, r.n_p);
-        Round {
+        let (h, h_u64_opt) = Self::h1(r.h.clone().as_ref(), s.as_ref(), r.n_p, sec_param);
+        h_u64_opt.map(|h_u64| Self {
             v: r.v,
             t: r.t,
             s_list,
             h,
             h_u64,
             n_p: r.n_p,
-        }
+        })
     }
 }
 
@@ -250,106 +230,126 @@ pub struct Proof {
 
 impl Proof {
     /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
-    fn h0(setup: &Setup, v: u64, s: Element) -> u64 {
-        let mut data = vec!["Telescope-H0".as_bytes().to_vec()];
-        data.push(v.to_ne_bytes().to_vec());
-        data.push(s.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
-        utils::sample_uniform(&digest, setup.n_p)
+    fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H0");
+        hasher.update(v.to_be_bytes());
+        hasher.update(s);
+        let digest: Hash = hasher.finalize().into();
+        utils::sample_uniform(&digest, setup.n_p, setup.sec_param)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
     fn h2(setup: &Setup, r: &Round) -> bool {
-        let mut data = vec!["Telescope-H2".as_bytes().to_vec()];
-        data.push(r.h.to_vec());
-        let digest = utils::combine_hashes::<DIGEST_SIZE>(&data);
-        utils::sample_bernouilli(&digest, setup.q)
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H2");
+        hasher.update(r.h);
+        let digest: Hash = hasher.finalize().into();
+        utils::sample_bernouilli(&digest, setup.q, setup.sec_param)
     }
 
     /// Depth-first search which goes through all potential round candidates
     /// and returns first round candidate Round{t, x_1, ..., x_u)} such that:
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
-    fn dfs(
-        setup: &Setup,
-        bins: &[Vec<Element>],
-        round: &Round,
-        limit: u64,
-    ) -> (u64, Option<Proof>) {
+    fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, limit: u64) -> (u64, Option<Self>) {
         if round.s_list.len() as u64 == setup.u {
-            if Proof::h2(setup, round) {
-                let v = round.v;
-                let t = round.t;
-                let items = round.s_list.clone();
-                return (limit, Some(Proof { v, t, items }));
+            let proof_opt = if Self::h2(setup, round) {
+                Some(Self {
+                    v: round.v,
+                    t: round.t,
+                    items: round.s_list.clone(),
+                })
             } else {
-                return (limit, None);
-            }
+                None
+            };
+            return (limit, proof_opt);
         }
 
-        bins[round.h_u64 as usize]
-            .iter()
-            .fold((limit, None), |(l, proof_opt), &s| {
-                if proof_opt.is_some() || l == setup.b {
-                    (l, proof_opt)
-                } else {
-                    Self::dfs(setup, bins, &Round::update(round, s), l + 1)
+        let mut l = limit;
+        for &s in &bins[round.h_u64 as usize] {
+            if let Some(r) = Round::update(round, s, setup.sec_param) {
+                let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l.saturating_add(1));
+                if proof_opt.is_some() {
+                    return (l_dfs, proof_opt);
                 }
-            })
+                l = l_dfs;
+            }
+        }
+        (l, None)
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
+    fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Self>) {
         let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p as usize];
-        for &s in set.iter() {
-            bins[Proof::h0(setup, v, s) as usize].push(s);
+        for &s in set {
+            match Self::h0(setup, v, s) {
+                Some(h) => {
+                    bins[h as usize].push(s);
+                }
+                None => return (0, None),
+            }
         }
 
-        (0..setup.d).fold((0, None), |(limit, proof_opt), t| {
-            if proof_opt.is_some() || limit == setup.b {
-                (limit, proof_opt)
-            } else {
-                let round = Round::new(v, t, setup.n_p);
-                Proof::dfs(setup, &bins, &round, limit + 1)
+        let mut limit = 0;
+        for t in 0..setup.d {
+            if limit == setup.b {
+                return (limit, None);
             }
-        })
+            if let Some(r) = Round::new(v, t, setup.n_p, setup.sec_param) {
+                let (l, proof_opt) = Self::dfs(setup, &bins, &r, limit.saturating_add(1));
+                if proof_opt.is_some() {
+                    return (l, proof_opt);
+                }
+                limit = l;
+            }
+        }
+        (limit, None)
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
-        (0..setup.r).find_map(|v| Proof::prove_index(setup, set, v).1)
+        // Take only up to 2*np elements for efficiency
+        let two_np = setup.n_p.saturating_mul(2) as usize;
+        let truncated_set = if set.len() >= two_np {
+            &set.iter().take(two_np).copied().collect::<Vec<Element>>()
+        } else {
+            set
+        };
+        (0..setup.r).find_map(|v| Self::prove_index(setup, truncated_set, v).1)
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &[Element]) -> (u64, u64, Option<Self>) {
-        (0..setup.r).fold((0, setup.r, None), |(limit, r, proof_opt), v| {
+        let mut limit: u64 = 0;
+        for v in 0..setup.r {
+            let (l, proof_opt) = Self::prove_index(setup, set, v.saturating_add(1));
+            limit = limit.saturating_add(l);
             if proof_opt.is_some() {
-                (limit, r, proof_opt)
-            } else {
-                let (l, opt) = Proof::prove_index(setup, set, v + 1);
-                (limit + l, r, opt)
+                return (limit, v, proof_opt);
             }
-        })
+        }
+        (limit, setup.r, None)
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
-    pub fn verify(setup: &Setup, proof: Proof) -> bool {
+    pub fn verify(setup: &Setup, proof: &Self) -> bool {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
-        let r0 = Round::new(proof.v, proof.t, setup.n_p);
+        let r0 = Round::new(proof.v, proof.t, setup.n_p, setup.sec_param).unwrap();
         let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
             (
-                b && r.h_u64 == Proof::h0(setup, proof.v, s),
-                Round::update(&r, s),
+                b && r.h_u64 == Self::h0(setup, proof.v, s).unwrap(),
+                Round::update(&r, s, setup.sec_param).unwrap(),
             )
         });
-        b && Proof::h2(setup, &round)
+        b && Self::h2(setup, &round)
     }
 }
 
@@ -366,8 +366,8 @@ mod tests {
         let nb_tests = 1_000;
         let set_size = 1_000;
         for _t in 0..nb_tests {
-            let seed = rng.next_u32().to_ne_bytes().to_vec();
-            let s_p = gen_items::<DATA_LENGTH>(seed, set_size);
+            let seed = rng.next_u32().to_be_bytes().to_vec();
+            let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
             let params = Params {
                 lambda_sec: 10.0,
                 lambda_rel: 10.0,
@@ -376,25 +376,25 @@ mod tests {
             };
             let setup = Setup::new(&params);
             let proof = Proof::prove(&setup, &s_p).unwrap();
-            assert!(Proof::verify(&setup, proof.clone()));
+            assert!(Proof::verify(&setup, &proof.clone()));
             let proof_d = Proof {
                 v: proof.v,
                 t: proof.t.wrapping_add(1),
                 items: proof.items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_d));
+            assert!(!Proof::verify(&setup, &proof_d));
             let proof_r = Proof {
                 v: proof.v.wrapping_add(1),
                 t: proof.t,
                 items: proof.items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_r));
+            assert!(!Proof::verify(&setup, &proof_r));
             let proof_item = Proof {
                 v: proof.v,
                 t: proof.t,
                 items: vec![],
             };
-            assert!(!Proof::verify(&setup, proof_item));
+            assert!(!Proof::verify(&setup, &proof_item));
             let mut wrong_items = proof.items.clone();
             let last_item = wrong_items.pop().unwrap();
             let mut penultimate_item = wrong_items.pop().unwrap();
@@ -403,7 +403,7 @@ mod tests {
                 t: proof.t,
                 items: wrong_items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_itembis));
+            assert!(!Proof::verify(&setup, &proof_itembis));
             // Modifying the penultimate item to check correctness of H1 check and not H2
             penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
             wrong_items.push(penultimate_item);
@@ -413,7 +413,7 @@ mod tests {
                 t: proof.t,
                 items: wrong_items.clone(),
             };
-            assert!(!Proof::verify(&setup, proof_itembis));
+            assert!(!Proof::verify(&setup, &proof_itembis));
         }
     }
 }

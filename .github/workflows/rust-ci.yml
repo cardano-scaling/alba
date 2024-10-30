@@ -1,6 +1,9 @@
 name: Rust CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches: ["main"]
+  pull_request:
 
 jobs:
   build:
@@ -29,7 +32,7 @@ jobs:
           rustup component add clippy
 
       - name: Build
-        run: cargo build --verbose
+        run: RUSTFLAGS=-Dwarnings cargo build --all-features --all-targets --verbose
 
       - name: Verify target directory exists
         run: |
@@ -39,9 +42,11 @@ jobs:
       - name: Run tests
         run: cargo test --verbose
 
-#      - name: Run Clippy
-#        run: cargo clippy -- -D warnings
-#        working-directory: caledonia
+      - name: Run Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-features --all-targets
 
       - name: Check format
         run: cargo fmt -- --check
@@ -60,7 +65,7 @@ jobs:
       - name: Cache Cargo build
         uses: actions/cache@v3
         with:
-          path: caledonia/target
+          path: target
           key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-build-

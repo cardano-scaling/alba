@@ -17,15 +17,23 @@ rand = "0.8.5"
 rand_chacha = "0.3.1"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
-[[bench]]
-name = "centralized_telescope_time"
-harness = false
-path = "benches/centralized_telescope.rs"
+[lints.rust]
+missing_docs = "warn"
+unsafe_code = "warn"
 
-[[bench]]
-name = "centralized_telescope_step"
-harness = false
-path = "benches/centralized_telescope.rs"
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+arithmetic_side_effects = "deny"
+cast_possible_truncation = "allow"
+cast_precision_loss = "allow"
+cast_sign_loss = "allow"
+derive_partial_eq_without_eq = "allow"
+doc_markdown = "allow"
+missing_panics_doc = "allow"
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+semicolon_if_nothing_returned = "deny"
+similar_names = "allow"
 
 [package.metadata.docs.rs]
 rustdoc-args = [ "--html-in-header", "./src/katex-header.html" ]
