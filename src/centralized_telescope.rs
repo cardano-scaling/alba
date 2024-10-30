@@ -43,8 +43,37 @@ pub struct Setup {
     pub b: u64,
 }
 impl Setup {
-    /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
-    pub fn new(params: &Params) -> Self {
+    fn param_small_case(params: &Params, u_f64: f64, sec_param: u64) -> Self {
+        let ln12 = (12f64).ln();
+        let d = (32.0 * ln12 * u_f64).ceil();
+        Setup {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: params.lambda_rel as u64,
+            d: d as u64,
+            q: 2.0 * ln12 / d,
+            b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as u64,
+        }
+    }
+
+    fn param_high_case(params: &Params, u_f64: f64, lambda_rel2: f64, sec_param: u64) -> Self {
+        let loge = f64::from(LOG2_E);
+        let l2 = lambda_rel2 + 2.0;
+        let d = (16.0 * u_f64 * l2 / loge).ceil();
+        debug_assert!(params.n_p as f64 >= d * d * loge / (9.0 * l2));
+        Setup {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: (params.lambda_rel / lambda_rel2).ceil() as u64,
+            d: d as u64,
+            q: 2.0 * l2 / (d * loge),
+            b: (((l2 + u_f64.log2()) / l2) * (3.0 * u_f64 * d / 4.0) + d + u_f64).floor() as u64,
+        }
+    }
+
+    fn param_mid_case(params: &Params, u_f64: f64, s1: f64, sec_param: u64) -> Self {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = (-l).exp2();
@@ -66,73 +95,53 @@ impl Setup {
             }
             w
         }
+        let lambda_rel1 = params.lambda_rel.min(s1);
+        let lbar = (lambda_rel1 + 7.0) / f64::from(LOG2_E);
+        let d = (16.0 * u_f64 * lbar).ceil();
+        let lbar_over_d = lbar / d;
+        debug_assert!(params.n_p as f64 >= d * d / (9.0 * lbar));
 
+        let w = compute_w(u_f64, lambda_rel1);
+        let exponential = (2.0 * u_f64 * w * lbar / params.n_p as f64 + 7.0 * u_f64 / w).exp();
+        Setup {
+            sec_param,
+            n_p: params.n_p,
+            u: u_f64 as u64,
+            r: (params.lambda_rel / lambda_rel1).ceil() as u64,
+            d: d as u64,
+            q: 2.0 * lbar_over_d,
+            b: ((w * lbar_over_d + 1.0) * exponential * d * u_f64 + d).floor() as u64,
+        }
+    }
+
+    /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
+    pub fn new(params: &Params) -> Self {
+        let sec_param = params.lambda_rel.max(params.lambda_sec).ceil() as u64;
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
-        let lognpnf = (n_p_f64 / n_f_f64).log2();
         let loge = f64::from(LOG2_E);
 
-        let u_f64 =
-            ((params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2()) / lognpnf).ceil();
-        let u = u_f64 as u64;
+        let u_f64 = {
+            let numerator = params.lambda_sec + params.lambda_rel.log2() + 5.0 - loge.log2();
+            let denominator = (n_p_f64 / n_f_f64).log2();
+            (numerator / denominator).ceil()
+        };
 
         let ratio = 9.0 * n_p_f64 * loge / ((17.0 * u_f64).powi(2));
         let s1 = ratio - 7.0;
         let s2 = ratio - 2.0;
 
         if s1 < 1.0 || s2 < 1.0 {
-            // Small case, ie n_p <= λ^2
-            let ln12 = (12f64).ln();
-            let d = (32.0 * ln12 * u_f64).ceil();
-            return Setup {
-                sec_param: params.lambda_rel.max(params.lambda_sec).ceil() as u64,
-                n_p: params.n_p,
-                u,
-                r: params.lambda_rel as u64,
-                d: d as u64,
-                q: 2.0 * ln12 / d,
-                b: (8.0 * (u_f64 + 1.0) * d / ln12).floor() as u64,
-            };
-        }
-        let lambda_rel2 = params.lambda_rel.min(s2);
-        if u_f64 < lambda_rel2 {
-            // Case 3, Theorem 14, ie  n_p >= λ^3
-            let d = (16.0 * u_f64 * (lambda_rel2 + 2.0) / loge).ceil();
-            debug_assert!(n_p_f64 >= d * d * loge / (9.0 * (lambda_rel2 + 2.0)));
-            Setup {
-                sec_param: params.lambda_rel.max(params.lambda_sec).ceil() as u64,
-                n_p: params.n_p,
-                u,
-                r: (params.lambda_rel / lambda_rel2).ceil() as u64,
-                d: d as u64,
-                q: 2.0 * (lambda_rel2 + 2.0) / (d * loge),
-                b: (((lambda_rel2 + 2.0 + u_f64.log2()) / (lambda_rel2 + 2.0))
-                    * (3.0 * u_f64 * d / 4.0)
-                    + d
-                    + u_f64)
-                    .floor() as u64,
-            }
+            // Small case, i.e. n_p <= λ^2
+            Self::param_small_case(params, u_f64, sec_param)
         } else {
-            // Case 2, Theorem 13, ie λ^3 > n_p > λ^2
-            let lambda_rel1 = params.lambda_rel.min(s1);
-            let lbar = (lambda_rel1 + 7.0) / loge;
-            let d = (16.0 * u_f64 * lbar).ceil();
-            debug_assert!(n_p_f64 >= d * d / (9.0 * lbar));
-
-            let w = compute_w(u_f64, lambda_rel1);
-            Setup {
-                sec_param: params.lambda_rel.max(params.lambda_sec).ceil() as u64,
-                n_p: params.n_p,
-                u,
-                r: (params.lambda_rel / lambda_rel1).ceil() as u64,
-                d: d as u64,
-                q: 2.0 * lbar / d,
-                b: ((w * lbar / d + 1.0)
-                    * (2.0 * u_f64 * w * lbar / n_p_f64 + 7.0 * u_f64 / w).exp()
-                    * d
-                    * u_f64
-                    + d)
-                    .floor() as u64,
+            let lambda_rel2 = params.lambda_rel.min(s2);
+            if u_f64 < lambda_rel2 {
+                // Case 3, Theorem 14, i.e.  n_p >= λ^3
+                Self::param_high_case(params, u_f64, lambda_rel2, sec_param)
+            } else {
+                // Case 2, Theorem 13, i.e. λ^3 > n_p > λ^2
+                Self::param_mid_case(params, u_f64, s1, sec_param)
             }
         }
     }
