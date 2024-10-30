@@ -46,7 +46,7 @@ impl Setup {
     fn param_small_case(params: &Params, u_f64: f64, sec_param: u64) -> Self {
         let ln12 = (12f64).ln();
         let d = (32.0 * ln12 * u_f64).ceil();
-        Setup {
+        Self {
             sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
@@ -62,7 +62,7 @@ impl Setup {
         let l2 = lambda_rel2 + 2.0;
         let d = (16.0 * u_f64 * l2 / loge).ceil();
         debug_assert!(params.n_p as f64 >= d * d * loge / (9.0 * l2));
-        Setup {
+        Self {
             sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
@@ -103,7 +103,7 @@ impl Setup {
 
         let w = compute_w(u_f64, lambda_rel1);
         let exponential = (2.0 * u_f64 * w * lbar / params.n_p as f64 + 7.0 * u_f64 / w).exp();
-        Setup {
+        Self {
             sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
@@ -183,14 +183,14 @@ impl Round {
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Round> {
-        let (h, h_u64_opt) = Round::h1(
+    pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
+        let (h, h_u64_opt) = Self::h1(
             v.to_ne_bytes().as_ref(),
             t.to_ne_bytes().as_ref(),
             n_p,
             sec_param,
         );
-        h_u64_opt.map(|h_u64| Round {
+        h_u64_opt.map(|h_u64| Self {
             v,
             t,
             s_list: vec![],
@@ -202,11 +202,11 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Round, s: Element, sec_param: u64) -> Option<Round> {
+    pub fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let (h, h_u64_opt) = Round::h1(r.h.clone().as_ref(), s.as_ref(), r.n_p, sec_param);
-        h_u64_opt.map(|h_u64| Round {
+        let (h, h_u64_opt) = Self::h1(r.h.clone().as_ref(), s.as_ref(), r.n_p, sec_param);
+        h_u64_opt.map(|h_u64| Self {
             v: r.v,
             t: r.t,
             s_list,
@@ -252,15 +252,10 @@ impl Proof {
     /// and returns first round candidate Round{t, x_1, ..., x_u)} such that:
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
-    fn dfs(
-        setup: &Setup,
-        bins: &[Vec<Element>],
-        round: &Round,
-        limit: u64,
-    ) -> (u64, Option<Proof>) {
+    fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, limit: u64) -> (u64, Option<Self>) {
         if round.s_list.len() as u64 == setup.u {
-            let proof_opt = if Proof::h2(setup, round) {
-                Some(Proof {
+            let proof_opt = if Self::h2(setup, round) {
+                Some(Self {
                     v: round.v,
                     t: round.t,
                     items: round.s_list.clone(),
@@ -286,10 +281,10 @@ impl Proof {
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
     /// candidate is found within the setup.b steps.
-    fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
+    fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Self>) {
         let mut bins: Vec<Vec<Element>> = vec![vec![]; setup.n_p as usize];
         for &s in set {
-            match Proof::h0(setup, v, s) {
+            match Self::h0(setup, v, s) {
                 Some(h) => {
                     bins[h as usize].push(s);
                 }
@@ -303,7 +298,7 @@ impl Proof {
                 return (limit, None);
             }
             if let Some(r) = Round::new(v, t, setup.n_p, setup.sec_param) {
-                let (l, proof_opt) = Proof::dfs(setup, &bins, &r, limit.saturating_add(1));
+                let (l, proof_opt) = Self::dfs(setup, &bins, &r, limit.saturating_add(1));
                 if proof_opt.is_some() {
                     return (l, proof_opt);
                 }
@@ -324,7 +319,7 @@ impl Proof {
         } else {
             set
         };
-        (0..setup.r).find_map(|v| Proof::prove_index(setup, truncated_set, v).1)
+        (0..setup.r).find_map(|v| Self::prove_index(setup, truncated_set, v).1)
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof as
@@ -334,7 +329,7 @@ impl Proof {
             if proof_opt.is_some() {
                 (limit, r, proof_opt)
             } else {
-                let (l, opt) = Proof::prove_index(setup, set, v.saturating_add(1));
+                let (l, opt) = Self::prove_index(setup, set, v.saturating_add(1));
                 (limit.saturating_add(l), r, opt)
             }
         })
@@ -342,18 +337,18 @@ impl Proof {
 
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
-    pub fn verify(setup: &Setup, proof: &Proof) -> bool {
+    pub fn verify(setup: &Setup, proof: &Self) -> bool {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
         let r0 = Round::new(proof.v, proof.t, setup.n_p, setup.sec_param).unwrap();
         let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
             (
-                b && r.h_u64 == Proof::h0(setup, proof.v, s).unwrap(),
+                b && r.h_u64 == Self::h0(setup, proof.v, s).unwrap(),
                 Round::update(&r, s, setup.sec_param).unwrap(),
             )
         });
-        b && Proof::h2(setup, &round)
+        b && Self::h2(setup, &round)
     }
 }
 
