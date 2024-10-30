@@ -1,3 +1,4 @@
+Mapping of the variable names in paper and the code.
 
 In the paper, numerous variables are represented by various letters. To enhance the simplicity and readability of our code, we have opted for more descriptive names. A mapping between the variable names used in the paper and those in the code is provided for reference.
 
