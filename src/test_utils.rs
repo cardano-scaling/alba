@@ -21,7 +21,7 @@ pub fn gen_items<const N: usize>(seed: &[u8], set_size: u64) -> Vec<[u8; N]> {
     let mut s_p = Vec::with_capacity(set_size as usize);
     for b in 0..set_size {
         let mut data = vec![seed.to_vec()];
-        data.push(b.to_ne_bytes().to_vec());
+        data.push(b.to_be_bytes().to_vec());
         let item = combine_hashes::<N>(&data);
         s_p.push(item);
     }

@@ -185,8 +185,8 @@ impl Round {
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
     pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
         let (h, h_u64_opt) = Self::h1(
-            v.to_ne_bytes().as_ref(),
-            t.to_ne_bytes().as_ref(),
+            v.to_be_bytes().as_ref(),
+            t.to_be_bytes().as_ref(),
             n_p,
             sec_param,
         );
@@ -366,7 +366,7 @@ mod tests {
         let nb_tests = 1_000;
         let set_size = 1_000;
         for _t in 0..nb_tests {
-            let seed = rng.next_u32().to_ne_bytes().to_vec();
+            let seed = rng.next_u32().to_be_bytes().to_vec();
             let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
             let params = Params {
                 lambda_sec: 10.0,
