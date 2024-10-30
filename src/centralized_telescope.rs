@@ -167,12 +167,16 @@ pub struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(input: &[Vec<u8>], n_p: u64, sec_param: u64) -> (Hash, Option<u64>) {
+    fn h1(
+        first_input: &[u8],
+        second_input: &[u8],
+        n_p: u64,
+        sec_param: u64,
+    ) -> (Hash, Option<u64>) {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-H1");
-        for i in input {
-            hasher.update(i);
-        }
+        hasher.update(first_input);
+        hasher.update(second_input);
         let digest: Hash = hasher.finalize().into();
         (digest, utils::sample_uniform(&digest, n_p, sec_param))
     }
@@ -180,9 +184,12 @@ impl Round {
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
     pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Round> {
-        let mut data = vec![v.to_ne_bytes().to_vec()];
-        data.push(t.to_ne_bytes().to_vec());
-        let (h, h_u64_opt) = Round::h1(&data, n_p, sec_param);
+        let (h, h_u64_opt) = Round::h1(
+            v.to_ne_bytes().as_ref(),
+            t.to_ne_bytes().as_ref(),
+            n_p,
+            sec_param,
+        );
         h_u64_opt.map(|h_u64| Round {
             v,
             t,
@@ -198,9 +205,7 @@ impl Round {
     pub fn update(r: &Round, s: Element, sec_param: u64) -> Option<Round> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let mut data = vec![r.h.clone().to_vec()];
-        data.push(s.to_vec());
-        let (h, h_u64_opt) = Round::h1(&data, r.n_p, sec_param);
+        let (h, h_u64_opt) = Round::h1(r.h.clone().as_ref(), s.as_ref(), r.n_p, sec_param);
         h_u64_opt.map(|h_u64| Round {
             v: r.v,
             t: r.t,
