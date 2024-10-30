@@ -325,14 +325,15 @@ impl Proof {
     /// Alba's proving algorithm used for benchmarking, returning a proof as
     /// well as the number of  steps ran to find it.
     pub fn bench(setup: &Setup, set: &[Element]) -> (u64, u64, Option<Self>) {
-        (0..setup.r).fold((0, setup.r, None), |(limit, r, proof_opt), v| {
+        let mut limit: u64 = 0;
+        for v in 0..setup.r {
+            let (l, proof_opt) = Self::prove_index(setup, set, v.saturating_add(1));
+            limit = limit.saturating_add(l);
             if proof_opt.is_some() {
-                (limit, r, proof_opt)
-            } else {
-                let (l, opt) = Self::prove_index(setup, set, v.saturating_add(1));
-                (limit.saturating_add(l), r, opt)
+                return (limit, v, proof_opt);
             }
-        })
+        }
+        (limit, setup.r, None)
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
