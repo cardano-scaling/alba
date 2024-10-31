@@ -267,6 +267,9 @@ impl Proof {
 
         let mut l = limit;
         for &s in &bins[round.h_u64 as usize] {
+            if limit == setup.b {
+                return (limit, None);
+            }
             if let Some(r) = Round::update(round, s, setup.sec_param) {
                 let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l.saturating_add(1));
                 if proof_opt.is_some() {
