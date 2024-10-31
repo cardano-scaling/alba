@@ -185,7 +185,7 @@ impl Round {
     pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
         let v_bytes: [u8; 8] = v.to_be_bytes();
         let t_bytes: [u8; 8] = t.to_be_bytes();
-        let (h, h_u64_opt) = Self::h1(v_bytes.as_ref(), t_bytes.as_ref(), n_p, sec_param);
+        let (h, h_u64_opt) = Self::h1(&v_bytes, &t_bytes, n_p, sec_param);
         h_u64_opt.map(|h_u64| Self {
             v,
             t,
@@ -201,7 +201,7 @@ impl Round {
     pub fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let (h, h_u64_opt) = Self::h1(r.h.clone().as_ref(), s.as_ref(), r.n_p, sec_param);
+        let (h, h_u64_opt) = Self::h1(&r.h, &s, r.n_p, sec_param);
         h_u64_opt.map(|h_u64| Self {
             v: r.v,
             t: r.t,
