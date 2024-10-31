@@ -242,7 +242,7 @@ impl Proof {
         hasher.update(b"Telescope-H2");
         hasher.update(r.h);
         let digest: Hash = hasher.finalize().into();
-        utils::sample_bernouilli(&digest, setup.q, setup.sec_param)
+        utils::sample_bernoulli(&digest, setup.q, setup.sec_param)
     }
 
     /// Depth-first search which goes through all potential round candidates

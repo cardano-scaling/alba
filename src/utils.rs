@@ -1,12 +1,9 @@
 //! Helper functions for Alba primitives
-
 use std::cmp::min;
 
-// Oracles
-
 /// Takes as input a hash and range $n$ and samples an integer from Unif(0, n).
-/// We do so by interpreting the hash as a random number an returns it modulo n
-/// (c.f. Appendix B, Alba paper).
+/// We do so by interpreting the hash as a random number and returns it modulo
+/// n (c.f. Appendix B, Alba paper).
 pub fn sample_uniform(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
@@ -46,9 +43,9 @@ pub fn sample_uniform(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {
 }
 
 /// Takes as input a hash and probability $q$ and returns true with
-/// probability q otherwise false according to a Bernouilli distribution
+/// probability q otherwise false according to a Bernoulli distribution
 /// (c.f. Appendix B, Alba paper).
-pub fn sample_bernouilli(hash: &[u8], q: f64, sec_param: u64) -> bool {
+pub fn sample_bernoulli(hash: &[u8], q: f64, sec_param: u64) -> bool {
     // For error parameter ɛ̝, find an approximation x/y of q with (x,y) in N²
     // such that 0 < q - x/y <= ɛ̝
     let epsilon_fail: u64 = 1 << sec_param;
