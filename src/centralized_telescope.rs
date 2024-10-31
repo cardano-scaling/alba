@@ -182,7 +182,7 @@ impl Round {
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
+    fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
         let v_bytes: [u8; 8] = v.to_be_bytes();
         let t_bytes: [u8; 8] = t.to_be_bytes();
         let (h, h_u64_opt) = Self::h1(&v_bytes, &t_bytes, n_p, sec_param);
@@ -198,7 +198,7 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
+    fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
         let (h, h_u64_opt) = Self::h1(&r.h, &s, r.n_p, sec_param);
