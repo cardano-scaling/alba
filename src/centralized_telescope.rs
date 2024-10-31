@@ -78,7 +78,7 @@ impl Setup {
                 let bound = (-l).exp2();
                 let mut factor = (w.ceil() as u64).saturating_add(1);
                 let w_2 = w + 2.0;
-                let exp_1_over_w = E.powf(1.0 / w);
+                let exp_1_over_w = w.recip().exp();
                 let mut ratio = (14.0 * w * w * w_2 * exp_1_over_w) / (w_2 - exp_1_over_w);
                 while factor != 0 {
                     ratio /= factor as f64;
