@@ -89,7 +89,7 @@ impl Setup {
                 }
                 false
             }
-            let mut w: f64 = u;
+            let mut w = u;
             while !factorial_check(w, l) {
                 w += 1.0;
             }
