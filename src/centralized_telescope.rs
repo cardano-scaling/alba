@@ -246,7 +246,9 @@ impl Proof {
     }
 
     /// Depth-first search which goes through all potential round candidates
-    /// and returns first round candidate Round{t, x_1, ..., x_u)} such that:
+    /// and returns the total number of recursive DFS calls done and, if found
+    /// under setup.b calls, the first round candidate Round{t, x_1, ..., x_u)}
+    /// such that:
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
     fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, limit: u64) -> (u64, Option<Self>) {
