@@ -32,7 +32,7 @@ pub fn sample_uniform(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {
     // two. *(up to 8 bytes, in little endian)
     fn mod_power_of_2(hash: &[u8], n: u64) -> u64 {
         debug_assert!(8u32.saturating_mul(hash.len() as u32) >= n.ilog2());
-        from_bytes_le(hash) & n.saturating_sub(1)
+        from_bytes_be(hash) & n.saturating_sub(1)
     }
 
     if n.is_power_of_two() {
@@ -60,16 +60,16 @@ pub fn sample_bernoulli(hash: &[u8], q: f64, sec_param: u64) -> bool {
     }
     // Output i in [0; y-1] from hash
     debug_assert!(8.0 * hash.len() as f32 >= (y as f32).log2());
-    let i = from_bytes_le(hash) & y.saturating_sub(1);
+    let i = from_bytes_be(hash) & y.saturating_sub(1);
     // Return true if i < x
     i < x
 }
 
 // Returns the integer representation of, up to the 8 first bytes of, the
 // input bytes in little endian
-fn from_bytes_le(bytes: &[u8]) -> u64 {
+fn from_bytes_be(bytes: &[u8]) -> u64 {
     let mut array = [0u8; 8];
     let bytes = &bytes[..min(8, bytes.len())];
     array[..bytes.len()].copy_from_slice(bytes);
-    u64::from_le_bytes(array)
+    u64::from_be_bytes(array)
 }
