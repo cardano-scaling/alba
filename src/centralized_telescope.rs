@@ -3,7 +3,7 @@
 
 use crate::utils;
 use blake2::{Blake2s256, Digest};
-use std::f64::consts::{E, LOG2_E};
+use std::f64::consts::LOG2_E;
 
 const DATA_LENGTH: usize = 32;
 const DIGEST_SIZE: usize = 32;
