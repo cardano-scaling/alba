@@ -148,7 +148,7 @@ impl Setup {
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round {
+struct Round {
     /// Proof counter
     v: u64,
     /// Proof 2nd counter
