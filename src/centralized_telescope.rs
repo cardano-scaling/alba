@@ -339,14 +339,25 @@ impl Proof {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
-        let r0 = Round::new(proof.v, proof.t, setup.n_p, setup.sec_param).unwrap();
-        let (b, round) = proof.items.iter().fold((true, r0), |(b, r), &s| {
-            (
-                b && r.h_u64 == Self::h0(setup, proof.v, s).unwrap(),
-                Round::update(&r, s, setup.sec_param).unwrap(),
-            )
-        });
-        b && Self::h2(setup, &round)
+        if let Some(mut round) = Round::new(proof.v, proof.t, setup.n_p, setup.sec_param) {
+            for element in proof.items.clone() {
+                if let Some(h) = Self::h0(setup, proof.v, element) {
+                    if round.h_u64 == h {
+                        if let Some(r) = Round::update(&round, element, setup.sec_param) {
+                            round = r;
+                        } else {
+                            return false;
+                        }
+                    } else {
+                        return false;
+                    }
+                } else {
+                    return false;
+                }
+            }
+            return Self::h2(setup, &round);
+        }
+        false
     }
 }
 
