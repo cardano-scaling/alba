@@ -247,11 +247,12 @@ impl Proof {
 
     /// Depth-first search which goes through all potential round candidates
     /// and returns the total number of recursive DFS calls done and, if found
-    /// under setup.b calls, the first round candidate Round{t, x_1, ..., x_u)}
-    /// such that:
-    /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
-    /// - H2(t, x_0, ..., x_u) = true
-    fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, limit: u64) -> (u64, Option<Self>) {
+    fn dfs(
+        setup: &Setup,
+        bins: &[Vec<Element>],
+        round: &Round,
+        mut limit: u64,
+    ) -> (u64, Option<Self>) {
         if round.s_list.len() as u64 == setup.u {
             let proof_opt = if Self::h2(setup, round) {
                 Some(Self {
@@ -265,20 +266,19 @@ impl Proof {
             return (limit, proof_opt);
         }
 
-        let mut l = limit;
         for &s in &bins[round.h_u64 as usize] {
-            if l == setup.b {
-                return (l, None);
+            if limit == setup.b {
+                return (limit, None);
             }
             if let Some(r) = Round::update(round, s, setup.sec_param) {
-                let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l.saturating_add(1));
+                let (l, proof_opt) = Self::dfs(setup, bins, &r, limit.saturating_add(1));
                 if proof_opt.is_some() {
-                    return (l_dfs, proof_opt);
+                    return (l, proof_opt);
                 }
-                l = l_dfs;
+                limit = l;
             }
         }
-        (l, None)
+        (limit, None)
     }
 
     /// Indexed proving algorithm, returns an empty proof if no suitable
