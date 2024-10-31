@@ -251,7 +251,7 @@ impl Proof {
     /// such that:
     /// - for all i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(t, x_1, ..., x_i)]
     /// - H2(t, x_0, ..., x_u) = true
-    fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, limit: u64) -> (u64, Option<Self>) {
+    fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut limit: u64) -> (u64, Option<Self>) {
         if round.s_list.len() as u64 == setup.u {
             let proof_opt = if Self::h2(setup, round) {
                 Some(Self {
@@ -267,8 +267,8 @@ impl Proof {
 
         let mut l = limit;
         for &s in &bins[round.h_u64 as usize] {
-            if limit == setup.b {
-                return (limit, None);
+            if l == setup.b {
+                return (l, None);
             }
             if let Some(r) = Round::update(round, s, setup.sec_param) {
                 let (l_dfs, proof_opt) = Self::dfs(setup, bins, &r, l.saturating_add(1));
