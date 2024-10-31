@@ -245,8 +245,13 @@ impl Proof {
         utils::sample_bernoulli(&digest, setup.q, setup.sec_param)
     }
 
-    /// Depth-first search which goes through all potential round candidates
+    /// Depth-First Search which goes through all potential round candidates
     /// and returns the total number of recursive DFS calls done and, if found
+    /// under setup.b calls, Some(Proof), that is the first round candidate
+    /// Round{v, t, x_1, ..., x_u)} such that:
+    /// - ∀i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(...H1(H1(v, t), x_1), ..., x_i)]
+    /// - H2(H1(... H1((H1(v, t), x_1), ..., x_u)) = true
+    /// otherwise None
     fn dfs(
         setup: &Setup,
         bins: &[Vec<Element>],
@@ -281,8 +286,9 @@ impl Proof {
         (limit, None)
     }
 
-    /// Indexed proving algorithm, returns an empty proof if no suitable
-    /// candidate is found within the setup.b steps.
+    /// Indexed proving algorithm, returns the total number of DFS calls done
+    /// to find a proof and Some(proof) if found within setup.b calls of DFS,
+    /// otherwise None
     fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Self>) {
         let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.n_p as usize);
         for _ in 0..setup.n_p {
