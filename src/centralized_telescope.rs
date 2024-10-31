@@ -322,20 +322,6 @@ impl Proof {
         (0..setup.r).find_map(|v| Self::prove_index(setup, truncated_set, v).1)
     }
 
-    /// Alba's proving algorithm used for benchmarking, returning a proof as
-    /// well as the number of  steps ran to find it.
-    pub fn bench(setup: &Setup, set: &[Element]) -> (u64, u64, Option<Self>) {
-        let mut limit: u64 = 0;
-        for v in 0..setup.r {
-            let (l, proof_opt) = Self::prove_index(setup, set, v.saturating_add(1));
-            limit = limit.saturating_add(l);
-            if proof_opt.is_some() {
-                return (limit, v, proof_opt);
-            }
-        }
-        (limit, setup.r, None)
-    }
-
     /// Alba's verification algorithm, follows proving algorithm by running the
     /// same depth-first search algorithm.
     pub fn verify(setup: &Setup, proof: &Self) -> bool {
