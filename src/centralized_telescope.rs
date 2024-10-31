@@ -294,7 +294,8 @@ impl Proof {
         for _ in 0..setup.n_p {
             bins.push(Vec::new());
         }
-        for &s in set {
+        // Take only up to 2*np elements for efficiency
+        for &s in set.iter().take(setup.n_p.saturating_mul(2) as usize) {
             match Self::h0(setup, v, s) {
                 Some(h) => {
                     bins[h as usize].push(s);
@@ -323,14 +324,7 @@ impl Proof {
     /// Calls up to setup.r times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
     pub fn prove(setup: &Setup, set: &[Element]) -> Option<Self> {
-        // Take only up to 2*np elements for efficiency
-        let two_np = setup.n_p.saturating_mul(2) as usize;
-        let truncated_set = if set.len() >= two_np {
-            &set.iter().take(two_np).copied().collect::<Vec<Element>>()
-        } else {
-            set
-        };
-        (0..setup.r).find_map(|v| Self::prove_index(setup, truncated_set, v).1)
+        (0..setup.r).find_map(|v| Self::prove_index(setup, set, v).1)
     }
 
     /// Alba's verification algorithm, follows proving algorithm by running the
