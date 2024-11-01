@@ -1,7 +1,7 @@
 //! Helper functions for Alba primitives
 use std::cmp::min;
 
-/// Takes as input a hash and range $n$ and samples an integer from Unif[0, n).
+/// Takes as input a hash and range $n$ and samples an integer from Unif[0, n[.
 /// We do so by interpreting the hash as a random number and returns it modulo
 /// n (c.f. Appendix B, Alba paper).
 pub(crate) fn sample_uniform(hash: &[u8], n: u64, sec_param: u64) -> Option<u64> {

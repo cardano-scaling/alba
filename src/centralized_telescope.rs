@@ -164,7 +164,7 @@ struct Round {
 }
 
 impl Round {
-    /// Oracle producing a uniformly random value in [1, n_p] used for round candidates
+    /// Oracle producing a uniformly random value in [0, n_p[ used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn h1(
         first_input: &[u8],
@@ -225,7 +225,7 @@ pub struct Proof {
 }
 
 impl Proof {
-    /// Oracle producing a uniformly random value in [1, n_p] used for prehashing S_p
+    /// Oracle producing a uniformly random value in [0, n_p[ used for prehashing S_p
     fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
         let v_bytes: [u8; 8] = v.to_be_bytes();
         let mut hasher = Blake2s256::new();
@@ -327,8 +327,8 @@ impl Proof {
         (0..setup.r).find_map(|v| Self::prove_index(setup, set, v).1)
     }
 
-    /// Alba's verification algorithm, follows proving algorithm by running the
-    /// same depth-first search algorithm.
+    /// Alba's verification algorithm, returns true if the proof is
+    /// successfully verified, following the DFS verification, false otherwise.
     pub fn verify(setup: &Setup, proof: &Self) -> bool {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
