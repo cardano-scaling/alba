@@ -27,8 +27,6 @@ pub struct Params {
 /// Setup output parameters
 #[derive(Debug, Clone)]
 pub struct Setup {
-    /// Security parameter
-    pub sec_param: u64,
     /// Approximate size of set Sp to lower bound
     pub n_p: u64,
     /// Proof size (in Sp elements)
@@ -43,11 +41,10 @@ pub struct Setup {
     pub b: u64,
 }
 impl Setup {
-    fn param_small_case(params: &Params, u_f64: f64, sec_param: u64) -> Self {
+    fn param_small_case(params: &Params, u_f64: f64) -> Self {
         let ln12 = (12f64).ln();
         let d = (32.0 * ln12 * u_f64).ceil();
         Self {
-            sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
             r: params.lambda_rel as u64,
@@ -57,12 +54,11 @@ impl Setup {
         }
     }
 
-    fn param_high_case(params: &Params, u_f64: f64, lambda_rel2: f64, sec_param: u64) -> Self {
+    fn param_high_case(params: &Params, u_f64: f64, lambda_rel2: f64) -> Self {
         let l2 = lambda_rel2 + 2.0;
         let d = (16.0 * u_f64 * l2 / LOG2_E).ceil();
         debug_assert!(params.n_p as f64 >= d * d * LOG2_E / (9.0 * l2));
         Self {
-            sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
             r: (params.lambda_rel / lambda_rel2).ceil() as u64,
@@ -72,7 +68,7 @@ impl Setup {
         }
     }
 
-    fn param_mid_case(params: &Params, u_f64: f64, s1: f64, sec_param: u64) -> Self {
+    fn param_mid_case(params: &Params, u_f64: f64, s1: f64) -> Self {
         fn compute_w(u: f64, l: f64) -> f64 {
             fn factorial_check(w: f64, l: f64) -> bool {
                 let bound = (-l).exp2();
@@ -104,7 +100,6 @@ impl Setup {
         let w = compute_w(u_f64, lambda_rel1);
         let exponential = (2.0 * u_f64 * w * lbar / params.n_p as f64 + 7.0 * u_f64 / w).exp();
         Self {
-            sec_param,
             n_p: params.n_p,
             u: u_f64 as u64,
             r: (params.lambda_rel / lambda_rel1).ceil() as u64,
@@ -116,7 +111,6 @@ impl Setup {
 
     /// Setup algorithm taking a Params as input and returning setup parameters (u,d,q)
     pub fn new(params: &Params) -> Self {
-        let sec_param = params.lambda_rel.max(params.lambda_sec).ceil() as u64;
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
 
@@ -132,15 +126,15 @@ impl Setup {
 
         if s1 < 1.0 || s2 < 1.0 {
             // Small case, i.e. n_p <= λ^2
-            Self::param_small_case(params, u_f64, sec_param)
+            Self::param_small_case(params, u_f64)
         } else {
             let lambda_rel2 = params.lambda_rel.min(s2);
             if u_f64 < lambda_rel2 {
                 // Case 3, Theorem 14, i.e.  n_p >= λ^3
-                Self::param_high_case(params, u_f64, lambda_rel2, sec_param)
+                Self::param_high_case(params, u_f64, lambda_rel2)
             } else {
                 // Case 2, Theorem 13, i.e. λ^3 > n_p > λ^2
-                Self::param_mid_case(params, u_f64, s1, sec_param)
+                Self::param_mid_case(params, u_f64, s1)
             }
         }
     }
@@ -166,26 +160,21 @@ struct Round {
 impl Round {
     /// Oracle producing a uniformly random value in [0, n_p[ used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(
-        first_input: &[u8],
-        second_input: &[u8],
-        n_p: u64,
-        sec_param: u64,
-    ) -> (Hash, Option<u64>) {
+    fn h1(first_input: &[u8], second_input: &[u8], n_p: u64) -> (Hash, Option<u64>) {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-H1");
         hasher.update(first_input);
         hasher.update(second_input);
         let digest: Hash = hasher.finalize().into();
-        (digest, utils::sample_uniform(&digest, n_p, sec_param))
+        (digest, utils::sample_uniform(&digest, n_p))
     }
 
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    fn new(v: u64, t: u64, n_p: u64, sec_param: u64) -> Option<Self> {
+    fn new(v: u64, t: u64, n_p: u64) -> Option<Self> {
         let v_bytes: [u8; 8] = v.to_be_bytes();
         let t_bytes: [u8; 8] = t.to_be_bytes();
-        let (h, h_u64_opt) = Self::h1(&v_bytes, &t_bytes, n_p, sec_param);
+        let (h, h_u64_opt) = Self::h1(&v_bytes, &t_bytes, n_p);
         h_u64_opt.map(|h_u64| Self {
             v,
             t,
@@ -198,10 +187,10 @@ impl Round {
 
     /// Updates a round with an element of S_p
     /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    fn update(r: &Self, s: Element, sec_param: u64) -> Option<Self> {
+    fn update(r: &Self, s: Element) -> Option<Self> {
         let mut s_list = r.s_list.clone();
         s_list.push(s);
-        let (h, h_u64_opt) = Self::h1(&r.h, &s, r.n_p, sec_param);
+        let (h, h_u64_opt) = Self::h1(&r.h, &s, r.n_p);
         h_u64_opt.map(|h_u64| Self {
             v: r.v,
             t: r.t,
@@ -233,7 +222,7 @@ impl Proof {
         hasher.update(v_bytes);
         hasher.update(s);
         let digest: Hash = hasher.finalize().into();
-        utils::sample_uniform(&digest, setup.n_p, setup.sec_param)
+        utils::sample_uniform(&digest, setup.n_p)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
@@ -242,7 +231,7 @@ impl Proof {
         hasher.update(b"Telescope-H2");
         hasher.update(r.h);
         let digest: Hash = hasher.finalize().into();
-        utils::sample_bernoulli(&digest, setup.q, setup.sec_param)
+        utils::sample_bernoulli(&digest, setup.q)
     }
 
     /// Depth-First Search which goes through all potential round candidates
@@ -275,7 +264,7 @@ impl Proof {
             if limit == setup.b {
                 return (limit, None);
             }
-            if let Some(r) = Round::update(round, s, setup.sec_param) {
+            if let Some(r) = Round::update(round, s) {
                 let (l, proof_opt) = Self::dfs(setup, bins, &r, limit.saturating_add(1));
                 if proof_opt.is_some() {
                     return (l, proof_opt);
@@ -309,7 +298,7 @@ impl Proof {
             if limit == setup.b {
                 return (limit, None);
             }
-            if let Some(r) = Round::new(v, t, setup.n_p, setup.sec_param) {
+            if let Some(r) = Round::new(v, t, setup.n_p) {
                 let (l, proof_opt) = Self::dfs(setup, &bins, &r, limit.saturating_add(1));
                 if proof_opt.is_some() {
                     return (l, proof_opt);
@@ -333,7 +322,7 @@ impl Proof {
         if proof.t >= setup.d || proof.v >= setup.r || proof.items.len() as u64 != setup.u {
             return false;
         }
-        let Some(mut round) = Round::new(proof.v, proof.t, setup.n_p, setup.sec_param) else {
+        let Some(mut round) = Round::new(proof.v, proof.t, setup.n_p) else {
             return false;
         };
         for &element in &proof.items {
@@ -341,7 +330,7 @@ impl Proof {
                 return false;
             };
             if round.h_u64 == h {
-                match Round::update(&round, element, setup.sec_param) {
+                match Round::update(&round, element) {
                     Some(r) => round = r,
                     None => return false,
                 }
