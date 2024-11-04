@@ -122,6 +122,7 @@ implemented in the future; for instance, unweighted variants can be concretely
 more efficient due to no lottery and less complexity, and in the decentralized
 setting, an unweighted version could be more efficient due to not needing to
 sample the binomial distribution.
+
 We should be able to reuse most of the logic between different schemes anyway,
 so the overhead shouldn't be large.
 
