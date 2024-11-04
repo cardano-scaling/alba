@@ -162,15 +162,16 @@ Additionally, different hash functions (e.g., SHA and BLAKE) shouldn't mix and
 match.
 The following example is contrived, but it demonstrates why using different
 hash function constructions within the same protocol can be insecure.
-Suppose H and H' are two distinct random looking hash functions.
-You might expect that the function G given by G(x) = H(x) xor H'(x) is also
-random looking, but it's not true.
-Let H be a hash function modeled as a random oracle and define H(x) = ~H'(x),
-where ~ is bitwise not; then H' is also random looking
-but G(x) = 111...111 for all x.
-Even if we use domain separation for H and H', we cannot guarantee that
-G(x) = H(0, x) xor H'(1, x) is random looking.
-Define H'(b, x) = H(~b, x); then G(x) = 000...000 for all x.
+Suppose $H$ and $H'$ are two distinct random looking hash functions.
+You might expect that the function $G$ given by $G(x) = H(x) \oplus H'(x)$,
+where $\oplus$ is the bitwise xor, is also random looking, but it's not true.
+Let $H$ be a hash function modeled as a random oracle and define
+$H(x) = \sim H'(x)$,
+where $\sim$ is bitwise not; then $H'$ is also random looking
+but $G(x) = 111...111$ for all $x$.
+Even if we use domain separation for $H$ and $H'$, we cannot guarantee that
+$G(x) = H(0, x) \oplus H'(1, x)$ is random looking.
+Define $H'(b, x) = H(\sim b, x)$; then $G(x) = 000...000$ for all $x$.
 
 ## Mathematical rigor and production-readiness
 At this point, it is not our goal to make the implementation 100% correct and
