@@ -4,9 +4,9 @@
 
 This is the first design doc for our implementation of Approximate Lower Bound
 Arguments intended to guide the development of the library.
-See the [website](https://alba.cardano-scaling.org) or the paper
-(https://eprint.iacr.org/2023/1655) to get an overview of this cryptographic
-primitive.
+See the [website](https://alba.cardano-scaling.org) or
+the [paper](https://eprint.iacr.org/2023/1655) to get an overview of this
+cryptographic primitive.
 
 We intend to create a high quality reference implementation of ALBA sufficient
 for accurately prototyping larger protocols utilizing this primitive.
@@ -145,12 +145,13 @@ for ALBA using, for example, BLAKE underneath, but with a warning that
 it is provided for demonstration / prototyping only and should not be used in
 production.
 One reason is that when ALBA is used alongside other sub-protocols that also
-need hashing, it is the user's responsibility to implement domain separation
-(https://en.wikipedia.org/wiki/Domain_separation) to provide the different
+need hashing, it is the user's responsibility to implement
+[domain separation](https://en.wikipedia.org/wiki/Domain_separation)
+to provide the different
 sub-protocols with independent hash functions.
 Otherwise, the underlying assumptions needed for security might break and the
 larger protocol can become insecure
-(https://link.springer.com/chapter/10.1007/978-3-030-45724-2_1).
+(see [here](https://link.springer.com/chapter/10.1007/978-3-030-45724-2_1)).
 the hash function do not collide.
 Additionally, different hash functions (e.g., SHA and BLAKE) shouldn't mix and
 match.
