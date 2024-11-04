@@ -172,6 +172,12 @@ Even if we use domain separation for $H$ and $H'$, we cannot guarantee that
 $G(x) = H(0, x) \oplus H'(1, x)$ is random looking.
 Define $H'(b, x) = H(\sim b, x)$; then $G(x) = 000...000$ for all $x$.
 
+## Generic data elements
+Similar to the above, we should also let data elements have a generic type.
+For example, the ALBA implementation should work with a signature type that
+exposes the underlying data as a `u8` slice.
+The exact interfaces will need to be determined.
+
 ## Mathematical rigor and production-readiness
 At this point, it is not our goal to make the implementation 100% correct and
 secure.
