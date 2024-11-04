@@ -109,7 +109,7 @@ serializing a certificate if the number of allowed repetitions $r = 1$.
 The simple lottery scheme, on the other hand, has large proof sizes but offers
 very fast proving time which might be important for some applications.
 Additionally, in the decentralized setting, it has the smallest communication
-complexity $mu$, so it's likely to be the top choice for applications where
+complexity $\mu$, so it's likely to be the top choice for applications where
 the certificate size is not important.
 
 We will implement schemes that seem redundant (e.g., unweighted schemes
