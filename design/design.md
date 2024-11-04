@@ -129,7 +129,8 @@ so the overhead shouldn't be large.
 ## Choice of hash function
 The "random" functions $H_0$, $H_1$, $H_2$ and others in ALBA constructions need to be
 implemented using some concrete function, either a cryptographic hash function
-modeled as a random oracle or a pseudo-random function (todo: add references).
+modeled as a random oracle or a
+[pseudorandom function](https://en.wikipedia.org/wiki/Pseudorandom_function_family).
 There are numerous options available for one or both models:
 SHA, BLAKE, AES, ChaCha, etc.
 
