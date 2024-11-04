@@ -147,6 +147,7 @@ We will provide an example implementing a hash function with the right interface
 for ALBA using, for example, BLAKE underneath, but with a warning that
 it is provided for demonstration / prototyping only and should not be used in
 production.
+
 One reason is that when ALBA is used alongside other sub-protocols that also
 need hashing, it is the user's responsibility to implement
 [domain separation](https://en.wikipedia.org/wiki/Domain_separation)
@@ -156,6 +157,7 @@ Otherwise, the underlying assumptions needed for security might break and the
 larger protocol can become insecure
 (see [here](https://link.springer.com/chapter/10.1007/978-3-030-45724-2_1)).
 the hash function do not collide.
+
 Additionally, different hash functions (e.g., SHA and BLAKE) shouldn't mix and
 match.
 The following example is contrived, but it demonstrates why using different
