@@ -156,7 +156,6 @@ sub-protocols with independent hash functions.
 Otherwise, the underlying assumptions needed for security might break and the
 larger protocol can become insecure
 (see [here](https://link.springer.com/chapter/10.1007/978-3-030-45724-2_1)).
-the hash function do not collide.
 
 Additionally, different hash functions (e.g., SHA and BLAKE) shouldn't mix and
 match.
