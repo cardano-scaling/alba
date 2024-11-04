@@ -100,8 +100,8 @@ The following is the full list of eight implemented schemes.
 ### Discussion
 We will not implement the other two ALBA schemes because the basic Telescope is
 way slower and offers almost no advantages, while Telescope with Prehashing is
-only applicable when
-the number of honest prover's elements $n_p$ is large and it offers no advantage
+only applicable when the number of honest prover's elements $n_p$ is large
+(about a million for typical parameters) and it offers no advantage
 over Telescope Bounded except for a very tiny difference in the certificate size
 (the integer $v$).
 As an optimization of Telescope Bounded, one can omit this integer when
