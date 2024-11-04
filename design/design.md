@@ -49,16 +49,16 @@ example of how the ALBA library can be used.
 
 ALBA comes in multiple different flavors.
 One variation dimension is the support for weights.
-In the unweighted setting, the prover is given >= n_p elements and he needs to
-prove that he has more than n_f elements (n_p > n_f).
+In the unweighted setting, the prover is given $\ge n_p$ elements and he needs
+to prove that he has more than $n_f$ elements ($n_p > n_f$).
 In the weighted setting, on the other hand, elements have an integer weight and
-the prover is given elements of total weight >= n_p and he wants to prove that
-he knows enough elements of total weight > n_f.
+the prover is given elements of total weight $\ge n_p$ and he wants to prove that
+he knows enough elements of total weight $> n_f$.
 
 Another dimension of ALBA flavors is decentralization.
 In the centralized setting, there are only two parties, prover and verifier,
-and the prover is assumed to know all n_p elements
-(or elements of total weight n_p).
+and the prover is assumed to know all $n_p$ elements
+(or elements of total weight $n_p$).
 In the decentralized setting, there are multiple different provers each holding
 one element (weighted or unweighted based on the model); the other two parties
 are aggregator and verifier.
@@ -100,11 +100,11 @@ The following is the full list of eight implemented schemes.
 We will not implement the other two ALBA schemes because the basic Telescope is
 way slower and offers almost no advantages, while Telescope with Prehashing is
 only applicable when
-the number of honest prover's elements n_p is large and it offers no advantage
+the number of honest prover's elements $n_p$ is large and it offers no advantage
 over Telescope Bounded except for a very tiny difference in the certificate size
 (the integer v).
 As an optimization of Telescope Bounded, one can omit this integer when
-serializing a certificate if the number of allowed repetitions r = 1.
+serializing a certificate if the number of allowed repetitions $r = 1$.
 The simple lottery scheme, on the other hand, has large proof sizes but offers
 very fast proving time which might be important for some applications.
 Additionally, in the decentralized setting, it has the smallest communication
@@ -125,7 +125,7 @@ We should be able to reuse most of the logic between different schemes anyway,
 so the overhead shouldn't be large.
 
 ## Choice of hash function
-The "random" functions H_0, H_1, H_2 and others in ALBA constructions need to be
+The "random" functions $H_0$, $H_1$, $H_2$ and others in ALBA constructions need to be
 implemented using some concrete function, either a cryptographic hash function
 modeled as a random oracle or a pseudo-random function (todo: add references).
 There are numerous options available for one or both models:
@@ -177,12 +177,13 @@ This means that there might be tiny rounding errors in parameter derivation due
 to the use of floats, and there might be tiny errors when using a uniformly
 random hash output to sample some distribution needed for ALBA
 (e.g., Bernoulli, Uniform, Binomial, Poisson).
-We will also probably not rigorously analyze the H_1 optimization described in
+We will also probably not rigorously analyze the $H_1$ optimization described in
 section 3.3 of the paper.
 
 ## Parameter calculation
 ALBA has two kinds of parameters: user friendly parameters such as
-lamsec, lamrel, n_p, n_f, and algorithm specific parameters such as u, d and q.
+$\lambda_{sec}$, $\lambda_{rel}$, $n_p$, $n_f$,
+and algorithm specific parameters such as $u$, $d$ and $q$.
 
 Our implementation will have parameter derivation code converting user friendly
 to algorithm specific parameters.
