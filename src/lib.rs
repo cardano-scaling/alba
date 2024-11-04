@@ -6,3 +6,4 @@ mod test_utils;
 mod utils;
 
 pub mod centralized_telescope;
+pub mod simple_lottery;
