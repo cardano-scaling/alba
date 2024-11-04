@@ -63,7 +63,7 @@ In the decentralized setting, there are multiple different provers each holding
 one element (weighted or unweighted based on the model); the other two parties
 are aggregator and verifier.
 Some provers will send a message to the aggregator who will in turn produce the
-final proof pi for the verifier.
+final proof $\pi$ for the verifier.
 
 See section 1 in the paper for an overview of these two flavor dimensions.
 
@@ -103,13 +103,13 @@ way slower and offers almost no advantages, while Telescope with Prehashing is
 only applicable when
 the number of honest prover's elements $n_p$ is large and it offers no advantage
 over Telescope Bounded except for a very tiny difference in the certificate size
-(the integer v).
+(the integer $v$).
 As an optimization of Telescope Bounded, one can omit this integer when
 serializing a certificate if the number of allowed repetitions $r = 1$.
 The simple lottery scheme, on the other hand, has large proof sizes but offers
 very fast proving time which might be important for some applications.
 Additionally, in the decentralized setting, it has the smallest communication
-complexity mu, so it's likely to be the top choice for applications where
+complexity $mu$, so it's likely to be the top choice for applications where
 the certificate size is not important.
 
 We will implement schemes that seem redundant (e.g., unweighted schemes
