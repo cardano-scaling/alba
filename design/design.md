@@ -74,6 +74,7 @@ currently four are known for the the centralized unweighted setting:
 3. Telescope with prehashing, repetitions and bounded DFS
 ("Telescope Bounded" in short, Section 3.2.2 in the paper),
 4. simple lottery (Section 4.1 in the paper).
+
 The same four schemes can be made decentralized by adding a simple lottery
 (or doing nothing in case of the simple lottery which itself is already a
 decentralized scheme), see Section 4.1 and 4.2 in the paper.
