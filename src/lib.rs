@@ -6,3 +6,6 @@ mod test_utils;
 mod utils;
 
 pub mod centralized_telescope;
+
+// Silence a rustc warning about unused crate.
+use rand_core as _;
