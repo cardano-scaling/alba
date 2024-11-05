@@ -8,61 +8,62 @@ use blake2::{Blake2s256, Digest};
 /// Round parameters
 #[derive(Debug, Clone)]
 pub struct Round {
-    /// Proof counter
-    pub v: u64,
-    /// Proof 2nd counter
-    pub t: u64,
-    // Round candidate tuple
-    pub s_list: Vec<Element>,
-    /// Round candidate hash
-    pub h: Hash,
-    /// Round candidate hash mapped to [1, n_p]
-    pub h_u64: u64,
-    /// Approximate size of set Sp to lower bound
-    pub n_p: u64,
+    /// Numbers of retries done so far
+    pub retry_counter: u64,
+    /// Index of the current subtree being searched
+    pub search_counter: u64,
+    /// Candidate element sequence
+    pub element_sequence: Vec<Element>,
+    /// Candidate round hash
+    pub hash: Hash,
+    /// Candidate round id, i.e. round hash mapped to [1, set_size]
+    pub id: u64,
+    /// Approximate size of prover set to lower bound
+    pub set_size: u64,
 }
 
 impl Round {
-    /// Output a round from a proof counter and n_p
-    /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
-    pub(super) fn new(v: u64, t: u64, n_p: u64) -> Option<Self> {
-        let v_bytes: [u8; 8] = v.to_be_bytes();
-        let t_bytes: [u8; 8] = t.to_be_bytes();
-        let (h, h_u64_opt) = Self::h1(&v_bytes, &t_bytes, n_p);
-        h_u64_opt.map(|h_u64| Self {
-            v,
-            t,
-            s_list: Vec::new(),
-            h,
-            h_u64,
-            n_p,
+    /// Output a round from retry and search counters as well as set_size
+    /// Initilialises the hash with node_hash(retry_counter || search_bytes)
+    /// and random value as oracle(node_hash(retry_counter || search_bytes), set_size)
+    pub(super) fn new(retry_counter: u64, search_counter: u64, set_size: u64) -> Option<Self> {
+        let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
+        let search_bytes: [u8; 8] = search_counter.to_be_bytes();
+        let (hash, id_opt) = Self::node_hash(&retry_bytes, &search_bytes, set_size);
+        id_opt.map(|id| Self {
+            retry_counter,
+            search_counter,
+            element_sequence: Vec::new(),
+            hash,
+            id,
+            set_size,
         })
     }
 
-    /// Updates a round with an element of S_p
-    /// Replaces the hash $h$ with $h' = H1(h, s)$ and the random value as oracle(h', n_p)
-    pub(super) fn update(r: &Self, s: Element) -> Option<Self> {
-        let mut s_list = r.s_list.clone();
-        s_list.push(s);
-        let (h, h_u64_opt) = Self::h1(&r.h, &s, r.n_p);
-        h_u64_opt.map(|h_u64| Self {
-            v: r.v,
-            t: r.t,
-            s_list,
-            h,
-            h_u64,
-            n_p: r.n_p,
+    /// Updates a round with an element
+    /// Replaces the hash $h$ with $h' = node_hash(h, s)$ and the random value as oracle(h', set_size)
+    pub(super) fn update(r: &Self, element: Element) -> Option<Self> {
+        let mut element_sequence = r.element_sequence.clone();
+        element_sequence.push(element);
+        let (hash, id_opt) = Self::node_hash(&r.hash, &element, r.set_size);
+        id_opt.map(|id| Self {
+            retry_counter: r.retry_counter,
+            search_counter: r.search_counter,
+            element_sequence,
+            hash,
+            id,
+            set_size: r.set_size,
         })
     }
 
-    /// Oracle producing a uniformly random value in [0, n_p[ used for round candidates
+    /// Oracle producing a uniformly random value in [0, set_size[ used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(first_input: &[u8], second_input: &[u8], n_p: u64) -> (Hash, Option<u64>) {
+    fn node_hash(first_input: &[u8], second_input: &[u8], set_size: u64) -> (Hash, Option<u64>) {
         let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-H1");
+        hasher.update(b"Telescope-node_hash");
         hasher.update(first_input);
         hasher.update(second_input);
         let digest: Hash = hasher.finalize().into();
-        (digest, sample::sample_uniform(&digest, n_p))
+        (digest, sample::sample_uniform(&digest, set_size))
     }
 }

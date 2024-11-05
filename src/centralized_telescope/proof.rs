@@ -5,10 +5,10 @@ use crate::utils::types::Element;
 /// Alba proof
 #[derive(Debug, Clone)]
 pub struct Proof {
-    /// Proof counter
-    pub v: u64,
-    /// Proof 2nd counter
-    pub t: u64,
-    /// Proof tuple
-    pub items: Vec<Element>,
+    /// Numbers of retries done to find the proof
+    pub retry_counter: u64,
+    /// Index of the searched subtree to find the proof
+    pub search_counter: u64,
+    /// Sequence of elements from prover set
+    pub element_sequence: Vec<Element>,
 }
