@@ -12,7 +12,7 @@ use blake2::{Blake2s256, Digest};
 /// Calls up to setup.r times the prove_index function and returns an empty
 /// proof if no suitable candidate is found.
 pub fn prove(setup: &Setup, set: &[Element]) -> Option<Proof> {
-    (0..setup.r).find_map(|v| Proof::prove_index(setup, set, v).1)
+    (0..setup.r).find_map(|v| prove_index(setup, set, v).1)
 }
 
 /// Alba's verification algorithm, returns true if the proof is
@@ -25,7 +25,7 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
         return false;
     };
     for &element in &proof.items {
-        let Some(h) = Proof::h0(setup, proof.v, element) else {
+        let Some(h) = h0(setup, proof.v, element) else {
             return false;
         };
         if round.h_u64 == h {
@@ -37,108 +37,107 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
             return false;
         }
     }
-    Proof::h2(setup, &round)
+    h2(setup, &round)
 }
 
-impl Proof {
-    /// Indexed proving algorithm, returns the total number of DFS calls done
-    /// to find a proof and Some(proof) if found within setup.b calls of DFS,
-    /// otherwise None
-    pub(super) fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Self>) {
-        let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.n_p as usize);
-        for _ in 0..setup.n_p {
-            bins.push(Vec::new());
-        }
-        // Take only up to 2*np elements for efficiency
-        for &s in set.iter().take(setup.n_p.saturating_mul(2) as usize) {
-            match Self::h0(setup, v, s) {
-                Some(h) => {
-                    bins[h as usize].push(s);
-                }
-                None => return (0, None),
+/// Indexed proving algorithm, returns the total number of DFS calls done
+/// to find a proof and Some(proof) if found within setup.b calls of DFS,
+/// otherwise None
+pub(super) fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
+    let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.n_p as usize);
+    for _ in 0..setup.n_p {
+        bins.push(Vec::new());
+    }
+    // Take only up to 2*np elements for efficiency
+    for &s in set.iter().take(setup.n_p.saturating_mul(2) as usize) {
+        match h0(setup, v, s) {
+            Some(h) => {
+                bins[h as usize].push(s);
             }
+            None => return (0, None),
         }
-
-        let mut limit = 0;
-        for t in 0..setup.d {
-            if limit == setup.b {
-                return (limit, None);
-            }
-            if let Some(r) = Round::new(v, t, setup.n_p) {
-                let (l, proof_opt) = Self::dfs(setup, &bins, &r, limit.saturating_add(1));
-                if proof_opt.is_some() {
-                    return (l, proof_opt);
-                }
-                limit = l;
-            }
-        }
-        (limit, None)
     }
 
-    /// Depth-First Search which goes through all potential round candidates
-    /// and returns the total number of recursive DFS calls done and, if not
-    /// found under setup.b calls, returns None otherwise Some(Proof), that is
-    /// the first round candidate Round{v, t, x_1, ..., x_u)} such that:
-    /// - ∀i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(...H1(H1(v, t), x_1), ..., x_i)]
-    /// - H2(H1(... H1((H1(v, t), x_1), ..., x_u)) = true
-    fn dfs(
-        setup: &Setup,
-        bins: &[Vec<Element>],
-        round: &Round,
-        mut limit: u64,
-    ) -> (u64, Option<Self>) {
-        if round.s_list.len() as u64 == setup.u {
-            let proof_opt = if Self::h2(setup, round) {
-                Some(Self {
-                    v: round.v,
-                    t: round.t,
-                    items: round.s_list.clone(),
-                })
-            } else {
-                None
-            };
-            return (limit, proof_opt);
+    let mut limit = 0;
+    for t in 0..setup.d {
+        if limit == setup.b {
+            return (limit, None);
         }
-
-        for &s in &bins[round.h_u64 as usize] {
-            if limit == setup.b {
-                return (limit, None);
+        if let Some(r) = Round::new(v, t, setup.n_p) {
+            let (l, proof_opt) = dfs(setup, &bins, &r, limit.saturating_add(1));
+            if proof_opt.is_some() {
+                return (l, proof_opt);
             }
-            if let Some(r) = Round::update(round, s) {
-                let (l, proof_opt) = Self::dfs(setup, bins, &r, limit.saturating_add(1));
-                if proof_opt.is_some() {
-                    return (l, proof_opt);
-                }
-                limit = l;
-            }
+            limit = l;
         }
-        (limit, None)
     }
-
-    /// Oracle producing a uniformly random value in [0, n_p[ used for prehashing S_p
-    pub(super) fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
-        let v_bytes: [u8; 8] = v.to_be_bytes();
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-H0");
-        hasher.update(v_bytes);
-        hasher.update(s);
-        let digest: Hash = hasher.finalize().into();
-        sample::sample_uniform(&digest, setup.n_p)
-    }
-
-    /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-    pub(super) fn h2(setup: &Setup, r: &Round) -> bool {
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-H2");
-        hasher.update(r.h);
-        let digest: Hash = hasher.finalize().into();
-        sample::sample_bernoulli(&digest, setup.q)
-    }
+    (limit, None)
 }
+
+/// Depth-First Search which goes through all potential round candidates
+/// and returns the total number of recursive DFS calls done and, if not
+/// found under setup.b calls, returns None otherwise Some(Proof), that is
+/// the first round candidate Round{v, t, x_1, ..., x_u)} such that:
+/// - ∀i ∈ [0, u-1], H0(x_i+1) ∈ bins[H1(...H1(H1(v, t), x_1), ..., x_i)]
+/// - H2(H1(... H1((H1(v, t), x_1), ..., x_u)) = true
+fn dfs(
+    setup: &Setup,
+    bins: &[Vec<Element>],
+    round: &Round,
+    mut limit: u64,
+) -> (u64, Option<Proof>) {
+    if round.s_list.len() as u64 == setup.u {
+        let proof_opt = if h2(setup, round) {
+            Some(Proof {
+                v: round.v,
+                t: round.t,
+                items: round.s_list.clone(),
+            })
+        } else {
+            None
+        };
+        return (limit, proof_opt);
+    }
+
+    for &s in &bins[round.h_u64 as usize] {
+        if limit == setup.b {
+            return (limit, None);
+        }
+        if let Some(r) = Round::update(round, s) {
+            let (l, proof_opt) = dfs(setup, bins, &r, limit.saturating_add(1));
+            if proof_opt.is_some() {
+                return (l, proof_opt);
+            }
+            limit = l;
+        }
+    }
+    (limit, None)
+}
+
+/// Oracle producing a uniformly random value in [0, n_p[ used for prehashing S_p
+pub(super) fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
+    let v_bytes: [u8; 8] = v.to_be_bytes();
+    let mut hasher = Blake2s256::new();
+    hasher.update(b"Telescope-H0");
+    hasher.update(v_bytes);
+    hasher.update(s);
+    let digest: Hash = hasher.finalize().into();
+    sample::sample_uniform(&digest, setup.n_p)
+}
+
+/// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
+pub(super) fn h2(setup: &Setup, r: &Round) -> bool {
+    let mut hasher = Blake2s256::new();
+    hasher.update(b"Telescope-H2");
+    hasher.update(r.h);
+    let digest: Hash = hasher.finalize().into();
+    sample::sample_bernoulli(&digest, setup.q)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::centralized_telescope::params::Params;
+    use crate::centralized_telescope::{init, params::Params};
     use crate::utils::test_utils::gen_items;
     use crate::utils::types::DATA_LENGTH;
     use rand_chacha::ChaCha20Rng;
@@ -158,7 +157,7 @@ mod tests {
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_be_bytes().to_vec();
             let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
-            let setup = Setup::new(&params);
+            let setup = init::make_setup(&params);
             let proof = prove(&setup, &s_p).unwrap();
             assert!(verify(&setup, &proof.clone()));
             // Checking that the proof fails if proof.t is erroneous
