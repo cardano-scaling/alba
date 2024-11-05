@@ -8,13 +8,13 @@ pub mod algorithm;
 pub mod init;
 
 // Structures
-pub(crate) mod params;
+pub mod params;
 
-pub(crate) mod proof;
+pub mod proof;
 
 pub(crate) mod round;
 
-pub(crate) mod setup;
+pub mod setup;
 
 // Types
 pub(crate) mod types;
