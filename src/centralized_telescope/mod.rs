@@ -4,6 +4,9 @@
 // Prove and Verify functions
 pub mod algorithm;
 
+// Setup function
+pub mod init;
+
 pub(crate) mod params;
 
 pub(crate) mod proof;
