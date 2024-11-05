@@ -12,7 +12,7 @@ type Element = [u8; DATA_LENGTH];
 type Hash = [u8; DIGEST_SIZE];
 
 /// Setup input parameters
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct Params {
     /// Soundness security parameter
     pub lambda_sec: f64,
@@ -25,7 +25,7 @@ pub struct Params {
 }
 
 /// Setup output parameters
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct Setup {
     /// Approximate size of set Sp to lower bound
     pub n_p: u64,
