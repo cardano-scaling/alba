@@ -4,9 +4,9 @@ use crate::utils::types::Element;
 /// Alba proof
 pub struct Proof {
     /// Proof counter
-    pub(super) v: u64,
+    pub v: u64,
     /// Proof 2nd counter
-    pub(super) t: u64,
+    pub t: u64,
     /// Proof tuple
-    pub(super) items: Vec<Element>,
+    pub items: Vec<Element>,
 }

@@ -5,19 +5,19 @@ use blake2::{Blake2s256, Digest};
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub(super) struct Round {
+pub struct Round {
     /// Proof counter
-    pub(super) v: u64,
+    pub v: u64,
     /// Proof 2nd counter
-    pub(super) t: u64,
+    pub t: u64,
     // Round candidate tuple
-    pub(super) s_list: Vec<Element>,
+    pub s_list: Vec<Element>,
     /// Round candidate hash
-    pub(super) h: Hash,
+    pub h: Hash,
     /// Round candidate hash mapped to [1, n_p]
-    pub(super) h_u64: u64,
+    pub h_u64: u64,
     /// Approximate size of set Sp to lower bound
-    pub(super) n_p: u64,
+    pub n_p: u64,
 }
 
 impl Round {

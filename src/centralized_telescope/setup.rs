@@ -2,15 +2,15 @@
 #[derive(Debug, Clone, Copy)]
 pub struct Setup {
     /// Approximate size of set Sp to lower bound
-    pub(super) n_p: u64,
+    pub n_p: u64,
     /// Proof size (in Sp elements)
-    pub(super) u: u64,
+    pub u: u64,
     /// Proof max counter
-    pub(super) r: u64,
+    pub r: u64,
     /// Proof max 2nd counter
-    pub(super) d: u64,
+    pub d: u64,
     /// Probability q
-    pub(super) q: f64,
+    pub q: f64,
     /// Computation bound
-    pub(super) b: u64,
+    pub b: u64,
 }
