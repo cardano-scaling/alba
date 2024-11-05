@@ -21,17 +21,6 @@ pub(super) struct Round {
 }
 
 impl Round {
-    /// Oracle producing a uniformly random value in [0, n_p[ used for round candidates
-    /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn h1(first_input: &[u8], second_input: &[u8], n_p: u64) -> (Hash, Option<u64>) {
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-H1");
-        hasher.update(first_input);
-        hasher.update(second_input);
-        let digest: Hash = hasher.finalize().into();
-        (digest, sample::sample_uniform(&digest, n_p))
-    }
-
     /// Output a round from a proof counter and n_p
     /// Initilialises the hash with H1(t) and random value as oracle(H1(t), n_p)
     pub(super) fn new(v: u64, t: u64, n_p: u64) -> Option<Self> {
@@ -62,5 +51,16 @@ impl Round {
             h_u64,
             n_p: r.n_p,
         })
+    }
+
+    /// Oracle producing a uniformly random value in [0, n_p[ used for round candidates
+    /// We also return hash(data) to follow the optimization presented in Section 3.3
+    fn h1(first_input: &[u8], second_input: &[u8], n_p: u64) -> (Hash, Option<u64>) {
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-H1");
+        hasher.update(first_input);
+        hasher.update(second_input);
+        let digest: Hash = hasher.finalize().into();
+        (digest, sample::sample_uniform(&digest, n_p))
     }
 }
