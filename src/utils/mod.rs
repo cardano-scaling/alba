@@ -1,6 +1,6 @@
-#[cfg(test)]
-pub(crate) mod test_utils;
+pub(crate) mod sample;
 
 pub(crate) mod types;
 
-pub(crate) mod sample;
+#[cfg(test)]
+pub(crate) mod test_utils;
