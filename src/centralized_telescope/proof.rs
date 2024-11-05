@@ -1,7 +1,9 @@
+//! ALBA's Proof structure
+
 use crate::utils::types::Element;
 
-#[derive(Debug, Clone)]
 /// Alba proof
+#[derive(Debug, Clone)]
 pub struct Proof {
     /// Proof counter
     pub v: u64,

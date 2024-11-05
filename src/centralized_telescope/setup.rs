@@ -1,3 +1,5 @@
+//! ALBA's Setup structure comprising among others numbers of elements and internal parameters
+
 /// Setup output parameters
 #[derive(Debug, Clone, Copy)]
 pub struct Setup {

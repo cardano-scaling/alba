@@ -1,3 +1,5 @@
+//! ALBA's Round structure and associated functions
+
 use super::types::Hash;
 use crate::utils::sample;
 use crate::utils::types::Element;

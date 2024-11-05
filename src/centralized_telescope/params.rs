@@ -1,3 +1,5 @@
+//! ALBA's Setup structure
+
 /// Setup input parameters
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
