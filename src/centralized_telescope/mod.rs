@@ -13,7 +13,6 @@ pub(crate) mod setup;
 pub use setup::Setup;
 
 pub(crate) mod types;
-pub(crate) mod utils;
 
 pub(crate) use crate::utils::types::Element;
 

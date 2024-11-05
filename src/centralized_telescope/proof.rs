@@ -1,7 +1,7 @@
 use super::round::Round;
 use super::setup::Setup;
 use super::types::Hash;
-use super::utils;
+use crate::utils::sample;
 
 use crate::utils::types::Element;
 use blake2::{Blake2s256, Digest};
@@ -26,7 +26,7 @@ impl Proof {
         hasher.update(v_bytes);
         hasher.update(s);
         let digest: Hash = hasher.finalize().into();
-        utils::sample_uniform(&digest, setup.n_p)
+        sample::sample_uniform(&digest, setup.n_p)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
@@ -35,7 +35,7 @@ impl Proof {
         hasher.update(b"Telescope-H2");
         hasher.update(r.h);
         let digest: Hash = hasher.finalize().into();
-        utils::sample_bernoulli(&digest, setup.q)
+        sample::sample_bernoulli(&digest, setup.q)
     }
 
     /// Depth-First Search which goes through all potential round candidates

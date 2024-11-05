@@ -1,6 +1,6 @@
 use super::types::Hash;
-use super::utils;
 use super::Element;
+use crate::utils::sample;
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
@@ -29,7 +29,7 @@ impl Round {
         hasher.update(first_input);
         hasher.update(second_input);
         let digest: Hash = hasher.finalize().into();
-        (digest, utils::sample_uniform(&digest, n_p))
+        (digest, sample::sample_uniform(&digest, n_p))
     }
 
     /// Output a round from a proof counter and n_p

@@ -1,19 +1,10 @@
 //! Helper functions for Alba primitives
 use std::cmp::min;
 
-// Returns the integer representation of, up to the 8 first bytes of, the
-// input bytes in little endian
-fn from_bytes_be(bytes: &[u8]) -> u64 {
-    let mut array = [0u8; 8];
-    let bytes = &bytes[..min(8, bytes.len())];
-    array[..bytes.len()].copy_from_slice(bytes);
-    u64::from_be_bytes(array)
-}
-
 /// Takes as input a hash and range $n$ and samples an integer from Unif[0, n[.
 /// We do so by interpreting the hash as a random number and returns it modulo
 /// n (c.f. Appendix B, Alba paper).
-pub(super) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
+pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
     fn mod_non_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
@@ -54,7 +45,7 @@ pub(super) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
 /// Takes as input a hash and probability $q$ and returns true with
 /// probability q otherwise false according to a Bernoulli distribution
 /// (c.f. Appendix B, Alba paper).
-pub(super) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
+pub(crate) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
     // For error parameter ɛ̝, find an approximation x/y of q with (x,y) in N²
     // such that 0 < q - x/y <= ɛ̝
     let epsilon_fail: u64 = 1 << 40; // TOOD: update
@@ -72,4 +63,13 @@ pub(super) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
     let i = from_bytes_be(hash) & y.saturating_sub(1);
     // Return true if i < x
     i < x
+}
+
+// Returns the integer representation of, up to the 8 first bytes of, the
+// input bytes in little endian
+fn from_bytes_be(bytes: &[u8]) -> u64 {
+    let mut array = [0u8; 8];
+    let bytes = &bytes[..min(8, bytes.len())];
+    array[..bytes.len()].copy_from_slice(bytes);
+    u64::from_be_bytes(array)
 }
