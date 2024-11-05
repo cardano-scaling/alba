@@ -28,8 +28,8 @@ action.
 ALBA is a very generic tool that lets one prove knowledge of any kind of data
 elements.
 On the other hand, many potential applications (such as those listed above),
-don't need the full expressivity of ALBA, they really need a decentralized
-multi-signature protocol.
+don't need the full expressivity of ALBA, they really need
+a multi-signature scheme.
 With great power comes great responsibility, and we, the developers of this
 library, need to take into account the tradeoff between freedom and usability.
 One solution is to have both.
