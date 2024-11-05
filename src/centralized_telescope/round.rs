@@ -1,6 +1,6 @@
 use super::types::Hash;
-use super::Element;
 use crate::utils::sample;
+use crate::utils::types::Element;
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
