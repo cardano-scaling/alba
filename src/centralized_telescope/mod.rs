@@ -7,6 +7,7 @@ pub mod algorithm;
 // Setup function
 pub mod init;
 
+// Structures
 pub(crate) mod params;
 
 pub(crate) mod proof;
@@ -15,4 +16,5 @@ pub(crate) mod round;
 
 pub(crate) mod setup;
 
+// Types
 pub(crate) mod types;
