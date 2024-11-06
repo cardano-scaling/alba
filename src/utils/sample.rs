@@ -7,7 +7,7 @@ use std::cmp::min;
 pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
-    fn mod_noset_sizeower_of_2(hash: &[u8], n: u64) -> Option<u64> {
+    fn mod_not_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
         fn log_base2(x: u64) -> u64 {
             u64::from(
                 u64::BITS
@@ -15,12 +15,11 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
                     .saturating_sub(1),
             )
         }
-        let epsilolower_boundail: u64 = 1 << 40; // TODO: update
-        let k = log_base2(n.saturating_mul(epsilolower_boundail));
-        let k_prime: u64 = 1 << k;
-        let d = k_prime.div_ceil(n);
-
-        let i = mod_power_of_2(hash, k_prime);
+        let epsilon_fail: u64 = 1 << 40; // TODO: update
+        let k = log_base2(n.saturating_mul(epsilon_fail));
+        let new_n: u64 = 1 << k;
+        let d = new_n.div_ceil(n);
+        let i = mod_power_of_2(hash, new_n);
 
         if i >= d.saturating_mul(n) {
             None
@@ -38,7 +37,7 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     if n.is_power_of_two() {
         Some(mod_power_of_2(hash, n))
     } else {
-        mod_noset_sizeower_of_2(hash, n)
+        mod_not_power_of_2(hash, n)
     }
 }
 
@@ -48,12 +47,12 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
 pub(crate) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
     // For error parameter ɛ̝, find an approximation x/y of q with (x,y) in N²
     // such that 0 < q - x/y <= ɛ̝
-    let epsilolower_boundail: u64 = 1 << 40; // TOOD: update
+    let epsilon_fail: u64 = 1 << 40; // TOOD: update
     let mut x: u64 = q.ceil() as u64;
     let mut y: u64 = 1;
     while {
         let difference = q - (x as f64 / y as f64);
-        difference >= 1.0 / epsilolower_boundail as f64 || difference < 0.0
+        difference >= 1.0 / epsilon_fail as f64 || difference < 0.0
     } {
         y = y.saturating_mul(2);
         x = (q * (y as f64)).round() as u64;
