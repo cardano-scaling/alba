@@ -3,7 +3,7 @@
 /// Setup output parameters
 #[derive(Debug, Clone, Copy)]
 pub struct Setup {
-    /// Approximate size of prover set to lower bound
+    /// Total number of elements available to the prover
     pub set_size: u64,
     /// Number of prover set's elements
     pub proof_size: u64,
