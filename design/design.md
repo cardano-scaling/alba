@@ -145,34 +145,27 @@ With Rust's advanced trait system, making the hash function generic should be
 easy, and the runtime code performance should be fast due to compile time
 function resolution.
 
-We will provide an example implementing a hash function with the right interface
-for ALBA using, for example, BLAKE underneath, but with a warning that
-it is provided for demonstration / prototyping only and should not be used in
-production.
-
-One reason is that when ALBA is used alongside other sub-protocols that also
-need hashing, it is the user's responsibility to implement
+Moreover, we should *require* users to provide their own hash function.
+One reason is that when ALBA is used alongside other sub-protocols, that also
+need hashing, in a larger protocol, it is the user's responsibility to implement
 [domain separation](https://en.wikipedia.org/wiki/Domain_separation)
-to provide the different
-sub-protocols with independent hash functions.
+to provide the different sub-protocols with independent hash functions.
 Otherwise, the underlying assumptions needed for security might break and the
 larger protocol can become insecure
 (see [here](https://link.springer.com/chapter/10.1007/978-3-030-45724-2_1)).
+Additionally, different sub-protocols should not use different hash function
+constructions (e.g., SHA and BLAKE) since there might be hidden correlations
+between them and that would be equivalent to not using domain separation.
 
-Additionally, different hash functions (e.g., SHA and BLAKE) shouldn't mix and
-match.
-The following example is contrived, but it demonstrates why using different
-hash function constructions within the same protocol can be insecure.
-Suppose $H$ and $H'$ are two distinct random looking hash functions.
-You might expect that the function $G$ given by $G(x) = H(x) \oplus H'(x)$,
-where $\oplus$ is the bitwise xor, is also random looking, but it's not true.
-Let $H$ be a hash function modeled as a random oracle and define
-$H(x) = \sim H'(x)$,
-where $\sim$ is bitwise not; then $H'$ is also random looking
-but $G(x) = 111...111$ for all $x$.
-Even if we use domain separation for $H$ and $H'$, we cannot guarantee that
-$G(x) = H(0, x) \oplus H'(1, x)$ is random looking.
-Define $H'(b, x) = H(\sim b, x)$; then $G(x) = 000...000$ for all $x$.
+Thus, the user must use a particular hash function $H$ of their choice to
+instantiate several domain separated hash functions $H_i(x) = H(i, x)$ that
+would be provided to the sub-protocols (one of them being ALBA).
+To our ALBA implementation, this domain separation would be transparent.
+
+We will still provide an example implementing a hash function with the right
+interface for ALBA using, for example, BLAKE underneath, but with a warning that
+it is provided for demonstration / prototyping only and should not be used in
+production.
 
 ## Generic data elements
 Similar to the above, we should also let data elements have a generic type.
