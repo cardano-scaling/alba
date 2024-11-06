@@ -25,11 +25,11 @@ action.
 
 ## Implemented cryptographic primitives
 
-ALBA is a very generic tool that lets one prove knowledge of any kind of data
+ALBA is a generic tool that lets one prove knowledge of any kind of data
 elements.
 On the other hand, many potential applications (such as those listed above),
 don't need the full expressivity of ALBA, they really need
-a multi-signature scheme.
+a multi-signature scheme (the data elements would specifically be signatures).
 With great power comes great responsibility, and we, the developers of this
 library, need to take into account the tradeoff between freedom and usability.
 One solution is to have both.
@@ -61,26 +61,26 @@ and the prover is assumed to know all $n_p$ elements
 (or elements of total weight $n_p$).
 In the decentralized setting, there are multiple different provers each holding
 one element (weighted or unweighted based on the model); the other two parties
-are aggregator and verifier.
+are the aggregator and the verifier.
 Some provers will send a message to the aggregator who will in turn produce the
-final proof $\pi$ for the verifier.
+proof $\pi$ for the verifier.
 
 See section 1 in the paper for an overview of these two flavor dimensions.
 
 There also exist multiple ALBA schemes;
-currently four are known for the the centralized unweighted setting:
-1. (basic) Telescope (Section 3.1 in the paper),
-2. Telescope with Prehashing (Section 3.2 in the paper),
+currently four are known for the centralized unweighted setting:
+1. (basic) Telescope (section 3.1 in the paper),
+2. Telescope with Prehashing (section 3.2 in the paper),
 3. Telescope with prehashing, repetitions and bounded DFS
-("Telescope Bounded" in short, Section 3.2.2 in the paper),
-4. simple lottery (Section 4.1 in the paper).
+("Telescope Bounded" in short, section 3.2.2 in the paper),
+4. simple lottery (section 4.1 in the paper).
 
 The same four schemes can be made decentralized by adding a simple lottery
 (or doing nothing in case of the simple lottery which itself is already a
-decentralized scheme), see Section 4.1 and 4.2 in the paper.
+decentralized scheme), see section 4.1 and 4.2 in the paper.
 Additionally, the support for weights can be introduced in the decentralized
 schemes by having the simple lottery take into account weights, as done in
-Algorand's sortition (see Section 5 in the paper).
+Algorand's sortition (see section 5 in the paper).
 Thus, the simple lottery in the decentralized weighted setting is equivalent
 to Algorand's sortition.
 Finally, we can create the centralized weighted ALBA schemes by remodeling the
@@ -98,18 +98,19 @@ The following is the full list of eight implemented schemes.
 * Centralized+decentralized weighted simple lottery (section 4.1 + 5)
 
 ### Discussion
-We will not implement the other two ALBA schemes because the basic Telescope is
-way slower and offers almost no advantages, while Telescope with Prehashing is
+We will not implement ALBA schemes (1) and (2) for the following reasons.
+The basic Telescope is way slower and offers almost no advantages.
+Also, Telescope with Prehashing is
 only applicable when the number of honest prover's elements $n_p$ is large
 (about a million for typical parameters) and it offers no advantage
 over Telescope Bounded except for a very tiny difference in the certificate size
 (the integer $v$).
 As an optimization of Telescope Bounded, one can omit this integer when
 serializing a certificate if the number of allowed repetitions $r = 1$.
-The simple lottery scheme, on the other hand, has large proof sizes but offers
-very fast proving time which might be important for some applications.
+We will implement the simple lottery scheme; despite its large proof sizes
+it offers very fast proving time which might be important for some applications.
 Additionally, in the decentralized setting, it has the smallest communication
-complexity $\mu$, so it's likely to be the top choice for applications where
+complexity, so it's likely to be the top choice for applications where
 the certificate size is not important.
 
 We will implement schemes that seem redundant (e.g., unweighted schemes
@@ -127,14 +128,15 @@ We should be able to reuse most of the logic between different schemes anyway,
 so the overhead shouldn't be large.
 
 ## Choice of hash function
-The "random" functions $H_0$, $H_1$, $H_2$ and others in ALBA constructions need to be
+The "random" functions $H_0$, $H_1$, $H_2$ and others in the ALBA constructions
+need to be
 implemented using some concrete function, either a cryptographic hash function
 modeled as a random oracle or a
 [pseudorandom function](https://en.wikipedia.org/wiki/Pseudorandom_function_family).
 There are numerous options available for one or both models:
 SHA, BLAKE, AES, ChaCha, etc.
 
-In our implementation, we will let the user provide his own function.
+In our implementation, we will let users provide their own function.
 Hash functions evolve, old ones get broken (SHA-1), and so our ALBA
 implementation shouldn't get stuck with an inefficient / broken hash function.
 Moreover, the user might want to instantiate ALBA with a PRF (e.g. AES) instead
@@ -180,23 +182,28 @@ The exact interfaces will need to be determined.
 
 ## Mathematical rigor and production-readiness
 At this point, it is not our goal to make the implementation 100% correct and
-secure.
-We need to roll out a prototype so that our primary clients (Peras, etc) can
+secure, meaning for input parameters $\lambda_{sec}$, $\lambda_{rel}$,
+we will not guarantee that the soundness and completeness errors are at most
+$2^\lambda_{sec}$ and $2^\lambda_{rel}$.
+We need to roll out a reference implemenentation so that our primary clients
+(Peras, etc) can
 incorporate it in their prototypes, and also so that the external community can
 start playing with it as well.
-This means that there might be tiny rounding errors in parameter derivation due
-to the use of floats, and there might be tiny errors when using a uniformly
+
+Among discrepancies that prevent us from making those rigorous guarantees are
+tiny rounding errors in parameter derivation due to the use of floats and
+tiny errors when using a uniformly
 random hash output to sample some distribution needed for ALBA
 (e.g., Bernoulli, Uniform, Binomial, Poisson).
 We will also probably not rigorously analyze the $H_1$ optimization described in
 section 3.3 of the paper.
 
 ## Parameter calculation
-ALBA has two kinds of parameters: user friendly parameters such as
+ALBA has two kinds of parameters: user-friendly parameters such as
 $\lambda_{sec}$, $\lambda_{rel}$, $n_p$, $n_f$,
 and algorithm specific parameters such as $u$, $d$ and $q$.
 
-Our implementation will have parameter derivation code converting user friendly
+Our implementation will have parameter derivation code converting user-friendly
 to algorithm specific parameters.
 However, this should be decoupled from the ALBA algorithms:
 through documentation, we will encourage the developer to run parameter
@@ -205,7 +212,7 @@ parameters in their application.
 The ALBA functions such as `prove` and `verify` will thus receive as input
 the algorithm specific parameters.
 
-The rational is that we want to be able to evolve parameter derivation
+The rationale is that we want to be able to evolve parameter derivation
 (e.g., to optimize parameters for performance, or making the derivation logic
 more rigorous) while maintaining backward compatibility with previous versions
 of the library.
