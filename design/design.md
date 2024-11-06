@@ -189,7 +189,7 @@ Among discrepancies that prevent us from making those rigorous guarantees are
 tiny rounding errors in parameter derivation due to the use of floats and
 tiny errors when using a uniformly
 random hash output to sample some distribution needed for ALBA
-(e.g., Bernoulli, Uniform, Binomial, Poisson).
+(e.g., Bernoulli, uniform, binomial, Poisson).
 We will also probably not rigorously analyze the $H_1$ optimization described in
 section 3.3 of the paper.
 
@@ -233,7 +233,7 @@ These are research problems, and when solved, we will need to enhance / modify
 our implementation as well.
 
 Additionally, we should investigate using the Poisson distribution instead of
-the Binomial as it can potentially simplify calculations and help make our code
+the binomial as it can potentially simplify calculations and help make our code
 rigorous in the future.
 
 ## Integration with larger protocols
