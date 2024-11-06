@@ -99,14 +99,16 @@ The following is the full list of eight implemented schemes.
 
 ### Discussion
 We will not implement ALBA schemes (1) and (2) for the following reasons.
-The basic Telescope is way slower and offers almost no advantages.
-Also, Telescope with Prehashing is
+The basic Telescope is way slower and offers almost no advantages over
+the other Telescope schemes.
+Telescope with Prehashing is
 only applicable when the number of honest prover's elements $n_p$ is large
 (about a million for typical parameters) and it offers no advantage
 over Telescope Bounded except for a very tiny difference in the certificate size
 (the integer $v$).
 As an optimization of Telescope Bounded, one can omit this integer when
 serializing a certificate if the number of allowed repetitions $r = 1$.
+
 We will implement the simple lottery scheme; despite its large proof sizes
 it offers very fast proving time which might be important for some applications.
 Additionally, in the decentralized setting, it has the smallest communication
@@ -199,7 +201,7 @@ and algorithm specific parameters such as $u$, $d$ and $q$.
 Our implementation will have parameter derivation code converting user-friendly
 to algorithm specific parameters.
 However, this should be decoupled from the ALBA algorithms:
-through documentation, we will encourage the developer to run parameter
+through documentation, we will ask the developer to run parameter
 derivation manually in advance and then hardcode the output algorithm specific
 parameters in their application.
 The ALBA functions such as `prove` and `verify` will thus receive as input
