@@ -9,8 +9,8 @@ pub mod params;
 
 pub mod proof;
 
-pub(crate) mod round;
+mod round;
 
 pub mod setup;
 
-pub(crate) mod types;
+mod types;

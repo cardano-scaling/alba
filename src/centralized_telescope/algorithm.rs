@@ -43,7 +43,7 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
 /// Indexed proving algorithm, returns the total number of DFS calls done
 /// to find a proof and Some(proof) if found within setup.b calls of DFS,
 /// otherwise None
-pub(super) fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
+fn prove_index(setup: &Setup, set: &[Element], v: u64) -> (u64, Option<Proof>) {
     let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.n_p as usize);
     for _ in 0..setup.n_p {
         bins.push(Vec::new());
@@ -115,7 +115,7 @@ fn dfs(
 }
 
 /// Oracle producing a uniformly random value in [0, n_p[ used for prehashing S_p
-pub(super) fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
+fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
     let v_bytes: [u8; 8] = v.to_be_bytes();
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-H0");
@@ -126,7 +126,7 @@ pub(super) fn h0(setup: &Setup, v: u64, s: Element) -> Option<u64> {
 }
 
 /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-pub(super) fn h2(setup: &Setup, r: &Round) -> bool {
+fn h2(setup: &Setup, r: &Round) -> bool {
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-H2");
     hasher.update(r.h);
