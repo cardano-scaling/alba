@@ -2,7 +2,7 @@
 
 /// Setup output parameters
 #[derive(Debug, Clone)]
-pub struct LotterySetup {
+pub struct Setup {
     /// Proof size (in Sp elements)
     pub u: u64,
     /// Lottery oracle probability
