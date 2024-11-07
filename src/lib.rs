@@ -3,6 +3,7 @@
 mod utils;
 
 pub mod centralized_telescope;
+pub mod simple_lottery;
 
 // Silence a rustc warning about unused crate.
 use rand_core as _;
