@@ -25,64 +25,76 @@ pub struct LotterySetup {
 }
 
 impl LotterySetup {
-    fn bound_u(lambda_sec: f64, lambda_rel: f64, rs: f64, rc: f64) -> f64 {
+    fn bounds_u(lambda_sec: f64, lambda_rel: f64, rs: f64, rc: f64) -> (f64, f64) {
         let ln2 = 2f64.ln();
         let lhs = (lambda_sec * ln2) / (rs.ln() - 1.0 + rs.recip());
         let rhs = (lambda_rel * ln2) / (rc - 1.0 - rc.ln());
-        lhs.max(rhs)
+        (lhs, rhs)
     }
 
-    fn compute_u(params: &Params, p: f64) -> f64 {
+    fn compute_u(params: &Params, p: f64) -> u64 {
         let n_p_f64 = params.n_p as f64;
         let n_f_f64 = params.n_f as f64;
         let np_nf_ratio = n_p_f64 / n_f_f64;
-        let mut u = 0.0;
-        let mut bound_u = 0.0;
+        let mut u;
+        let mut bound_u;
         let mut rc;
         let mut rs;
 
-        if params.lambda_sec == params.lambda_rel {
+        if (params.lambda_sec - params.lambda_rel).abs() < 0.001 {
             let ln_np_nf = np_nf_ratio.ln();
 
             rc = (n_p_f64 / (n_p_f64 - n_f_f64)) * ln_np_nf;
             rs = ((n_p_f64 - n_f_f64) / n_f_f64) * ln_np_nf.recip();
 
-            u = rs * p * n_f_f64;
-            bound_u = Self::bound_u(params.lambda_sec, params.lambda_rel, rs, rc);
-            // println!("u: {}, bound_u: {}", u, bound_u);
+            u = (rs * p * n_f_f64).ceil();
+            let (bound_sec, bound_rel) =
+                Self::bounds_u(params.lambda_sec, params.lambda_rel, rs, rc);
+            bound_u = bound_sec.max(bound_rel);
         } else {
             rc = np_nf_ratio.sqrt();
             rs = rc;
-            if params.lambda_sec > params.lambda_rel {
-                while rc > 1.0 {
-                    u = rs * p * n_f_f64;
-                    bound_u = Self::bound_u(params.lambda_sec, params.lambda_rel, rs, rc);
-                    if u.ceil() >= bound_u {
-                        // println!("u: {}, bound_u: {}", u, bound_u);
-                        break;
-                    }
-                    rc -= -0.5;
+            let (bound_sec, bound_rel) =
+                Self::bounds_u(params.lambda_sec, params.lambda_rel, rs, rc);
+            let mut bound_rel_rc = bound_rel;
+            let mut bound_sec_rs = bound_sec;
+            // Minimizing the overall bound
+            while bound_sec_rs.ceil().ne(&bound_rel_rc.ceil()) && rs > 1.0 && rc > 1.0 {
+                // TODO : make step dynamic, according to difference between bound_sec_rs and bound_rel_rc
+                let step = 1.0 / 100.0;
+                if bound_rel_rc > bound_sec_rs {
+                    rs -= step;
+                    rc = np_nf_ratio / rs;
+                } else {
+                    rc -= step;
                     rs = np_nf_ratio / rc;
                 }
+                let (bound_sec, bound_rel) =
+                    Self::bounds_u(params.lambda_sec, params.lambda_rel, rs, rc);
+
+                bound_rel_rc = bound_rel;
+                bound_sec_rs = bound_sec;
             }
-            if params.lambda_rel > params.lambda_sec {
-                while rs > 1.0 {
-                    u = rs * p * n_f_f64;
-                    bound_u = Self::bound_u(params.lambda_sec, params.lambda_rel, rs, rc);
-                    if u.ceil() >= bound_u {
-                        // println!("u: {}, bound_u: {}", u, bound_u);
-                        break;
-                    }
-                    rs -= 0.01;
-                    rc = np_nf_ratio / rs;
-                }
+            bound_u = bound_sec_rs.ceil().max(bound_rel_rc.ceil());
+            // println!("\n--- Found optimal bound_u:{}", bound_u);
+            // Finding minimal u > bound_u
+            u = (rs * p * n_f_f64).ceil();
+            while u < bound_u {
+                // TODO : make step dynamic, according to difference between u and bound_u
+                let step = 1.0 / 10.0;
+                rs += step;
+                rc = np_nf_ratio / rs;
+                let (bound_sec, bound_rel) =
+                    Self::bounds_u(params.lambda_sec, params.lambda_rel, rs, rc);
+                bound_u = bound_sec.max(bound_rel);
+                u = (rs * p * n_f_f64).ceil();
             }
         }
         let bound_mu = bound_u * rc;
-        if u.ceil() >= bound_u && params.mu >= bound_mu {
-            u
+        if u >= bound_u && params.mu >= bound_mu {
+            u as u64
         } else {
-            0.0
+            0
         }
     }
 
@@ -90,7 +102,7 @@ impl LotterySetup {
     pub fn new(params: &Params) -> Option<Self> {
         let n_p_f64 = params.n_p as f64;
         let p = params.mu / n_p_f64;
-        let u = Self::compute_u(params, p) as u64;
+        let u = Self::compute_u(params, p);
 
         if u > 0 {
             Some(Self { u, p })
@@ -108,7 +120,7 @@ mod tests {
     fn test_compute_mu() {
         let params = Params {
             lambda_sec: 10.0,
-            lambda_rel: 10.0,
+            lambda_rel: 12.0,
             n_p: 80,
             n_f: 20,
             mu: 55.0,
