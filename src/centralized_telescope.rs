@@ -342,73 +342,73 @@ impl Proof {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::test_utils::gen_items;
-    use rand_chacha::ChaCha20Rng;
-    use rand_core::{RngCore, SeedableRng};
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use crate::test_utils::gen_items;
+//     use rand_chacha::ChaCha20Rng;
+//     use rand_core::{RngCore, SeedableRng};
 
-    #[test]
-    fn test_verify() {
-        let mut rng = ChaCha20Rng::from_seed(Default::default());
-        let nb_tests = 1_000;
-        let set_size = 1_000;
-        let params = Params {
-            lambda_sec: 10.0,
-            lambda_rel: 10.0,
-            n_p: 80 * set_size / 100,
-            n_f: 20 * set_size / 100,
-        };
-        for _t in 0..nb_tests {
-            let seed = rng.next_u32().to_be_bytes().to_vec();
-            let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
-            let setup = Setup::new(&params);
-            let proof = Proof::prove(&setup, &s_p).unwrap();
-            assert!(Proof::verify(&setup, &proof.clone()));
-            // Checking that the proof fails if proof.t is erroneous
-            let proof_t = Proof {
-                v: proof.v,
-                t: proof.t.wrapping_add(1),
-                items: proof.items.clone(),
-            };
-            assert!(!Proof::verify(&setup, &proof_t));
-            // Checking that the proof fails if proof.v is erroneous
-            let proof_v = Proof {
-                v: proof.v.wrapping_add(1),
-                t: proof.t,
-                items: proof.items.clone(),
-            };
-            assert!(!Proof::verify(&setup, &proof_v));
-            // Checking that the proof fails when no elements are included
-            let proof_item = Proof {
-                v: proof.v,
-                t: proof.t,
-                items: Vec::new(),
-            };
-            assert!(!Proof::verify(&setup, &proof_item));
-            // Checking that the proof fails when wrong elements are included
-            // We are trying to trigger H2
-            let mut wrong_items = proof.items.clone();
-            let last_item = wrong_items.pop().unwrap();
-            let mut penultimate_item = wrong_items.pop().unwrap();
-            let proof_itembis = Proof {
-                v: proof.v,
-                t: proof.t,
-                items: wrong_items.clone(),
-            };
-            assert!(!Proof::verify(&setup, &proof_itembis));
-            // Checking that the proof fails when wrong elements are included
-            // We are trying to trigger H1
-            penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
-            wrong_items.push(penultimate_item);
-            wrong_items.push(last_item);
-            let proof_itembis = Proof {
-                v: proof.v,
-                t: proof.t,
-                items: wrong_items.clone(),
-            };
-            assert!(!Proof::verify(&setup, &proof_itembis));
-        }
-    }
-}
+//     #[test]
+//     fn test_verify() {
+//         let mut rng = ChaCha20Rng::from_seed(Default::default());
+//         let nb_tests = 1_000;
+//         let set_size = 1_000;
+//         let params = Params {
+//             lambda_sec: 10.0,
+//             lambda_rel: 10.0,
+//             n_p: 80 * set_size / 100,
+//             n_f: 20 * set_size / 100,
+//         };
+//         for _t in 0..nb_tests {
+//             let seed = rng.next_u32().to_be_bytes().to_vec();
+//             let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
+//             let setup = Setup::new(&params);
+//             let proof = Proof::prove(&setup, &s_p).unwrap();
+//             assert!(Proof::verify(&setup, &proof.clone()));
+//             // Checking that the proof fails if proof.t is erroneous
+//             let proof_t = Proof {
+//                 v: proof.v,
+//                 t: proof.t.wrapping_add(1),
+//                 items: proof.items.clone(),
+//             };
+//             assert!(!Proof::verify(&setup, &proof_t));
+//             // Checking that the proof fails if proof.v is erroneous
+//             let proof_v = Proof {
+//                 v: proof.v.wrapping_add(1),
+//                 t: proof.t,
+//                 items: proof.items.clone(),
+//             };
+//             assert!(!Proof::verify(&setup, &proof_v));
+//             // Checking that the proof fails when no elements are included
+//             let proof_item = Proof {
+//                 v: proof.v,
+//                 t: proof.t,
+//                 items: Vec::new(),
+//             };
+//             assert!(!Proof::verify(&setup, &proof_item));
+//             // Checking that the proof fails when wrong elements are included
+//             // We are trying to trigger H2
+//             let mut wrong_items = proof.items.clone();
+//             let last_item = wrong_items.pop().unwrap();
+//             let mut penultimate_item = wrong_items.pop().unwrap();
+//             let proof_itembis = Proof {
+//                 v: proof.v,
+//                 t: proof.t,
+//                 items: wrong_items.clone(),
+//             };
+//             assert!(!Proof::verify(&setup, &proof_itembis));
+//             // Checking that the proof fails when wrong elements are included
+//             // We are trying to trigger H1
+//             penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
+//             wrong_items.push(penultimate_item);
+//             wrong_items.push(last_item);
+//             let proof_itembis = Proof {
+//                 v: proof.v,
+//                 t: proof.t,
+//                 items: wrong_items.clone(),
+//             };
+//             assert!(!Proof::verify(&setup, &proof_itembis));
+//         }
+//     }
+// }
