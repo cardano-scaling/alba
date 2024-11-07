@@ -74,19 +74,6 @@ impl LotterySetup {
         (bound_u.ceil() as u64, bound_mu.ceil() as u64)
     }
 
-    // Compute soundness and completeness bounds
-    fn compute_bounds(lambda_sec: f64, lambda_rel: f64, rs: f64, rc: f64) -> (f64, f64) {
-        let ln2 = 2f64.ln();
-
-        // bound_{λ_sec}(r_s) = ln(2) · λ_sec / ( ln(r_s) - 1 + 1/r_s )
-        let lhs = (lambda_sec * ln2) / (rs.ln() - 1.0 + rs.recip());
-
-        // bound_{λ_rel}(r_c) = ln(2) · λ_rel / ( r_c - 1 - ln(r_c) )
-        let rhs = (lambda_rel * ln2) / (rc - 1.0 - rc.ln());
-
-        (lhs, rhs)
-    }
-
     // Compute minimal bound for u by converging completeness and soundness bounds
     fn minimize_bounds(
         lambda_sec: f64,
@@ -121,6 +108,19 @@ impl LotterySetup {
 
         let bound_u = bound_sec.max(bound_rel);
         (rs, rc, bound_u, bound_u * rc)
+    }
+
+    // Compute soundness and completeness bounds
+    fn compute_bounds(lambda_sec: f64, lambda_rel: f64, rs: f64, rc: f64) -> (f64, f64) {
+        let ln2 = 2f64.ln();
+
+        // bound_{λ_sec}(r_s) = ln(2) · λ_sec / ( ln(r_s) - 1 + 1/r_s )
+        let lhs = (lambda_sec * ln2) / (rs.ln() - 1.0 + rs.recip());
+
+        // bound_{λ_rel}(r_c) = ln(2) · λ_rel / ( r_c - 1 - ln(r_c) )
+        let rhs = (lambda_rel * ln2) / (rc - 1.0 - rc.ln());
+
+        (lhs, rhs)
     }
 }
 
