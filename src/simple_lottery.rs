@@ -69,8 +69,9 @@ impl LotterySetup {
     /// the lower bound and returns the minimum proof size and number of
     /// participants.
     fn compute_u_mu(lambda_sec: f64, lambda_rel: f64, n_p: u64, n_f: u64) -> (u64, u64) {
-        let (_, _, u, mu) = Self::minimize_bounds(lambda_sec, lambda_rel, n_p as f64, n_f as f64);
-        (u.ceil() as u64, mu.ceil() as u64)
+        let (_, _, bound_u, bound_mu) =
+            Self::minimize_bounds(lambda_sec, lambda_rel, n_p as f64, n_f as f64);
+        (bound_u.ceil() as u64, bound_mu.ceil() as u64)
     }
 
     // Compute soundness and completeness bounds
