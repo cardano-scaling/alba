@@ -9,4 +9,3 @@ Implementation of _Approximate Lower Bound Arguments_ from the [paper](https://i
 > Its one and only purpose is to help people who are more familiar with code than equations to have a better understanding of ALBAs
 
 👉 Checkout documentation on https://alba.cardano-scaling.org
-

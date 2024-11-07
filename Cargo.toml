@@ -43,3 +43,6 @@ module_name_repetitions = "allow"
 must_use_candidate = "allow"
 semicolon_if_nothing_returned = "deny"
 similar_names = "allow"
+
+[package.metadata.docs.rs]
+rustdoc-args = [ "--html-in-header", "./docs/assets/katex-header.html" ]
