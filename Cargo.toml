@@ -45,4 +45,4 @@ semicolon_if_nothing_returned = "deny"
 similar_names = "allow"
 
 [package.metadata.docs.rs]
-rustdoc-args = [ "--html-in-header", "./src/katex-header.html" ]
+rustdoc-args = [ "--html-in-header", "./docs/assets/katex-header.html" ]

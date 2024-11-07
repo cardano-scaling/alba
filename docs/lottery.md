@@ -1,1 +1,0 @@
-Simple lottery construction given in _Section 4.1_.
