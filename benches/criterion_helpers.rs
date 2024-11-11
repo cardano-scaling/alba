@@ -28,7 +28,7 @@ pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     n_p: &[u64],
     n_f: &[u64],
     group_name: String,
-    bench_name: String,
+    bench_name: &str,
     f: &dyn Fn(f64, u64, u64, u64, u64, u64) -> V,
 ) {
     let mut group = c.benchmark_group(group_name);
@@ -39,21 +39,21 @@ pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
                 for &nf in n_f {
                     // Benchmark where the prover only has access to np percent elements of Sp,
                     // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
-                    let low = (sp * np).div_ceil(100);
+                    let low = sp.saturating_mul(np).div_ceil(100);
                     group.bench_function(bench_id(&bench_name, np, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, low, n))
+                        b.iter_custom(|n| f(l, sp, np, nf, low, n));
                     });
 
                     // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
-                    let mean = (100 + np).div_ceil(2);
-                    let mid = (sp + low).div_ceil(2);
+                    let mean = np.saturating_add(100).div_ceil(2);
+                    let mid: u64 = sp.saturating_add(low).div_ceil(2);
                     group.bench_function(bench_id(&bench_name, mean, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, mid, n))
+                        b.iter_custom(|n| f(l, sp, np, nf, mid, n));
                     });
 
                     // Benchmark where the prover only has access to all elements of Sp
                     group.bench_function(bench_id(&bench_name, 100, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, sp, n))
+                        b.iter_custom(|n| f(l, sp, np, nf, sp, n));
                     });
                 }
             }
@@ -81,7 +81,7 @@ impl Measurement for Steps {
     }
 
     fn add(&self, v1: &Self::Value, v2: &Self::Value) -> Self::Value {
-        v1 + v2
+        v1.saturating_add(*v2)
     }
 
     fn zero(&self) -> Self::Value {
@@ -102,13 +102,13 @@ struct StepsFormatter;
 
 impl ValueFormatter for StepsFormatter {
     fn format_value(&self, value: f64) -> String {
-        format!("{:.4} steps", value)
+        format!("{value:.4} steps")
     }
 
     fn format_throughput(&self, throughput: &Throughput, value: f64) -> String {
         match throughput {
             Throughput::Bytes(b) => format!("{:.4} spb", value / *b as f64),
-            Throughput::Elements(b) => format!("{:.4} steps/{}", value, b),
+            Throughput::Elements(b) => format!("{value:.4} steps/{b}"),
             Throughput::BytesDecimal(b) => format!("{:.4} spb (decimal)", value / *b as f64),
         }
     }
@@ -168,7 +168,7 @@ impl Measurement for Repetitions {
     }
 
     fn add(&self, v1: &Self::Value, v2: &Self::Value) -> Self::Value {
-        v1 + v2
+        v1.saturating_add(*v2)
     }
 
     fn zero(&self) -> Self::Value {
@@ -188,13 +188,13 @@ struct RepetitionsFormatter;
 
 impl ValueFormatter for RepetitionsFormatter {
     fn format_value(&self, value: f64) -> String {
-        format!("{:.4} repet", value)
+        format!("{value:.4} repet")
     }
 
     fn format_throughput(&self, throughput: &Throughput, value: f64) -> String {
         match throughput {
             Throughput::Bytes(b) => format!("{:.4} rpb", value / *b as f64),
-            Throughput::Elements(b) => format!("{:.4} repet/{}", value, b),
+            Throughput::Elements(b) => format!("{value:.4} repet/{b}"),
             Throughput::BytesDecimal(b) => format!("{:.4} rpb (decimal)", value / *b as f64),
         }
     }
