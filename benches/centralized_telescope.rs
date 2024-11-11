@@ -43,6 +43,7 @@ pub fn centralized_setup(
 
 /// Bench the duration of both the proving and verifiying algorithm of Alba centralized
 fn time_benches(c: &mut Criterion) {
+    #[allow(clippy::unit_arg)]
     fn prove_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
@@ -59,6 +60,7 @@ fn time_benches(c: &mut Criterion) {
         total_duration
     }
 
+    #[allow(clippy::unit_arg)]
     fn verify_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
@@ -104,6 +106,7 @@ fn time_benches(c: &mut Criterion) {
 
 /// Bench the number of steps, i.e. DFS calls, of Alba centralized prover
 fn step_benches(c: &mut Criterion<Steps>) {
+    #[allow(clippy::unit_arg)]
     fn prove_steps(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_steps = 0;
@@ -115,10 +118,10 @@ fn step_benches(c: &mut Criterion<Steps>) {
             // Bench
             black_box({
                 let (steps, _, _) = algorithm::bench(&bench_setup, &dataset);
-                total_steps += steps
+                total_steps += steps;
             });
         }
-        total_steps as u64
+        total_steps
     }
 
     benchmarks::<u64, u64, Steps>(
@@ -135,6 +138,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
 
 /// Bench the number of repetitions, i.e. the "r" parameter, of Alba centralized prover
 fn repetition_benches(c: &mut Criterion<Repetitions>) {
+    #[allow(clippy::unit_arg)]
     fn prove_repetitions(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_repetitions = 0;
@@ -146,10 +150,10 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
             // Bench
             black_box({
                 let (_, r, _) = algorithm::bench(&bench_setup, &dataset);
-                total_repetitions += 1 + r
+                total_repetitions += 1 + r;
             });
         }
-        total_repetitions as u64
+        total_repetitions
     }
 
     benchmarks::<u64, u64, Repetitions>(

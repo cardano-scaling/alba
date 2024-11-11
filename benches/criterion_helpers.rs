@@ -40,19 +40,19 @@ pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
                     // Benchmark where the prover only has access to np percent elements of Sp,
                     // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
                     let low = sp.saturating_mul(np).div_ceil(100);
-                    group.bench_function(bench_id(&bench_name, np, l, sp, np, nf), move |b| {
+                    group.bench_function(bench_id(bench_name, np, l, sp, np, nf), move |b| {
                         b.iter_custom(|n| f(l, sp, np, nf, low, n));
                     });
 
                     // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
                     let mean = np.saturating_add(100).div_ceil(2);
                     let mid: u64 = sp.saturating_add(low).div_ceil(2);
-                    group.bench_function(bench_id(&bench_name, mean, l, sp, np, nf), move |b| {
+                    group.bench_function(bench_id(bench_name, mean, l, sp, np, nf), move |b| {
                         b.iter_custom(|n| f(l, sp, np, nf, mid, n));
                     });
 
                     // Benchmark where the prover only has access to all elements of Sp
-                    group.bench_function(bench_id(&bench_name, 100, l, sp, np, nf), move |b| {
+                    group.bench_function(bench_id(bench_name, 100, l, sp, np, nf), move |b| {
                         b.iter_custom(|n| f(l, sp, np, nf, sp, n));
                     });
                 }
