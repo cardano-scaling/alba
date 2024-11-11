@@ -1,19 +1,17 @@
 //! Benchmarking centralized_telescope
 
 use criterion::{black_box, criterion_group, criterion_main, measurement::WallTime, Criterion};
-
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 use std::time::{Duration, Instant};
 
-use alba::{
-    centralized_telescope::{algorithm, init, params::Params, setup::Setup},
-    utils::test_utils::gen_items,
-};
+use alba::centralized_telescope::{algorithm, init, params::Params, setup::Setup};
 
 pub mod criterion_helpers;
-
 use criterion_helpers::{benchmarks, Repetitions, Steps};
+
+#[path = "../src/utils/test_utils.rs"]
+mod test_utils;
 
 // Global variables
 const NAME: &str = "Centralized";
@@ -33,7 +31,7 @@ pub fn centralized_setup(
 ) -> (Vec<[u8; 32]>, Setup) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 32]> = gen_items(&seed, sp);
+    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, sp);
     let params = Params {
         soundness_param: l,
         completeness_param: l,
