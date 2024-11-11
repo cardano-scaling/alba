@@ -157,7 +157,7 @@ fn leaf_hash(setup: &Setup, r: &Round) -> bool {
     hasher.update(b"Telescope-leaf_hash");
     hasher.update(r.hash);
     let digest: Hash = hasher.finalize().into();
-    sample::sample_bernoulli(&digest, setup.leaf_probability)
+    sample::sample_bernoulli(&digest, setup.valid_proof_probability)
 }
 
 #[cfg(test)]

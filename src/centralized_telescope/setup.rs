@@ -11,8 +11,8 @@ pub struct Setup {
     pub max_retries: u64,
     /// Maximum number of subtrees to search to find a proof
     pub search_width: u64,
-    /// Probability that a leaf was correctly chosen
-    pub leaf_probability: f64,
+    /// Probability that a tuple of element is a valid proof
+    pub valid_proof_probability: f64,
     /// Maximum number of DFS calls permitted to find a proof
     pub dfs_bound: u64,
 }

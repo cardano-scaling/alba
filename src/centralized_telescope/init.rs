@@ -44,7 +44,7 @@ fn param_small_case(params: &Params, proof_size_f64: f64) -> Setup {
         proof_size: proof_size_f64 as u64,
         max_retries: params.completeness_param as u64,
         search_width: search_width as u64,
-        leaf_probability: 2.0 * ln12 / search_width,
+        valid_proof_probability: 2.0 * ln12 / search_width,
         dfs_bound: (8.0 * (proof_size_f64 + 1.0) * search_width / ln12).floor() as u64,
     }
 }
@@ -58,7 +58,7 @@ fn param_high_case(params: &Params, proof_size_f64: f64, completeness_param2: f6
         proof_size: proof_size_f64 as u64,
         max_retries: (params.completeness_param / completeness_param2).ceil() as u64,
         search_width: search_width as u64,
-        leaf_probability: 2.0 * l2 / (search_width * LOG2_E),
+        valid_proof_probability: 2.0 * l2 / (search_width * LOG2_E),
         dfs_bound: (((l2 + proof_size_f64.log2()) / l2)
             * (3.0 * proof_size_f64 * search_width / 4.0)
             + search_width
@@ -106,7 +106,7 @@ fn param_mid_case(params: &Params, proof_size_f64: f64, s1: f64) -> Setup {
         proof_size: proof_size_f64 as u64,
         max_retries: (params.completeness_param / completeness_param1).ceil() as u64,
         search_width: search_width as u64,
-        leaf_probability: 2.0 * lbar_over_sw,
+        valid_proof_probability: 2.0 * lbar_over_sw,
         dfs_bound: ((max_v * lbar_over_sw + 1.0) * exponential * search_width * proof_size_f64
             + search_width)
             .floor() as u64,
