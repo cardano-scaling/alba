@@ -1,1 +1,32 @@
-**Telescope ALBA** documentation.
+- ALBA is a system which allows a prover to _quickly and succinctly_ convince a verifier of their knowledge regarding a large number of _valid elements_, even when presenting only a _subset_.
+- It approximates a lower bound on the prover's knowledge which permits a gap between
+    - what the prover actually knows and
+    - what the verifier is convinced they know.
+- This approach enables efficient proofs, with nearly optimal proof sizes in both _noninteractive_ and _distributed_ settings.
+- Key applications:
+    - Large-scale decentralized signatures,
+    - Universal composability in general-purpose succinct proof systems.
+- Particularly, it provides communication efficiency in decentralized or blockchain contexts where multiple provers share evidence.
+
+## Overview
+- **The protocol**
+    - The protocol addresses the problem where a prover possesses a large set of verifiable evidence that would be costly to present in its entirety.
+    - The prover's goal is to convince the verifier of their knowledge by revealing only a subset of this evidence, thus achieving efficiency in both time and communication.
+    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains at least $n_f$ elements, where $n_f$ is a threshold smaller than $n_p$.
+        - This creates an _approximate_ lower bound, as the verifier is convinced that $S_p$ meets or exceeds a threshold, though the actual size might be greater.
+    - ALBA achieves efficiency by allowing a small gap between the provable lower bound and the actual knowledge, enabling rapid verification without compromising security.
+- **Historical context**
+    - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques or interactive protocols.
+    - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
+- **Design goals**
+    - ALBA aims to minimize both proof size and computational load, making it feasible for high-throughput settings like blockchain networks.
+    - The protocol is versatile, supporting both noninteractive proofs in a random oracle model and multi-prover scenarios in decentralized environments.
+        - This makes it adaptable for contexts where multiple provers collaborate, such as a blockchain where many parties collectively validate transactions.
+- **Setup and interaction models**
+    - Noninteractive Model:
+        - ALBA provides a noninteractive proof (_NIROPK_) in the random oracle model, where the verifier can extract knowledge directly from observing queries.
+    - Decentralized Model:
+        - ALBA is also adapted for decentralized, multi-prover settings, where several entities hold parts of $S_p$ and communicate over a network to jointly prove possession of evidence, achieving efficiency in both communication and computation.
+- **Applications**
+    - ALBA has practical applications in large-scale decentralized signatures and in enhancing universal composability in general-purpose succinct proof systems (such as *SNARK*s).
+    - These applications are particularly relevant for cryptographic protocols in distributed systems, where rapid verification of large data sets is essential.
