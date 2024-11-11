@@ -7,7 +7,7 @@ use std::cmp::min;
 pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     // Computes the integer reprensation of hash* modulo n when n is not a
     // power of two. *(up to 8 bytes, in little endian)
-    fn mod_non_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
+    fn mod_not_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
         fn log_base2(x: u64) -> u64 {
             u64::from(
                 u64::BITS
@@ -17,10 +17,9 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
         }
         let epsilon_fail: u64 = 1 << 40; // TODO: update
         let k = log_base2(n.saturating_mul(epsilon_fail));
-        let k_prime: u64 = 1 << k;
-        let d = k_prime.div_ceil(n);
-
-        let i = mod_power_of_2(hash, k_prime);
+        let new_n: u64 = 1 << k;
+        let d = new_n.div_ceil(n);
+        let i = mod_power_of_2(hash, new_n);
 
         if i >= d.saturating_mul(n) {
             None
@@ -38,11 +37,11 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     if n.is_power_of_two() {
         Some(mod_power_of_2(hash, n))
     } else {
-        mod_non_power_of_2(hash, n)
+        mod_not_power_of_2(hash, n)
     }
 }
 
-/// Takes as input a hash and probability $q$ and returns true with
+/// Takes as input a hash and probability q and returns true with
 /// probability q otherwise false according to a Bernoulli distribution
 /// (c.f. Appendix B, Alba paper).
 pub(crate) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
