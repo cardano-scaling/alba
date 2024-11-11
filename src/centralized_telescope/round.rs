@@ -24,12 +24,12 @@ pub struct Round {
 
 impl Round {
     /// Output a round from retry and search counters as well as set_size
-    /// Initilialises the hash with node_hash(retry_counter || search_bytes)
-    /// and random value as oracle(node_hash(retry_counter || search_bytes), set_size)
+    /// Initilialises the hash with round_hash(retry_counter || search_bytes)
+    /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)
     pub(super) fn new(retry_counter: u64, search_counter: u64, set_size: u64) -> Option<Self> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
         let search_bytes: [u8; 8] = search_counter.to_be_bytes();
-        let (hash, id_opt) = Self::node_hash(&retry_bytes, &search_bytes, set_size);
+        let (hash, id_opt) = Self::round_hash(&retry_bytes, &search_bytes, set_size);
         id_opt.map(|id| Self {
             retry_counter,
             search_counter,
@@ -41,11 +41,11 @@ impl Round {
     }
 
     /// Updates a round with an element
-    /// Replaces the hash $h$ with $h' = node_hash(h, s)$ and the random value as oracle(h', set_size)
+    /// Replaces the hash $h$ with $h' = round_hash(h, s)$ and the random value as oracle(h', set_size)
     pub(super) fn update(r: &Self, element: Element) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
         element_sequence.push(element);
-        let (hash, id_opt) = Self::node_hash(&r.hash, &element, r.set_size);
+        let (hash, id_opt) = Self::round_hash(&r.hash, &element, r.set_size);
         id_opt.map(|id| Self {
             retry_counter: r.retry_counter,
             search_counter: r.search_counter,
@@ -58,9 +58,9 @@ impl Round {
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
-    fn node_hash(first_input: &[u8], second_input: &[u8], set_size: u64) -> (Hash, Option<u64>) {
+    fn round_hash(first_input: &[u8], second_input: &[u8], set_size: u64) -> (Hash, Option<u64>) {
         let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-node_hash");
+        hasher.update(b"Telescope-round_hash");
         hasher.update(first_input);
         hasher.update(second_input);
         let digest: Hash = hasher.finalize().into();

@@ -49,7 +49,7 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
             return false;
         }
     }
-    leaf_hash(setup, &round)
+    proof_hash(setup, &round)
 }
 
 /// Indexed proving algorithm, returns the total number of DFS calls done
@@ -101,12 +101,12 @@ fn prove_index(setup: &Setup, prover_set: &[Element], retry_counter: u64) -> (u6
 /// and returns the total number of recursive DFS calls done and, if not
 /// found under setup.dfs_bound calls, returns None otherwise Some(Proof),
 /// that is the first round candidate Round{retry_counter, search_counter, x_1, ..., x_u)} such that:
-/// - ∀i ∈ [0, u-1], bin_hash(x_i+1) ∈ bins[node_hash(...node_hash(node_hash(v, t), x_1), ..., x_i)]
-/// - leaf_hash(node_hash(... node_hash((node_hash(v, t), x_1), ..., x_u)) = true
+/// - ∀i ∈ [0, u-1], bin_hash(x_i+1) ∈ bins[round_hash(...round_hash(round_hash(v, t), x_1), ..., x_i)]
+/// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
 fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u64, Option<Proof>) {
     // If current round comprises proof_size elements, returns it as Proof
     if round.element_sequence.len() as u64 == setup.proof_size {
-        let proof_opt = if leaf_hash(setup, round) {
+        let proof_opt = if proof_hash(setup, round) {
             Some(Proof {
                 retry_counter: round.retry_counter,
                 search_counter: round.search_counter,
@@ -152,9 +152,9 @@ fn bin_hash(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64> 
 }
 
 /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-fn leaf_hash(setup: &Setup, r: &Round) -> bool {
+fn proof_hash(setup: &Setup, r: &Round) -> bool {
     let mut hasher = Blake2s256::new();
-    hasher.update(b"Telescope-leaf_hash");
+    hasher.update(b"Telescope-proof_hash");
     hasher.update(r.hash);
     let digest: Hash = hasher.finalize().into();
     sample::sample_bernoulli(&digest, setup.valid_proof_probability)
@@ -208,7 +208,7 @@ mod tests {
             };
             assert!(!verify(&setup, &proof_item));
             // Checking that the proof fails when wrong elements are included
-            // We are trying to trigger leaf_hash
+            // We are trying to trigger proof_hash
             let mut wrong_items = proof.element_sequence.clone();
             let last_item = wrong_items.pop().unwrap();
             let mut penultimate_item = wrong_items.pop().unwrap();
@@ -219,7 +219,7 @@ mod tests {
             };
             assert!(!verify(&setup, &proof_itembis));
             // Checking that the proof fails when wrong elements are included
-            // We are trying to trigger node_hash
+            // We are trying to trigger round_hash
             penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
             wrong_items.push(penultimate_item);
             wrong_items.push(last_item);
