@@ -21,6 +21,7 @@ pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) ->
 }
 
 /// Helper function to create series of benchmarks
+#[allow(clippy::too_many_arguments)]
 pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     c: &mut Criterion<T>,
     lambdas: &[f64],
