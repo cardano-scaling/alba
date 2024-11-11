@@ -20,7 +20,7 @@
     - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
 - **Design goals**
     - ALBA aims to minimize both proof size and computational load, making it feasible for high-throughput settings like blockchain networks.
-    - The protocol is versatile and adaptable, supporting non-interactive proofs in both the random oracle and common reference string model as well as allowing multi-prover scenarii in decentralized environments.
+    - The protocol is versatile and adaptable, supporting non-interactive proofs in both the random oracle and common reference string model as well as allowing multi-prover scenario in decentralized environments.
         - This makes it of special interest for multi-party environment, such as a blockchain where many parties collectively validate transactions.
 - **Setup and interaction models**
     - Noninteractive Model:
