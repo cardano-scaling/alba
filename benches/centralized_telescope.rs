@@ -35,8 +35,8 @@ pub fn centralized_setup(
     let params = Params {
         soundness_param: l,
         completeness_param: l,
-        set_size: (np * sp).div_ceil(100),
-        lower_bound: (nf * sp).div_ceil(100),
+        set_size: np.saturating_mul(sp).div_ceil(100),
+        lower_bound: nf.saturating_mul(sp).div_ceil(100),
     };
     (dataset, init::make_setup(&params))
 }
@@ -53,9 +53,7 @@ fn time_benches(c: &mut Criterion) {
             dataset.truncate(truncate_size as usize);
             // Bench
             let start = Instant::now();
-            black_box({
-                algorithm::prove(&bench_setup, &dataset);
-            });
+            black_box(algorithm::prove(&bench_setup, &dataset));
             total_duration = total_duration.saturating_add(start.elapsed());
         }
         total_duration
@@ -74,9 +72,7 @@ fn time_benches(c: &mut Criterion) {
             if let Some(proof) = proof_opt {
                 // Bench
                 let start = Instant::now();
-                black_box({
-                    algorithm::verify(&bench_setup, &proof);
-                });
+                black_box(algorithm::verify(&bench_setup, &proof));
                 total_duration = total_duration.saturating_add(start.elapsed());
             }
         }
@@ -90,7 +86,7 @@ fn time_benches(c: &mut Criterion) {
         NP,
         NF,
         format!("{} - {}", NAME, "Time"),
-        "Prove".to_string(),
+        "Prove",
         &prove_duration,
     );
 
@@ -101,7 +97,7 @@ fn time_benches(c: &mut Criterion) {
         NP,
         NF,
         format!("{} - {}", NAME, "Time"),
-        "Verify".to_string(),
+        "Verify",
         &verify_duration,
     );
 }
@@ -119,7 +115,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
             // Bench
             black_box({
                 let (steps, _, _) = algorithm::bench(&bench_setup, &dataset);
-                total_steps += steps;
+                total_steps += steps
             });
         }
         total_steps as u64
@@ -132,7 +128,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
         NP,
         NF,
         format!("{} - {}", NAME, "Steps"),
-        "Prove".to_string(),
+        "Prove",
         &prove_steps,
     );
 }
@@ -150,7 +146,7 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
             // Bench
             black_box({
                 let (_, r, _) = algorithm::bench(&bench_setup, &dataset);
-                total_repetitions += 1 + r;
+                total_repetitions += 1 + r
             });
         }
         total_repetitions as u64
@@ -163,14 +159,17 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
         NP,
         NF,
         format!("{} - {}", NAME, "Repetitions"),
-        "Prove".to_string(),
+        "Prove",
         &prove_repetitions,
     );
 }
 
 mod criterion_groups {
     #![allow(missing_docs)]
-    use super::*;
+    use super::{
+        criterion_group, repetition_benches, step_benches, time_benches, Criterion, Duration,
+        Repetitions, Steps,
+    };
 
     // Benchmarking proving and verifying time
     criterion_group!(name = centralized_time;
