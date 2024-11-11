@@ -168,19 +168,31 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
     );
 }
 
-criterion_group!(name = centralized_time;
-                 config = Criterion::default().measurement_time(Duration::from_secs(30));
-                 targets = time_benches
-);
+mod criterion_groups {
+    #![allow(missing_docs)]
+    use super::*;
 
-criterion_group!(name = centralized_step;
-    config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30));
-    targets = step_benches
-);
+    // Benchmarking proving and verifying time
+    criterion_group!(name = centralized_time;
+                     config = Criterion::default().measurement_time(Duration::from_secs(30));
+                     targets = time_benches
+    );
 
-criterion_group!(name = centralized_repetitions;
-    config = Criterion::default().with_measurement(Repetitions).measurement_time(Duration::from_secs(30));
-    targets = repetition_benches
-);
+    // Benchmarking the number of DFS calls per proof
+    criterion_group!(name = centralized_step;
+        config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30));
+        targets = step_benches
+    );
 
-criterion_main!(centralized_time, centralized_step, centralized_repetitions);
+    // Benchmarking the number of repetitions, i.e. prove_index calls, per proof
+    criterion_group!(name = centralized_repetitions;
+        config = Criterion::default().with_measurement(Repetitions).measurement_time(Duration::from_secs(30));
+        targets = repetition_benches
+    );
+}
+
+criterion_main!(
+    criterion_groups::centralized_time,
+    criterion_groups::centralized_step,
+    criterion_groups::centralized_repetitions
+);
