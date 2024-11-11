@@ -11,6 +11,6 @@ pub mod docs;
 // Silence a rustc warning about unused crate.
 #[cfg(test)]
 use criterion as _;
+
 #[cfg(test)]
 use rand as _;
-use rand_core as _;
