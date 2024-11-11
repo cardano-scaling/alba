@@ -4,21 +4,26 @@ use super::proof::Proof;
 use super::round::Round;
 use super::setup::Setup;
 use super::types::Hash;
-use crate::utils::sample;
-use crate::utils::types::Element;
+use crate::utils::{sample, types::ToBytes};
 use blake2::{Blake2s256, Digest};
 
 /// Alba's proving algorithm, based on a depth-first search algorithm.
 /// Calls up to setup.max_retries times the prove_index function and returns an empty
 /// proof if no suitable candidate is found.
-pub fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
+pub fn prove<Element>(setup: &Setup, prover_set: &[Element]) -> Option<Proof<Element>>
+where
+    Element: Copy + Clone + ToBytes,
+{
     // Run prove_index up to max_retries times
     (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
 }
 
 /// Alba's verification algorithm, returns true if the proof is
 /// successfully verified, following the DFS verification, false otherwise.
-pub fn verify(setup: &Setup, proof: &Proof) -> bool {
+pub fn verify<Element>(setup: &Setup, proof: &Proof<Element>) -> bool
+where
+    Element: Copy + Clone + ToBytes,
+{
     if proof.search_counter >= setup.search_width
         || proof.retry_counter >= setup.max_retries
         || proof.element_sequence.len() as u64 != setup.proof_size
@@ -27,7 +32,8 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
     }
 
     // Initialise a round with given retry and search counters
-    let Some(mut round) = Round::new(proof.retry_counter, proof.search_counter, setup.set_size)
+    let Some(mut round) =
+        Round::<Element>::new(proof.retry_counter, proof.search_counter, setup.set_size)
     else {
         return false;
     };
@@ -41,7 +47,7 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
         // Check that the new element was chosen correctly
         // i.e. that we chose the new element such that its bin id equals the round id
         if round.id == bin_id {
-            match Round::update(&round, element) {
+            match Round::<Element>::update(&round, element) {
                 Some(r) => round = r,
                 None => return false,
             }
@@ -55,7 +61,14 @@ pub fn verify(setup: &Setup, proof: &Proof) -> bool {
 /// Indexed proving algorithm, returns the total number of DFS calls done
 /// to find a proof and Some(proof) if found within setup.dfs_bound calls of DFS,
 /// otherwise None
-fn prove_index(setup: &Setup, prover_set: &[Element], retry_counter: u64) -> (u64, Option<Proof>) {
+fn prove_index<Element>(
+    setup: &Setup,
+    prover_set: &[Element],
+    retry_counter: u64,
+) -> (u64, Option<Proof<Element>>)
+where
+    Element: Copy + Clone + ToBytes,
+{
     // Initialise set_size bins
     let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.set_size as usize);
     for _ in 0..setup.set_size {
@@ -103,7 +116,15 @@ fn prove_index(setup: &Setup, prover_set: &[Element], retry_counter: u64) -> (u6
 /// that is the first round candidate Round{retry_counter, search_counter, x_1, ..., x_u)} such that:
 /// - ∀i ∈ [0, u-1], bin_hash(x_i+1) ∈ bins[round_hash(...round_hash(round_hash(v, t), x_1), ..., x_i)]
 /// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
-fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u64, Option<Proof>) {
+fn dfs<Element>(
+    setup: &Setup,
+    bins: &[Vec<Element>],
+    round: &Round<Element>,
+    mut step: u64,
+) -> (u64, Option<Proof<Element>>)
+where
+    Element: Copy + Clone + ToBytes,
+{
     // If current round comprises proof_size elements, returns it as Proof
     if round.element_sequence.len() as u64 == setup.proof_size {
         let proof_opt = if proof_hash(setup, round) {
@@ -125,7 +146,7 @@ fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u
             return (step, None);
         }
         // Update round with such element
-        if let Some(r) = Round::update(round, element) {
+        if let Some(r) = Round::<Element>::update(round, element) {
             // Run DFS on updated round, incrementing step
             let (dfs_calls, proof_opt) = dfs(setup, bins, &r, step.saturating_add(1));
             // Returns proof if found
@@ -141,18 +162,22 @@ fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u
 }
 
 /// Oracle producing a uniformly random value in [0, set_size[ used for prehashing S_p
-fn bin_hash(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64> {
+fn bin_hash<Element>(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64>
+where
+    Element: Copy + Clone + ToBytes,
+{
     let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
+    let element_bytes = element.to_be_bytes();
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-bin_hash");
     hasher.update(retry_bytes);
-    hasher.update(element);
+    hasher.update(element_bytes);
     let digest: Hash = hasher.finalize().into();
     sample::sample_uniform(&digest, setup.set_size)
 }
 
 /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-fn proof_hash(setup: &Setup, r: &Round) -> bool {
+fn proof_hash<Element>(setup: &Setup, r: &Round<Element>) -> bool {
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-proof_hash");
     hasher.update(r.hash);
@@ -165,7 +190,6 @@ mod tests {
     use super::*;
     use crate::centralized_telescope::{init, params::Params};
     use crate::utils::test_utils::gen_items;
-    use crate::utils::types::DATA_LENGTH;
     use rand_chacha::ChaCha20Rng;
     use rand_core::{RngCore, SeedableRng};
 
@@ -182,7 +206,7 @@ mod tests {
         };
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_be_bytes().to_vec();
-            let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
+            let s_p = gen_items::<32>(&seed, set_size);
             let setup = init::make_setup(&params);
             let proof = prove(&setup, &s_p).unwrap();
             assert!(verify(&setup, &proof.clone()));
@@ -201,7 +225,7 @@ mod tests {
             };
             assert!(!verify(&setup, &proof_v));
             // Checking that the proof fails when no elements are included
-            let proof_item = Proof {
+            let proof_item: Proof<[u8; 32]> = Proof {
                 retry_counter: proof.retry_counter,
                 search_counter: proof.search_counter,
                 element_sequence: Vec::new(),
