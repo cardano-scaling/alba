@@ -30,12 +30,13 @@ pub fn make_setup(params: &Params) -> Setup {
             // Case 3, Theorem 14, i.e.  set_size >= λ^3
             param_high_case(params, proof_size_f64, completeness_param2)
         } else {
-            // Case 2, Theorem 13, i.e. λ^3 > set_size > λ^2
+            // Case 2, Theorem 13, i.e. λ^2 < set_size < λ^3
             param_mid_case(params, proof_size_f64, s1)
         }
     }
 }
 
+/// Helper function that returns Setup, used when set_size <= λ^2
 fn param_small_case(params: &Params, proof_size_f64: f64) -> Setup {
     let ln12 = (12f64).ln();
     let search_width = (32.0 * ln12 * proof_size_f64).ceil();
@@ -49,6 +50,7 @@ fn param_small_case(params: &Params, proof_size_f64: f64) -> Setup {
     }
 }
 
+/// Helper function that returns Setup, used when set_size >= λ^3
 fn param_high_case(params: &Params, proof_size_f64: f64, completeness_param2: f64) -> Setup {
     let l2 = completeness_param2 + 2.0;
     let search_width = (16.0 * proof_size_f64 * l2 / LOG2_E).ceil();
@@ -67,6 +69,7 @@ fn param_high_case(params: &Params, proof_size_f64: f64, completeness_param2: f6
     }
 }
 
+/// Helper function that returns Setup, used when λ^2 < set_size < λ^3
 fn param_mid_case(params: &Params, proof_size_f64: f64, s1: f64) -> Setup {
     fn max_vertices_visited(proof_size: f64, l1: f64) -> f64 {
         fn factorial_check(max_v: f64, l1: f64) -> bool {
