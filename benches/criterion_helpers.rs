@@ -1,11 +1,18 @@
+//! Criterion helper functions including new Measurements and wrappers on
+//! BenchmarId and BenchmarkGroup
+
+use alba as _;
+use blake2 as _;
+use rand as _;
+use rand_chacha as _;
+use rand_core as _;
+
 use criterion::{
     measurement::{Measurement, ValueFormatter},
     BenchmarkId, Criterion, Throughput,
 };
 
-// Criterion helpers
-
-// Helper function creating a Benchmark ID
+/// Helper function creating a Benchmark ID
 pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) -> BenchmarkId {
     BenchmarkId::new(
         bench_name,
@@ -13,7 +20,7 @@ pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) ->
     )
 }
 
-// Helper function to create series of benchmarks
+/// Helper function to create series of benchmarks
 pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     c: &mut Criterion<T>,
     lambdas: &[f64],
@@ -57,7 +64,7 @@ pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
 
 // Measurements
 
-/// Nb of DFS call per proof
+/// Structure to count the number of DFS calls per proof
 #[derive(Debug, Clone, Copy)]
 pub struct Steps;
 
@@ -143,7 +150,8 @@ impl ValueFormatter for StepsFormatter {
     }
 }
 
-/// Nb of repet, times prove_index was called, per proof
+/// Structure to count the number of repetitions done, i.e. how many times the
+/// function prove_index was called, per proof
 #[derive(Debug, Clone, Copy)]
 pub struct Repetitions;
 
