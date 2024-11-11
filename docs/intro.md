@@ -1,12 +1,9 @@
-- ALBA is a system which allows a prover to _quickly and succinctly_ convince a verifier of their knowledge regarding a large number of _valid elements_, even when presenting only a _subset_.
-- It approximates a lower bound on the prover's knowledge which permits a gap between
-    - what the prover actually knows and
-    - what the verifier is convinced they know.
-- This approach enables efficient proofs, with nearly optimal proof sizes in both _non-interactive_ and _distributed_ settings.
-- Key applications:
-    - Large-scale decentralized signatures,
-    - Universal composability in general-purpose succinct proof systems.
-- Particularly, it provides communication efficiency in decentralized or blockchain contexts where multiple provers share evidence.
+- Assume that, a prover, who has a large collection of data, wants to convince a verifier that their set contains at least a minimum number of items that satisfy a specific condition, known as a predicate, even if the prover only shares a portion of it.
+- The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
+- The protocol makes use of a small gap between the size of what the prover actually has and the threshold the verifier knows they have.
+- . This gap makes ALBA very efficient, as it reduces the data the prover needs to share, enabling compact and efficient proofs.
+- ALBA also supports weighted items, where each item has an assigned importance or weight. This allows the prover to demonstrate that the total weight of their set meets a required threshold, rather than simply the count of items.
+- ALBA supports scalable and efficient proof mechanisms in decentralized systems, i.e., voting schemes.
 
 ## Overview
 - **The protocol**
@@ -27,6 +24,3 @@
         - ALBA provides a non-interactive proof of knowledge in the random oracle model (_NIROPK_), where the verifier can extract knowledge directly from observing queries.
     - Decentralized Model:
         - ALBA is also adapted for decentralized, multi-prover settings, where several entities hold parts of $S_p$ and communicate over a network to jointly prove possession of evidence, achieving efficiency in both communication and computation.
-- **Applications**
-    - ALBA has practical applications in large-scale decentralized signatures and in enhancing universal composability in general-purpose succinct proof systems (such as *SNARK*s).
-    - These applications are particularly relevant for cryptographic protocols in distributed systems, where rapid verification of large data sets is essential.
