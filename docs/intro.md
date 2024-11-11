@@ -2,7 +2,7 @@
 - It approximates a lower bound on the prover's knowledge which permits a gap between
     - what the prover actually knows and
     - what the verifier is convinced they know.
-- This approach enables efficient proofs, with nearly optimal proof sizes in both _noninteractive_ and _distributed_ settings.
+- This approach enables efficient proofs, with nearly optimal proof sizes in both _non-interactive_ and _distributed_ settings.
 - Key applications:
     - Large-scale decentralized signatures,
     - Universal composability in general-purpose succinct proof systems.
@@ -23,8 +23,8 @@
     - The protocol is versatile and adaptable, supporting non-interactive proofs in both the random oracle and common reference string model as well as allowing multi-prover scenario in decentralized environments.
         - This makes it of special interest for multi-party environment, such as a blockchain where many parties collectively validate transactions.
 - **Setup and interaction models**
-    - Noninteractive Model:
-        - ALBA provides a noninteractive proof (_NIROPK_) in the random oracle model, where the verifier can extract knowledge directly from observing queries.
+    - Non-interactive Model:
+        - ALBA provides a non-interactive proof of knowledge in the random oracle model (_NIROPK_), where the verifier can extract knowledge directly from observing queries.
     - Decentralized Model:
         - ALBA is also adapted for decentralized, multi-prover settings, where several entities hold parts of $S_p$ and communicate over a network to jointly prove possession of evidence, achieving efficiency in both communication and computation.
 - **Applications**
