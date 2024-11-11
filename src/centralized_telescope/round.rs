@@ -2,12 +2,12 @@
 
 use super::types::Hash;
 use crate::utils::sample;
-use crate::utils::types::Element;
+use crate::utils::types::ToBytes;
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round {
+pub struct Round<Element> {
     /// Numbers of retries done so far
     pub retry_counter: u64,
     /// Index of the current subtree being searched
@@ -22,13 +22,16 @@ pub struct Round {
     pub set_size: u64,
 }
 
-impl Round {
+impl<Element> Round<Element>
+where
+    Element: Copy + Clone + ToBytes,
+{
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
     /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)
     pub(super) fn new(retry_counter: u64, search_counter: u64, set_size: u64) -> Option<Self> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-        let search_bytes: [u8; 8] = search_counter.to_be_bytes();
+        let search_bytes = search_counter.to_be_bytes();
         let (hash, id_opt) = Self::round_hash(&retry_bytes, &search_bytes, set_size);
         id_opt.map(|id| Self {
             retry_counter,
@@ -45,7 +48,8 @@ impl Round {
     pub(super) fn update(r: &Self, element: Element) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
         element_sequence.push(element);
-        let (hash, id_opt) = Self::round_hash(&r.hash, &element, r.set_size);
+        let element_bytes = element.to_be_bytes().as_ref().to_vec();
+        let (hash, id_opt) = Self::round_hash(&r.hash, &element_bytes, r.set_size);
         id_opt.map(|id| Self {
             retry_counter: r.retry_counter,
             search_counter: r.search_counter,
