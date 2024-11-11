@@ -109,7 +109,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
     #[allow(clippy::unit_arg)]
     fn prove_steps(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
-        let mut total_steps = 0;
+        let mut total_steps = 0u64;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
@@ -118,7 +118,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
             // Bench
             black_box({
                 let (steps, _, _) = algorithm::bench(&bench_setup, &dataset);
-                total_steps += steps;
+                total_steps = total_steps.saturating_add(steps);
             });
         }
         total_steps
@@ -141,7 +141,7 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
     #[allow(clippy::unit_arg)]
     fn prove_repetitions(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
-        let mut total_repetitions = 0;
+        let mut total_repetitions = 0u64;
         for _ in 0..n {
             // Setup
             let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
@@ -150,7 +150,7 @@ fn repetition_benches(c: &mut Criterion<Repetitions>) {
             // Bench
             black_box({
                 let (_, r, _) = algorithm::bench(&bench_setup, &dataset);
-                total_repetitions += 1 + r;
+                total_repetitions = total_repetitions.saturating_add(r).saturating_add(1);
             });
         }
         total_repetitions
