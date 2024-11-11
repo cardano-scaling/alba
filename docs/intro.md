@@ -10,18 +10,18 @@
 
 ## Overview
 - **The protocol**
-    - The protocol addresses the problem where a prover possesses a large set of verifiable evidence that would be costly to present in its entirety.
-    - The prover's goal is to convince the verifier of their knowledge by revealing only a subset of this evidence, thus achieving efficiency in both time and communication.
-    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains at least $n_f$ elements, where $n_f$ is a threshold smaller than $n_p$.
+    - The protocol addresses the problem of succinctly proving knowledge of a large set of verifiable evidence.
+    - The prover convinces the verifier by revealing only a subset of this evidence, thus achieving efficiency in both time and communication.
+    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains at least $n_f$ elements, where $n_f$ is a threshold strictly smaller than $n_p$.
         - This creates an _approximate_ lower bound, as the verifier is convinced that $S_p$ meets or exceeds a threshold, though the actual size might be greater.
-    - ALBA achieves efficiency by allowing a small gap between the provable lower bound and the actual knowledge, enabling rapid verification without compromising security.
+    - ALBA achieves efficiency by making use of the gap between the provable lower bound and the actual size, enabling rapid verification without compromising security. The greater the gap, the smaller the proof, and the faster its generation.
 - **Historical context**
     - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques or interactive protocols.
     - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
 - **Design goals**
     - ALBA aims to minimize both proof size and computational load, making it feasible for high-throughput settings like blockchain networks.
-    - The protocol is versatile, supporting both noninteractive proofs in a random oracle model and multi-prover scenarios in decentralized environments.
-        - This makes it adaptable for contexts where multiple provers collaborate, such as a blockchain where many parties collectively validate transactions.
+    - The protocol is versatile and adaptable, supporting non-interactive proofs in both the random oracle and common reference string model as well as allowing multi-prover scenarii in decentralized environments.
+        - This makes it of special interest for multi-party environment, such as a blockchain where many parties collectively validate transactions.
 - **Setup and interaction models**
     - Noninteractive Model:
         - ALBA provides a noninteractive proof (_NIROPK_) in the random oracle model, where the verifier can extract knowledge directly from observing queries.
