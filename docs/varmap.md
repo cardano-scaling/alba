@@ -21,4 +21,5 @@ In the [paper](https://iohk.io/en/research/library/papers/approximate-lower-boun
 | $s_i$              | `Element`                                                                                        |
 | $s_1, \ldots, s_u$ | `element_sequence`                                                                               |
 | $p$                | [`lottery_probability`][crate::simple_lottery::setup::Setup::lottery_probability]                |
+| $limit$            | `step`                                                                                           |
 
