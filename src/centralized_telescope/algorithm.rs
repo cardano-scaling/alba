@@ -11,7 +11,7 @@ use blake2::{Blake2s256, Digest};
 /// Indexed proving algorithm, returns the total number of DFS calls done
 /// to find a proof and Some(proof) if found within setup.dfs_bound calls of DFS,
 /// otherwise None
-pub(crate) fn prove_index(
+pub(super) fn prove_index(
     setup: &Setup,
     prover_set: &[Element],
     retry_counter: u64,
@@ -101,7 +101,7 @@ fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u
 }
 
 /// Oracle producing a uniformly random value in [0, set_size[ used for prehashing S_p
-pub(crate) fn bin_hash(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64> {
+pub(super) fn bin_hash(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64> {
     let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-bin_hash");
@@ -112,7 +112,7 @@ pub(crate) fn bin_hash(setup: &Setup, retry_counter: u64, element: Element) -> O
 }
 
 /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0 otherwise
-pub(crate) fn proof_hash(setup: &Setup, r: &Round) -> bool {
+pub(super) fn proof_hash(setup: &Setup, r: &Round) -> bool {
     let mut hasher = Blake2s256::new();
     hasher.update(b"Telescope-proof_hash");
     hasher.update(r.hash);
