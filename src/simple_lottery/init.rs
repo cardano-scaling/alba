@@ -9,24 +9,22 @@ use std::f64::consts::LN_2;
 pub fn make_setup(params: &Params) -> Setup {
     let ratio = params.set_size as f64 / params.lower_bound as f64;
 
-    // Execute binary search for the optimal value of `rs`.
+    // Execute binary search for the optimal value of `rs` in the interval
+    // ]1.0, ratio[.
 
-    let mut l: f64 = 0.0;
-    let mut r: f64 = ratio;
+    let mut left: f64 = 1.0;
+    let mut right: f64 = ratio;
 
     loop {
-        let m = (l + r) / 2.0;
-        let rs = m;
+        let middle = (left + right) / 2.0;
+        let rs = middle;
         let rc = ratio / rs;
 
         let lhs = params.soundness_param / (rs.ln() - 1.0 + 1.0 / rs);
         let rhs = params.completeness_param / (rc - 1.0 - rc.ln());
 
-        if (m <= l) || (m >= r) {
-            let lhs = lhs * LN_2;
-            let rhs = rhs * LN_2;
-            let max = if lhs > rhs { lhs } else { rhs };
-            let u = max.ceil();
+        if (middle <= left) || (middle >= right) {
+            let u = (lhs.max(rhs) * LN_2).ceil();
             let mu = u * rc;
             return Setup {
                 proof_size: u as u64,
@@ -35,9 +33,9 @@ pub fn make_setup(params: &Params) -> Setup {
         }
 
         if lhs > rhs {
-            l = m;
+            left = middle;
         } else {
-            r = m;
+            right = middle;
         }
     }
 }
