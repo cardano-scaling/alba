@@ -55,19 +55,16 @@ impl Telescope {
         }
     }
 
-    /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Calls up to params.max_retries times the prove_index function and returns an empty
-    /// proof if no suitable candidate is found.
-    pub fn prove(self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
+    
+    pub fn prove(&self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
         // Run prove_index up to max_retries times
         (0..self.params.max_retries).find_map(|retry_counter| {
             Proof::prove_index(self.set_size, &self.params, prover_set, retry_counter).1
         })
     }
 
-    /// Alba's verification algorithm, returns true if the proof is
-    /// successfully verified, following the DFS verification, false otherwise.
-    pub fn verify(self, proof: &Proof) -> bool {
+    
+    pub fn verify(&self, proof: &Proof) -> bool {
         if proof.search_counter >= self.params.search_width
             || proof.retry_counter >= self.params.max_retries
             || proof.element_sequence.len() as u64 != self.params.proof_size
@@ -125,7 +122,7 @@ mod tests {
             let telescope =
                 Telescope::new(soundness_param, completeness_param, set_size, lower_bound);
             let proof = telescope.prove(&s_p).unwrap();
-            assert!(telescope.clone().verify(&proof.clone()));
+            assert!(telescope.verify(&proof.clone()));
             // Checking that the proof fails if proof.search_counter is erroneous
             let proof_t = Proof {
                 retry_counter: proof.retry_counter,
