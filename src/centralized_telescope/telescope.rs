@@ -1,7 +1,7 @@
 //! Customer facing Telescope structure
 
 use super::algorithm::{bin_hash, proof_hash, prove_index};
-use super::init::make_setup;
+use super::init::setup;
 use super::params::Params;
 use super::proof::Proof;
 use super::round::Round;
@@ -30,7 +30,7 @@ impl Telescope {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        let params = setup(soundness_param, completeness_param, set_size, lower_bound);
         Telescope {
             soundness_param,
             completeness_param,

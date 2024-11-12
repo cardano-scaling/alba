@@ -5,7 +5,7 @@ use super::params::Params;
 use std::f64::consts::LOG2_E;
 
 /// Params algorithm taking a Params as input and returning setup parameters (u,d,q)
-pub fn make_setup(
+pub fn setup(
     soundness_param: f64,
     completeness_param: f64,
     set_size: u64,
