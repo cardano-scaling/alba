@@ -12,7 +12,7 @@ use blake2::{Blake2s256, Digest};
 /// proof if no suitable candidate is found.
 pub fn prove<Element>(setup: &Setup, prover_set: &[Element]) -> Option<Proof<Element>>
 where
-    Element: Copy + Clone + ToBytes,
+    Element: Copy + ToBytes,
 {
     // Run prove_index up to max_retries times
     (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
@@ -22,7 +22,7 @@ where
 /// successfully verified, following the DFS verification, false otherwise.
 pub fn verify<Element>(setup: &Setup, proof: &Proof<Element>) -> bool
 where
-    Element: Copy + Clone + ToBytes,
+    Element: Copy + ToBytes,
 {
     if proof.search_counter >= setup.search_width
         || proof.retry_counter >= setup.max_retries
@@ -41,7 +41,7 @@ where
     // For each element in the proof's sequence
     for &element in &proof.element_sequence {
         // Retrieve the bin id associated to this new element
-        let Some(bin_id) = bin_hash(setup, proof.retry_counter, element) else {
+        let Some(bin_id) = bin_hash(setup, proof.retry_counter, &element) else {
             return false;
         };
         // Check that the new element was chosen correctly
@@ -67,7 +67,7 @@ fn prove_index<Element>(
     retry_counter: u64,
 ) -> (u64, Option<Proof<Element>>)
 where
-    Element: Copy + Clone + ToBytes,
+    Element: Copy + ToBytes,
 {
     // Initialise set_size bins
     let mut bins: Vec<Vec<Element>> = Vec::with_capacity(setup.set_size as usize);
@@ -80,7 +80,7 @@ where
         .iter()
         .take(setup.set_size.saturating_mul(2) as usize)
     {
-        match bin_hash(setup, retry_counter, element) {
+        match bin_hash(setup, retry_counter, &element) {
             Some(bin_index) => {
                 bins[bin_index as usize].push(element);
             }
@@ -123,7 +123,7 @@ fn dfs<Element>(
     mut step: u64,
 ) -> (u64, Option<Proof<Element>>)
 where
-    Element: Copy + Clone + ToBytes,
+    Element: Copy + ToBytes,
 {
     // If current round comprises proof_size elements, returns it as Proof
     if round.element_sequence.len() as u64 == setup.proof_size {
@@ -162,9 +162,9 @@ where
 }
 
 /// Oracle producing a uniformly random value in [0, set_size[ used for prehashing S_p
-fn bin_hash<Element>(setup: &Setup, retry_counter: u64, element: Element) -> Option<u64>
+fn bin_hash<Element>(setup: &Setup, retry_counter: u64, element: &Element) -> Option<u64>
 where
-    Element: Copy + Clone + ToBytes,
+    Element: ToBytes,
 {
     let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
     let element_bytes = element.to_be_bytes();

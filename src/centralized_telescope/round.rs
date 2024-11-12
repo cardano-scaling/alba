@@ -24,7 +24,7 @@ pub struct Round<Element> {
 
 impl<Element> Round<Element>
 where
-    Element: Copy + Clone + ToBytes,
+    Element: Copy + ToBytes,
 {
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
