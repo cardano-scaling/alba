@@ -62,8 +62,9 @@ impl Telescope {
     /// proof if no suitable candidate is found.
     pub fn prove(self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
         // Run prove_index up to max_retries times
-        (0..self.setup.max_retries)
-            .find_map(|retry_counter| prove_index(&self.setup, prover_set, retry_counter).1)
+        (0..self.setup.max_retries).find_map(|retry_counter| {
+            prove_index(self.set_size, &self.setup, prover_set, retry_counter).1
+        })
     }
 
     /// Alba's verification algorithm, returns true if the proof is
@@ -77,18 +78,15 @@ impl Telescope {
         }
 
         // Initialise a round with given retry and search counters
-        let Some(mut round) = Round::new(
-            proof.retry_counter,
-            proof.search_counter,
-            self.setup.set_size,
-        ) else {
+        let Some(mut round) = Round::new(proof.retry_counter, proof.search_counter, self.set_size)
+        else {
             return false;
         };
 
         // For each element in the proof's sequence
         for &element in &proof.element_sequence {
             // Retrieve the bin id associated to this new element
-            let Some(bin_id) = bin_hash(&self.setup, proof.retry_counter, element) else {
+            let Some(bin_id) = bin_hash(self.set_size, proof.retry_counter, element) else {
                 return false;
             };
             // Check that the new element was chosen correctly
@@ -102,7 +100,7 @@ impl Telescope {
                 return false;
             }
         }
-        proof_hash(&self.setup, &round)
+        proof_hash(self.setup.valid_proof_probability, &round)
     }
 }
 

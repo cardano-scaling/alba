@@ -26,7 +26,7 @@ pub fn make_setup(
 
     if s1 < 1.0 || s2 < 1.0 {
         // Small case, i.e. set_size <= λ^2
-        param_small_case(completeness_param, set_size, proof_size_f64)
+        param_small_case(completeness_param, proof_size_f64)
     } else {
         let completeness_param2 = completeness_param.min(s2);
         if proof_size_f64 < completeness_param2 {
@@ -45,11 +45,10 @@ pub fn make_setup(
 }
 
 /// Helper function that returns Setup, used when set_size <= λ^2
-fn param_small_case(completeness_param: f64, set_size: u64, proof_size_f64: f64) -> Setup {
+fn param_small_case(completeness_param: f64, proof_size_f64: f64) -> Setup {
     let ln12 = (12f64).ln();
     let search_width = (32.0 * ln12 * proof_size_f64).ceil();
     Setup {
-        set_size,
         proof_size: proof_size_f64 as u64,
         max_retries: completeness_param as u64,
         search_width: search_width as u64,
@@ -69,7 +68,6 @@ fn param_high_case(
     let search_width = (16.0 * proof_size_f64 * l2 / LOG2_E).ceil();
     debug_assert!(set_size as f64 >= search_width * search_width * LOG2_E / (9.0 * l2));
     Setup {
-        set_size,
         proof_size: proof_size_f64 as u64,
         max_retries: (completeness_param / completeness_param2).ceil() as u64,
         search_width: search_width as u64,
@@ -118,7 +116,6 @@ fn param_mid_case(completeness_param: f64, set_size: u64, proof_size_f64: f64, s
         + 7.0 * proof_size_f64 / max_v)
         .exp();
     Setup {
-        set_size,
         proof_size: proof_size_f64 as u64,
         max_retries: (completeness_param / completeness_param1).ceil() as u64,
         search_width: search_width as u64,
