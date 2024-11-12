@@ -2,7 +2,6 @@
 
 use super::algorithm::{bin_hash, proof_hash, prove_index};
 use super::init::make_setup;
-use super::params::Params;
 use super::proof::Proof;
 use super::round::Round;
 use super::setup::Setup;
@@ -11,28 +10,51 @@ use super::setup::Setup;
 /// and verify it
 #[derive(Debug, Clone, Copy)]
 pub struct Telescope {
-    /// Input parameters
-    pub params: Params,
+    /// Soundness security parameter
+    pub soundness_param: f64,
+    /// Completeness security parameter
+    pub completeness_param: f64,
+    /// Approximate size of the prover set to lower bound
+    pub set_size: u64,
+    /// Lower bound to prove on prover set
+    pub lower_bound: u64,
     /// Internal parameters
     pub setup: Setup,
 }
 
 impl Telescope {
     /// Returns a Telescope structure from input parameters
-    pub fn new(params: Params) -> Self {
-        let setup = make_setup(&params);
-        Telescope { params, setup }
+    pub fn new(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+    ) -> Self {
+        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        Telescope {
+            soundness_param,
+            completeness_param,
+            set_size,
+            lower_bound,
+            setup,
+        }
     }
 
     /// Returns a Telescope structure from a set_size and Setup
-    pub fn from(set_size: u64, setup: Setup) -> Self {
-        let params = Params {
-            soundness_param: 0.0,
-            completeness_param: 0.0,
+    pub fn from(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        setup: Setup,
+    ) -> Self {
+        Telescope {
+            soundness_param,
+            completeness_param,
             set_size,
-            lower_bound: 0,
-        };
-        Telescope { params, setup }
+            lower_bound,
+            setup,
+        }
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
@@ -97,16 +119,15 @@ mod tests {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
         let nb_tests = 1_000;
         let set_size = 1_000;
-        let params = Params {
-            soundness_param: 10.0,
-            completeness_param: 10.0,
-            set_size: 80 * set_size / 100,
-            lower_bound: 20 * set_size / 100,
-        };
+        let soundness_param = 10.0;
+        let completeness_param = 10.0;
+        let set_size = 80 * set_size / 100;
+        let lower_bound = 20 * set_size / 100;
         for _t in 0..nb_tests {
             let seed = rng.next_u32().to_be_bytes().to_vec();
             let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
-            let telescope = Telescope::new(params);
+            let telescope =
+                Telescope::new(soundness_param, completeness_param, set_size, lower_bound);
             let proof = telescope.prove(&s_p).unwrap();
             assert!(telescope.clone().verify(&proof.clone()));
             // Checking that the proof fails if proof.search_counter is erroneous
