@@ -19,7 +19,7 @@ pub struct Params {
 impl Params {
     /// Setup algorithm taking as input the security parameters, the set size
     /// and the lower bound and returning the internal parameters Params
-    pub(super) fn setup(
+    pub(super) fn new(
         soundness_param: f64,
         completeness_param: f64,
         set_size: u64,

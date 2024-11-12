@@ -28,7 +28,7 @@ impl Telescope {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let params = Params::setup(soundness_param, completeness_param, set_size, lower_bound);
+        let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
         Telescope {
             soundness_param,
             completeness_param,
@@ -72,7 +72,7 @@ impl Telescope {
     /// let telescope = Telescope::new(128, 128, 1_000, 750);
     /// let proof = telescope.prove(prover_set)?;
     /// ```
-    
+
     pub fn prove(&self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
         // Run prove_index up to max_retries times
         (0..self.params.max_retries).find_map(|retry_counter| {
@@ -98,7 +98,7 @@ impl Telescope {
     /// let proof = telescope.prove(prover_set)?;
     /// assert!(telescope.verify(proof));
     /// ```
-    
+
     pub fn verify(&self, proof: &Proof) -> bool {
         if proof.search_counter >= self.params.search_width
             || proof.retry_counter >= self.params.max_retries
