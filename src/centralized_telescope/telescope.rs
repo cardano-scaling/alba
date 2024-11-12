@@ -55,6 +55,23 @@ impl Telescope {
         }
     }
 
+    /// Generates a Centralized Telescope proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current Telescope structure
+    /// * `prover_set` - an array of elements to generate an Alba proof on
+    ///
+    /// # Returns
+    ///
+    /// A proof if found, None otherwise
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let telescope = Telescope::new(128, 128, 1_000, 750);
+    /// let proof = telescope.prove(prover_set)?;
+    /// ```
     
     pub fn prove(&self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
         // Run prove_index up to max_retries times
@@ -63,6 +80,24 @@ impl Telescope {
         })
     }
 
+    /// Verifies a Centralized Telescope proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current Telescope structure
+    /// * `proof` - a centralized Telescope proof
+    ///
+    /// # Returns
+    ///
+    /// True if the verification is successful, false otherwise
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// let telescope = Telescope::new(128, 128, 1_000, 750);
+    /// let proof = telescope.prove(prover_set)?;
+    /// assert!(telescope.verify(proof));
+    /// ```
     
     pub fn verify(&self, proof: &Proof) -> bool {
         if proof.search_counter >= self.params.search_width
@@ -72,7 +107,7 @@ impl Telescope {
             return false;
         }
 
-        // Initialise a round with given retry and search counters
+        // Initialize a round with given retry and search counters
         let Some(mut round) = Round::new(proof.retry_counter, proof.search_counter, self.set_size)
         else {
             return false;
