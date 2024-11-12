@@ -22,6 +22,24 @@ pub struct Telescope {
 
 impl Telescope {
     /// Returns a Telescope structure from input parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    ///
+    /// # Returns
+    ///
+    /// A Telescope structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let telescope = Telescope::new(128.0, 128.0, 1_000, 750);
+    /// ```
     pub fn new(
         soundness_param: f64,
         completeness_param: f64,
@@ -38,7 +56,28 @@ impl Telescope {
         }
     }
 
-    /// Returns a Telescope structure from a set_size and Params
+    /// Returns a Telescope structure from input and internal parameters, to use for backward compability
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    /// * `params` - some centralized Telescope internal parameters
+    ///
+    /// # Returns
+    ///
+    /// A Telescope structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
+    /// let telescope = Telescope::from(128.0, 128.0, 1_000, 750, params);
+    /// ```
     pub fn from(
         soundness_param: f64,
         completeness_param: f64,
@@ -69,8 +108,14 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// let telescope = Telescope::new(128, 128, 1_000, 750);
-    /// let proof = telescope.prove(prover_set)?;
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let set_size = 200;
+    /// let telescope = Telescope::new(128.0, 128.0, set_size, 150);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = telescope.prove(&prover_set).unwrap();
     /// ```
 
     pub fn prove(&self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
@@ -94,9 +139,15 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// let telescope = Telescope::new(128, 128, 1_000, 750);
-    /// let proof = telescope.prove(prover_set)?;
-    /// assert!(telescope.verify(proof));
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let set_size = 200;
+    /// let telescope = Telescope::new(128.0, 128.0, set_size, 150);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = telescope.prove(&prover_set).unwrap();
+    /// assert!(telescope.verify(&proof));
     /// ```
 
     pub fn verify(&self, proof: &Proof) -> bool {
