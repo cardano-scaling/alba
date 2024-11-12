@@ -1,7 +1,7 @@
-//! ALBA's Params structure comprising, among others, the number of elements and internal parameters
+//! ALBA's Params structure comprising internal parameters
 use std::f64::consts::LOG2_E;
 
-/// Params output parameters
+/// Params structure comprising internal parameters
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
     /// Number of prover set's elements
@@ -17,8 +17,9 @@ pub struct Params {
 }
 
 impl Params {
-    /// Params algorithm taking a Params as input and returning internal parameters (u,d,q)
-    pub fn setup(
+    /// Setup algorithm taking as input the security parameters, the set size
+    /// and the lower bound and returning the internal parameters Params
+    pub(super) fn setup(
         soundness_param: f64,
         completeness_param: f64,
         set_size: u64,
