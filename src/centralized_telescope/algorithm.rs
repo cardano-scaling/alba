@@ -1,19 +1,19 @@
 //! ALBA's bounded DFS scheme prove and verification functions
 
+use super::params::Params;
 use super::proof::Proof;
 use super::round::Round;
-use super::setup::Setup;
 use super::types::Hash;
 use crate::utils::sample;
 use crate::utils::types::Element;
 use blake2::{Blake2s256, Digest};
 
 /// Indexed proving algorithm, returns the total number of DFS calls done
-/// to find a proof and Some(proof) if found within setup.dfs_bound calls of DFS,
+/// to find a proof and Some(proof) if found within params.dfs_bound calls of DFS,
 /// otherwise None
 pub(super) fn prove_index(
     set_size: u64,
-    setup: &Setup,
+    params: &Params,
     prover_set: &[Element],
     retry_counter: u64,
 ) -> (u64, Option<Proof>) {
@@ -35,15 +35,15 @@ pub(super) fn prove_index(
 
     // Run the DFS algorithm on up to search_width different trees
     let mut step = 0;
-    for search_counter in 0..setup.search_width {
+    for search_counter in 0..params.search_width {
         // If DFS was called more than dfs_bound times, abort this retry
-        if step >= setup.dfs_bound {
+        if step >= params.dfs_bound {
             return (step, None);
         }
         // Initialise new round
         if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
             // Run DFS on such round, incrementing step
-            let (dfs_calls, proof_opt) = dfs(setup, &bins, &r, step.saturating_add(1));
+            let (dfs_calls, proof_opt) = dfs(params, &bins, &r, step.saturating_add(1));
             // Returns proof if found
             if proof_opt.is_some() {
                 return (dfs_calls, proof_opt);
@@ -57,14 +57,19 @@ pub(super) fn prove_index(
 
 /// Depth-First Search which goes through all potential round candidates
 /// and returns the total number of recursive DFS calls done and, if not
-/// found under setup.dfs_bound calls, returns None otherwise Some(Proof),
+/// found under params.dfs_bound calls, returns None otherwise Some(Proof),
 /// that is the first round candidate Round{retry_counter, search_counter, x_1, ..., x_u)} such that:
 /// - ∀i ∈ [0, u-1], bin_hash(x_i+1) ∈ bins[round_hash(...round_hash(round_hash(v, t), x_1), ..., x_i)]
 /// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
-fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u64, Option<Proof>) {
+fn dfs(
+    params: &Params,
+    bins: &[Vec<Element>],
+    round: &Round,
+    mut step: u64,
+) -> (u64, Option<Proof>) {
     // If current round comprises proof_size elements, returns it as Proof
-    if round.element_sequence.len() as u64 == setup.proof_size {
-        let proof_opt = if proof_hash(setup.valid_proof_probability, round) {
+    if round.element_sequence.len() as u64 == params.proof_size {
+        let proof_opt = if proof_hash(params.valid_proof_probability, round) {
             Some(Proof {
                 retry_counter: round.retry_counter,
                 search_counter: round.search_counter,
@@ -79,13 +84,13 @@ fn dfs(setup: &Setup, bins: &[Vec<Element>], round: &Round, mut step: u64) -> (u
     // For each element in bin numbered id
     for &element in &bins[round.id as usize] {
         // If DFS was called more than dfs_bound times, abort this round
-        if step == setup.dfs_bound {
+        if step == params.dfs_bound {
             return (step, None);
         }
         // Update round with such element
         if let Some(r) = Round::update(round, element) {
             // Run DFS on updated round, incrementing step
-            let (dfs_calls, proof_opt) = dfs(setup, bins, &r, step.saturating_add(1));
+            let (dfs_calls, proof_opt) = dfs(params, bins, &r, step.saturating_add(1));
             // Returns proof if found
             if proof_opt.is_some() {
                 return (dfs_calls, proof_opt);

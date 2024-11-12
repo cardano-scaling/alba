@@ -2,9 +2,9 @@
 
 use super::algorithm::{bin_hash, proof_hash, prove_index};
 use super::init::make_setup;
+use super::params::Params;
 use super::proof::Proof;
 use super::round::Round;
-use super::setup::Setup;
 
 /// Structure wrapping input and internal parameters to generate a proof from
 /// and verify it
@@ -19,7 +19,7 @@ pub struct Telescope {
     /// Lower bound to prove on prover set
     pub lower_bound: u64,
     /// Internal parameters
-    pub setup: Setup,
+    pub params: Params,
 }
 
 impl Telescope {
@@ -30,49 +30,49 @@ impl Telescope {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
         Telescope {
             soundness_param,
             completeness_param,
             set_size,
             lower_bound,
-            setup,
+            params,
         }
     }
 
-    /// Returns a Telescope structure from a set_size and Setup
+    /// Returns a Telescope structure from a set_size and Params
     pub fn from(
         soundness_param: f64,
         completeness_param: f64,
         set_size: u64,
         lower_bound: u64,
-        setup: Setup,
+        params: Params,
     ) -> Self {
         Telescope {
             soundness_param,
             completeness_param,
             set_size,
             lower_bound,
-            setup,
+            params,
         }
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Calls up to setup.max_retries times the prove_index function and returns an empty
+    /// Calls up to params.max_retries times the prove_index function and returns an empty
     /// proof if no suitable candidate is found.
     pub fn prove(self, prover_set: &[crate::utils::types::Element]) -> Option<Proof> {
         // Run prove_index up to max_retries times
-        (0..self.setup.max_retries).find_map(|retry_counter| {
-            prove_index(self.set_size, &self.setup, prover_set, retry_counter).1
+        (0..self.params.max_retries).find_map(|retry_counter| {
+            prove_index(self.set_size, &self.params, prover_set, retry_counter).1
         })
     }
 
     /// Alba's verification algorithm, returns true if the proof is
     /// successfully verified, following the DFS verification, false otherwise.
     pub fn verify(self, proof: &Proof) -> bool {
-        if proof.search_counter >= self.setup.search_width
-            || proof.retry_counter >= self.setup.max_retries
-            || proof.element_sequence.len() as u64 != self.setup.proof_size
+        if proof.search_counter >= self.params.search_width
+            || proof.retry_counter >= self.params.max_retries
+            || proof.element_sequence.len() as u64 != self.params.proof_size
         {
             return false;
         }
@@ -100,7 +100,7 @@ impl Telescope {
                 return false;
             }
         }
-        proof_hash(self.setup.valid_proof_probability, &round)
+        proof_hash(self.params.valid_proof_probability, &round)
     }
 }
 
