@@ -56,7 +56,7 @@ mod tests {
         let setup = make_setup(&params);
         assert_eq!(1488, setup.proof_size);
         let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 2062.805);
+        assert!(mu > 2062.806);
         assert!(mu < 2062.807);
     }
 
@@ -71,8 +71,8 @@ mod tests {
         let setup = make_setup(&params);
         assert_eq!(1127, setup.proof_size);
         let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 1473.0);
-        assert!(mu < 1474.0);
+        assert!(mu > 1473.574);
+        assert!(mu < 1473.575);
     }
 
     #[test]
