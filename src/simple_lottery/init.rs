@@ -17,15 +17,15 @@ pub fn make_setup(params: &Params) -> Setup {
 
     loop {
         let middle = (left + right) / 2.0;
-        let rs = middle;
-        let rc = ratio / rs;
+        let ratio_soundness = middle; // rs
+        let ratio_completeness = ratio / ratio_soundness; // rc
 
-        let lhs = params.soundness_param / (rs.ln() - 1.0 + 1.0 / rs);
-        let rhs = params.completeness_param / (rc - 1.0 - rc.ln());
+        let lhs = params.soundness_param / (ratio_soundness.ln() - 1.0 + 1.0 / ratio_soundness);
+        let rhs = params.completeness_param / (ratio_completeness - 1.0 - ratio_completeness.ln());
 
         if (middle <= left) || (middle >= right) {
             let u = (lhs.max(rhs) * LN_2).ceil();
-            let mu = u * rc;
+            let mu = u * ratio_completeness;
             return Setup {
                 proof_size: u as u64,
                 lottery_probability: mu / params.set_size as f64,
