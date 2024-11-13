@@ -1,5 +1,5 @@
 # ALBA
-This is the rust library of _Approximate Lower Bound Arguments_ proposed in the [paper](https://iohk.io/en/research/library/papers/approximate-lower-bound-arguments/), May 2024, Eurocrypt'24 by _Pyrros Chaidos, Prof Aggelos Kiayias, Leonid Reyzin, Anatoliy Zinovyev_.
+This is the Rust library of _Approximate Lower Bound Arguments_ proposed in the [paper](https://iohk.io/en/research/library/papers/approximate-lower-bound-arguments/), May 2024, Eurocrypt'24 by _Pyrros Chaidos, Prof Aggelos Kiayias, Leonid Reyzin, Anatoliy Zinovyev_.
 
 ### Introduction
 ALBA enables a prover who has a large collection of data to convince a verifier that their set includes at least a minimum number of items that meet a specific condition, called a predicate, even though the prover only reveals a subset of the data. By approximating a lower bound on the prover's knowledge, ALBA makes use of a controlled gap between the size of prover's actual knowledge and the threshold of the verifier checks they know. This design results in highly efficient proofs, achieving nearly optimal proof sizes in both non-interactive and distributed environments. ALBA's primary applications include large-scale decentralized signature schemes. It is particularly well-suited for decentralized or blockchain scenarios, where it enhances communication efficiency among multiple provers sharing witness.
