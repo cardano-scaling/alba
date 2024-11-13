@@ -89,4 +89,34 @@ mod tests {
         assert!(mu > 5264.558);
         assert!(mu < 5264.559);
     }
+
+    #[test]
+    fn small_lambda_reliability() {
+        let params = Params {
+            soundness_param: 128.0,
+            completeness_param: 1.0,
+            set_size: 200,
+            lower_bound: 100,
+        };
+        let setup = make_setup(&params);
+        assert_eq!(527, setup.proof_size);
+        let mu = setup.lottery_probability * params.set_size as f64;
+        assert!(mu > 554.495);
+        assert!(mu < 554.496);
+    }
+
+    #[test]
+    fn small_lambda_security() {
+        let params = Params {
+            soundness_param: 1.0,
+            completeness_param: 128.0,
+            set_size: 200,
+            lower_bound: 100,
+        };
+        let setup = make_setup(&params);
+        assert_eq!(358, setup.proof_size);
+        let mu = setup.lottery_probability * params.set_size as f64;
+        assert!(mu > 672.362);
+        assert!(mu < 672.363);
+    }
 }
