@@ -1,7 +1,7 @@
-- Assume that, a prover, who has a large collection of data, wants to convince a verifier that their set contains at least a minimum number of items that satisfy a specific condition, known as a predicate, even if the prover only shares a portion of it.
+- Assume that, a prover, who has a large collection of data, wants to convince a verifier that their set contains at least a minimum number of elements that satisfy a specific condition, known as a predicate, even if the prover only shares a portion of it.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
 - The protocol makes use of a small gap between the size of what the prover actually has and the threshold the verifier knows they have, enabling small proofs and short prover and verifier running times.
-- ALBA also supports weighted items, where each item has an assigned importance or weight. This allows the prover to demonstrate that the total weight of their set meets a required threshold, rather than simply the count of items.
+- ALBA also supports weighted elements, where each element has an assigned importance or weight. This allows the prover to demonstrate that the total weight of their set meets a required threshold, rather than simply the count of elements.
 - ALBA supports scalable and efficient proof mechanisms in decentralized systems, i.e., voting schemes.
 
 ## Overview
