@@ -1,15 +1,14 @@
 - Assume that, a prover, who has a large collection of data, wants to convince a verifier that their set contains at least a minimum number of items that satisfy a specific condition, known as a predicate, even if the prover only shares a portion of it.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
-- The protocol makes use of a small gap between the size of what the prover actually has and the threshold the verifier knows they have.
-- . This gap makes ALBA very efficient, as it reduces the data the prover needs to share, enabling compact and efficient proofs.
+- The protocol makes use of a small gap between the size of what the prover actually has and the threshold the verifier knows they have, enabling small proofs and short prover and verifier running times.
 - ALBA also supports weighted items, where each item has an assigned importance or weight. This allows the prover to demonstrate that the total weight of their set meets a required threshold, rather than simply the count of items.
 - ALBA supports scalable and efficient proof mechanisms in decentralized systems, i.e., voting schemes.
 
 ## Overview
 - **The protocol**
     - The protocol addresses the problem of succinctly proving knowledge of a large set of verifiable evidence.
-    - The prover convinces the verifier by revealing only a subset of this evidence, thus achieving efficiency in both time and communication.
-    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains at least $n_f$ elements, where $n_f$ is a threshold strictly smaller than $n_p$.
+    - The prover convinces the verifier by revealing only a subset of this evidence, thus achieving efficiency in both proof size and communication.
+    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains more than $n_f$ elements, where $n_f$ is a threshold strictly smaller than $n_p$.
         - This creates an _approximate_ lower bound, as the verifier is convinced that $S_p$ meets or exceeds a threshold, though the actual size might be greater.
     - ALBA achieves efficiency by making use of the gap between the provable lower bound and the actual size, enabling rapid verification without compromising security. The greater the gap, the smaller the proof, and the faster its generation.
 - **Historical context**
