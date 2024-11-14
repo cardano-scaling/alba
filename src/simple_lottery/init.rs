@@ -44,79 +44,90 @@ pub fn make_setup(params: &Params) -> Setup {
 mod tests {
     use super::super::params::Params;
     use super::make_setup;
+    use test_case::test_case;
 
-    #[test]
-    fn basic() {
-        let params = Params {
+    #[derive(Debug, Clone, Copy)]
+    struct Expected {
+        u: u64,     // proof size
+        mu_lb: f64, // average communication lower bound
+        mu_ub: f64, // average communication upper bound
+    }
+
+    #[test_case(
+        Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
             set_size: 200,
             lower_bound: 100,
+        },
+        Expected {
+            u: 1488,
+            mu_lb: 2062.806,
+            mu_ub: 2062.807,
         };
-        let setup = make_setup(&params);
-        assert_eq!(1488, setup.proof_size);
-        let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 2062.806);
-        assert!(mu < 2062.807);
-    }
-
-    #[test]
-    fn different_lambdas() {
-        let params = Params {
+        "basic"
+    )]
+    #[test_case(
+        Params {
             soundness_param: 128.0,
             completeness_param: 64.0,
             set_size: 200,
             lower_bound: 100,
+        },
+        Expected {
+            u: 1127,
+            mu_lb: 1473.574,
+            mu_ub: 1473.575,
         };
-        let setup = make_setup(&params);
-        assert_eq!(1127, setup.proof_size);
-        let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 1473.574);
-        assert!(mu < 1473.575);
-    }
-
-    #[test]
-    fn fractional_ratio() {
-        let params = Params {
+        "different_lambdas"
+    )]
+    #[test_case(
+        Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
             set_size: 150,
             lower_bound: 100,
+        },
+        Expected {
+            u: 4328,
+            mu_lb: 5264.558,
+            mu_ub: 5264.559,
         };
-        let setup = make_setup(&params);
-        assert_eq!(4328, setup.proof_size);
-        let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 5264.558);
-        assert!(mu < 5264.559);
-    }
-
-    #[test]
-    fn small_lambda_reliability() {
-        let params = Params {
+        "fractional_ratio"
+    )]
+    #[test_case(
+        Params {
             soundness_param: 128.0,
             completeness_param: 1.0,
             set_size: 200,
             lower_bound: 100,
+        },
+        Expected {
+            u: 527,
+            mu_lb: 554.495,
+            mu_ub: 554.496,
         };
-        let setup = make_setup(&params);
-        assert_eq!(527, setup.proof_size);
-        let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 554.495);
-        assert!(mu < 554.496);
-    }
-
-    #[test]
-    fn small_lambda_security() {
-        let params = Params {
+        "small_lambda_reliability"
+    )]
+    #[test_case(
+        Params {
             soundness_param: 1.0,
             completeness_param: 128.0,
             set_size: 200,
             lower_bound: 100,
+        },
+        Expected {
+            u: 358,
+            mu_lb: 672.362,
+            mu_ub: 672.363,
         };
+        "small_lambda_security"
+    )]
+    fn all(params: Params, expected: Expected) {
         let setup = make_setup(&params);
-        assert_eq!(358, setup.proof_size);
+        assert_eq!(expected.u, setup.proof_size);
         let mu = setup.lottery_probability * params.set_size as f64;
-        assert!(mu > 672.362);
-        assert!(mu < 672.363);
+        assert!(mu > expected.mu_lb);
+        assert!(mu < expected.mu_ub);
     }
 }
