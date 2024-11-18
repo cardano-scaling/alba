@@ -20,11 +20,13 @@ pub fn make_setup(params: &Params) -> Setup {
         let ratio_soundness = middle; // rs
         let ratio_completeness = ratio / ratio_soundness; // rc
 
-        let lhs = params.soundness_param / (ratio_soundness.ln() - 1.0 + 1.0 / ratio_soundness);
-        let rhs = params.completeness_param / (ratio_completeness - 1.0 - ratio_completeness.ln());
+        let bound_soundness =
+            params.soundness_param * LN_2 / (ratio_soundness.ln() - 1.0 + 1.0 / ratio_soundness);
+        let bound_completess =
+            params.completeness_param * LN_2 / (ratio_completeness - 1.0 - ratio_completeness.ln());
 
         if (middle <= left) || (middle >= right) {
-            let u = (lhs.max(rhs) * LN_2).ceil();
+            let u = bound_soundness.max(bound_completess).ceil();
             let mu = u * ratio_completeness;
             return Setup {
                 proof_size: u as u64,
@@ -32,7 +34,7 @@ pub fn make_setup(params: &Params) -> Setup {
             };
         }
 
-        if lhs > rhs {
+        if bound_soundness > bound_completess {
             left = middle;
         } else {
             right = middle;
