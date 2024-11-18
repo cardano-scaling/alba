@@ -7,6 +7,8 @@ use std::f64::consts::LN_2;
 
 /// Calculates Setup parameters.
 pub fn make_setup(params: &Params) -> Setup {
+    // The following follows section 4.1 of the ALBA paper. https://eprint.iacr.org/2023/1655
+
     let ratio = params.set_size as f64 / params.lower_bound as f64;
 
     // Execute binary search for the optimal value of `rs` in the interval
