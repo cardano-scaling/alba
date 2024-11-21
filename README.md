@@ -1,48 +1,91 @@
 # ALBA
 This is a Rust library of _Approximate Lower Bound Arguments_ proposed in the [paper](https://iohk.io/en/research/library/papers/approximate-lower-bound-arguments/), May 2024, Eurocrypt'24 by _Pyrros Chaidos, Aggelos Kiayias, Leonid Reyzin, Anatoliy Zinovyev_.
 
-### Introduction
-ALBA enables a prover who has a large collection of data to convince a verifier that their set includes at least a minimum number of elements that meet a specific condition, called a predicate, even though the prover only reveals a subset of the data.
-By approximating a lower bound on the prover's knowledge, ALBA makes use of a controlled gap between the size of prover's actual knowledge and the threshold of the verifier checks they know.
-This design results in highly efficient proofs, achieving nearly optimal proof sizes in both non-interactive and distributed environments.
-ALBA's primary applications include large-scale decentralized signature schemes.
-It is particularly well-suited for decentralized or blockchain scenarios, where it enhances communication efficiency among multiple provers sharing witness.
+## Introduction
+ALBA is a cryptographic primitive that enables a prover to convince a verifier that their dataset includes at least a minimum number of elements meeting a specific condition, called a predicate, without revealing the entire dataset.
+The core idea of ALBA is to efficiently prove knowledge by leveraging an *approximate lower bound*. 
+This approach introduces a controlled gap between the prover's actual knowledge and the threshold required for the verifier to be convinced. 
+This gap not only gives ALBA its name (_Approximate Lower Bound Argument_) but also enables highly efficient algorithms for generating compact proofs.
+ALBA proofs are particularly small and efficient in scenarios involving weight oracles and are generated significantly faster than traditional SNARKs.
+Its main applications include large-scale decentralized signature schemes and other blockchain scenarios where it improves communication efficiency among multiple provers sharing a common witness.
 
-In a decentralized voting system, participants (voters) submit votes that support different options or candidates.
+For example, in a decentralized voting system, participants (voters) submit votes that support different options or candidates.
 To validate the results without revealing all individual votes, an ALBA protocol could be used.
 Each voter's choice can be considered an _element_ that meets a certain predicate (e.g., a valid vote for a candidate).
 Instead of tallying every vote publicly, ALBA allows an aggregator (like an election authority) to generate a compact proof showing that a sufficient number of valid votes has been cast for each candidate to meet the required threshold for a decision (such as reaching a quorum or winning a majority).
-Combining ALBA with zero-knowledge technology such as _zkSNARKs_, we can efficiently keep individual votes private while enabling quick, efficient validation of the voting outcome, making it particularly useful for secure, private, and scalable voting systems where privacy and efficiency are critical.
+Combining ALBA with zero-knowledge technology such as _zkSNARKs_, we can efficiently keep individual votes private while enabling quick, efficient validation of the voting outcome.
+Beyond voting, ALBA's versatility makes it suitable for various use cases requiring efficient, scalable proof systems that balance privacy, speed, and resource efficiency.
 
-The paper introduces various ALBA protocol constructions tailored to different needs.
-The basic construction allows a prover to show possession of a large set by creating a proof sequence of elements that meet staged hash-based conditions, efficiently excluding small sets.
-_Pre-hashing_ improves this by precomputing hashes to group elements into _bins_, reducing computation and enhancing performance, especially with large sets.
-For smaller sets, the generalized Telescope scheme allows multiple attempts to form a proof, adjusting parameters to maintain efficiency across sizes.
-Decentralized versions of ALBA include the _Simple Lottery Construction_, where each party holding an element decides to share it based on a random _lottery_ mechanism, with an aggregator forming the proof from a target number of shared elements.
-The _Decentralized Telescope_ adapts the Telescope scheme for multiple parties, who individually apply it and share qualifying elements with an aggregator.
-Finally, the weighted extension supports elements with integer weights, allowing the prover to meet a total weight threshold, making ALBA versatile for contexts where elements have varying significance.
+### ALBA in a Nutshell
+ALBA's core construction, the _centralized telescope_, operates as follows:  
+The prover holds a set of $n_p$ elements (e.g., signatures, data points, or weighted items) that satisfy a predicate. 
+The verifier needs to be convinced that the prover knows more than $n_f$ elements, where $n_f < n_p$. 
+ALBA guarantees this convincingly while keeping the proof size compact.
+The larger the ratio $n_p / n_f$, the smaller the proof size, making ALBA practical for scenarios involving large datasets.
 
-The library covers the following constructions of the ALBA protocol:
-1. Centralized Telescope
-2. Simple Lottery Construction
-3. Decentralized Telescope
-4. Wighted-Decentralized Telescope
+ALBA also supports *weighted elements*, where each item has an integer weight. 
+In this case the prover demonstrates possession of elements with a total weight of at least $n_p$, while convincing the verifier that the total weight exceeds $n_f$.
+In *decentralized settings*, ALBA adapts to distributed data environments. 
+Multiple participants compute parts of the proof independently and send their results to an aggregator, who combines them into a single, compact proof for the verifier.
+
+ALBA can seamlessly handle both *weighted/unweighted* and *centralized/decentralized* configurations. 
+This flexibility is particularly valuable in applications like *proof-of-stake blockchains*, where weights represent stake amounts. 
+ALBA ensures honest participants' stakes outweigh malicious contributions, providing robust security in distributed systems.
+The *decentralized construction* of ALBA stands out for its flexibility, offering tradeoffs between proof size and communication complexity. 
+This feature allows protocol designers to optimize ALBA for various decentralized applications.
+
+### Why Use ALBA?
+ALBA is an ideal choice for applications that require:
+- *Fast proof generation and verification*, such as in blockchain systems or multisignature schemes.
+- *Efficient decentralized collaboration*, enabling multiple participants to jointly prove knowledge.
+- *Flexibility in tradeoffs*, balancing proof size and communication overhead.
+Whether it's for multisignatures, proof-of-stake systems, or secure voting protocols, ALBA provides a robust, scalable, and efficient solution for proving knowledge across diverse use cases.
+
+## Implementation
+The library implements ALBA schemes based on two core constructions: *Telescope* and *Lottery*. 
+These constructions form the foundation for the various configurations supported, including centralized and decentralized setups as well as unweighted and weighted scenarios.
+
+The *Telescope* construction allows the prover to build a sequence of elements that satisfy staged hash-based conditions. 
+This process efficiently filters relevant elements, narrowing down the data to subsets that meet the required criteria. 
+The *Bounded Telescope* variant enhances this approach by introducing repetitions and bounding the prover's search, ensuring scalability and efficiency for large datasets.
+
+The *Lottery* construction offers a decentralized approach where participants probabilistically decide whether to share their elements with an aggregator. 
+The aggregator collects enough shared elements to generate a proof. 
+This method is inherently decentralized and can also handle weighted scenarios by incorporating element weights into the lottery process.
+
+Using these constructions, the library supports eight ALBA schemes, covering a wide range of configurations:
+- Centralized unweighted Telescope Bounded (Section 3.2.2)
+- Decentralized unweighted Telescope Bounded (Sections 3.2.2, 4.2)
+- Centralized weighted Telescope Bounded (Sections 3.2.2, 5)
+- Decentralized weighted Telescope Bounded (Sections 3.2.2, 4.2, 5)
+- Centralized unweighted Simple Lottery (Section 4.1)
+- Decentralized unweighted Simple Lottery (Section 4.1)
+- Centralized weighted Simple Lottery (Sections 4.1, 5)
+- Decentralized weighted Simple Lottery (Sections 4.1, 5)
+
 
 ### Disclaimer
-
 > This code is NOT fit for production, it's not been optimised, thoroughly tested, nor audited by competent cryptographers.
 > Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
 
-### Documentation
+## Documentation
 👉 We deliver comprehensive [documentation][crate::docs] aimed at connecting theory with practical implementation.
 
 👉 Checkout website on this [link](https://alba.cardano-scaling.org).
 
-### Compiling the library
-Compile the library:
+## Compiling
+
+### Library
+Compile the library by:
 ```shell
 cargo build --release
 ```
 
 ### Tests and Benchmarks
 Run tests with `cargo test`. Run benchmarks with `cargo bench`. 
+
+### Documentation
+Compile the documentation by:
+```shell
+RUSTDOCFLAGS="--html-in-header docs/assets/katex-header.html" cargo doc --no-deps --open
+```
