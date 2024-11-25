@@ -1,4 +1,6 @@
 use super::algorithm;
+use super::init::make_setup;
+use super::params::Params;
 use super::proof::Proof;
 use super::setup::Setup;
 use crate::utils::types::Element;
@@ -10,8 +12,15 @@ pub struct Wrapper {
 }
 
 impl Wrapper {
-    /// Initialize ALBA with `Setup` parameters.
-    pub fn new(setup: &Setup) -> Self {
+    /// Initialize ALBA with `Params`.
+    pub fn create(params: &Params) -> Self {
+        let setup = make_setup(params);
+        Self::create_with_setup(&setup)
+    }
+
+    /// Initialize ALBA with `Setup`. This function is unsafe to use and should
+    /// be avoided.
+    pub fn create_with_setup(setup: &Setup) -> Self {
         Self { setup: *setup }
     }
 
