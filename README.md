@@ -45,9 +45,9 @@ Whether it's for multisignatures, proof-of-stake systems, or secure voting proto
 The library implements ALBA schemes based on two core constructions: *Telescope* and *Lottery*. 
 These constructions form the foundation for the various configurations supported, including centralized and decentralized setups as well as unweighted and weighted scenarios.
 
-The *Telescope* construction allows the prover to build a sequence of elements that satisfy staged hash-based conditions. 
-This process efficiently filters relevant elements, narrowing down the data to subsets that meet the required criteria. 
-The *Bounded Telescope* variant enhances this approach by introducing repetitions and bounding the prover's search, ensuring scalability and efficiency for large datasets.
+The *Telescope* construction allows the prover to build a sequence of elements that satisfy staged hash-based conditions.
+This process efficiently filters relevant elements, narrowing down the data to subsets that meet the required criteria.
+By introducing bounded repetitions and constraints on the prover's search, the construction ensures scalability and efficiency for large datasets.
 
 The *Lottery* construction offers a decentralized approach where participants probabilistically decide whether to share their elements with an aggregator. 
 The aggregator collects enough shared elements to generate a proof. 
