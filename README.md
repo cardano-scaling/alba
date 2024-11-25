@@ -6,31 +6,31 @@ ALBA is a cryptographic primitive that enables a prover to convince a verifier t
 The core idea of ALBA is to efficiently prove knowledge by leveraging an *approximate lower bound*. 
 This approach introduces a controlled gap between the prover's actual knowledge and the threshold required for the verifier to be convinced. 
 This gap not only gives ALBA its name (_Approximate Lower Bound Argument_) but also enables highly efficient algorithms for generating compact proofs.
-ALBA proofs are particularly small and efficient in scenarios involving weight oracles and are generated significantly faster than traditional SNARKs.
+ALBA proofs are particularly small and efficient in scenarios with significant discrepancy between the dataset size and the threhold to prove, or involving weight oracles, and are generated significantly faster than traditional SNARKs.
 Its main applications include large-scale decentralized signature schemes and other blockchain scenarios where it improves communication efficiency among multiple provers sharing a common witness.
 
 For example, in a decentralized voting system, participants (voters) submit votes that support different options or candidates.
-To validate the results without revealing all individual votes, an ALBA protocol could be used.
-Each voter's choice can be considered an _element_ that meets a certain predicate (e.g., a valid vote for a candidate).
+To validate the results without revealing all individual votes, an ALBA protocol could be used to prove a majority was reached.
+Each vote can be considered an _element_ that meets a certain predicate (e.g., a valid vote for a specific candidate).
 Instead of tallying every vote publicly, ALBA allows an aggregator (like an election authority) to generate a compact proof showing that a sufficient number of valid votes has been cast for each candidate to meet the required threshold for a decision (such as reaching a quorum or winning a majority).
-Combining ALBA with zero-knowledge technology such as _zkSNARKs_, we can efficiently keep individual votes private while enabling quick, efficient validation of the voting outcome.
+Combining ALBA with zero-knowledge technology such as _zk-SNARKs_, we can efficiently keep individual votes private while reducing the proof size even more.
 Beyond voting, ALBA's versatility makes it suitable for various use cases requiring efficient, scalable proof systems that balance privacy, speed, and resource efficiency.
 
 ### ALBA in a Nutshell
 ALBA's core construction, the _centralized telescope_, operates as follows:  
-The prover holds a set of $n_p$ elements (e.g., signatures, data points, or weighted items) that satisfy a predicate. 
+The prover holds a set of $n_p$ elements (e.g. signatures, data points, or weighted items) that satisfy a predicate. 
 The verifier needs to be convinced that the prover knows more than $n_f$ elements, where $n_f < n_p$. 
-ALBA guarantees this convincingly while keeping the proof size compact.
-The larger the ratio $n_p / n_f$, the smaller the proof size, making ALBA practical for scenarios involving large datasets.
+ALBA generates a proof by choosing a subset of, potentially repeated, elements through a random walk satisfying some oracle checks at each step, outputing a tuple significantly smaller than $n_f$.
+The larger the ratio $n_p / n_f$, the smaller the proof size, making ALBA practical for scenarios involving large datasets and low thresholds.
 
 ALBA also supports *weighted elements*, where each item has an integer weight. 
 In this case the prover demonstrates possession of elements with a total weight of at least $n_p$, while convincing the verifier that the total weight exceeds $n_f$.
 In *decentralized settings*, ALBA adapts to distributed data environments. 
-Multiple participants compute parts of the proof independently and send their results to an aggregator, who combines them into a single, compact proof for the verifier.
+Multiple participants play a lottery and send their elements to an aggregator accordingly, which then combines them into a single, compact proof for the verifier.
 
 ALBA can seamlessly handle both *weighted/unweighted* and *centralized/decentralized* configurations. 
 This flexibility is particularly valuable in applications like *proof-of-stake blockchains*, where weights represent stake amounts. 
-ALBA ensures honest participants' stakes outweigh malicious contributions, providing robust security in distributed systems.
+ALBA there ensures that  honest participants' stakes outweight malicious contributions, providing robust security in distributed systems.
 The *decentralized construction* of ALBA stands out for its flexibility, offering tradeoffs between proof size and communication complexity. 
 This feature allows protocol designers to optimize ALBA for various decentralized applications.
 
