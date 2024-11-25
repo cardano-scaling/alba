@@ -1,25 +1,38 @@
-- Assume that, a prover, who has a large collection of data, wants to convince a verifier that their set contains at least a minimum number of elements that satisfy a specific condition, known as a predicate, even if the prover only shares a portion of it.
+- Assume that a prover has a large collection of data. They want to convince a verifier that their set contains at least a minimum number of elements satisfying a specific condition, known as a predicate. This remains true even if the prover only shares a portion of their data.
+- A trivial solution to this problem would be for the prover to provide the entire dataset or all sequence elements to the verifier. However, this approach is inefficient due to the large size of the data and communication costs.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
-- The protocol makes use of a small gap between the size of what the prover actually has and the threshold the verifier knows they have, enabling small proofs and short prover and verifier running times.
-- ALBA also supports weighted elements, where each element has an assigned importance or weight. This allows the prover to demonstrate that the total weight of their set meets a required threshold, rather than simply the count of elements.
-- ALBA supports scalable and efficient proof mechanisms in decentralized systems, i.e., voting schemes.
+- ALBA is designed to prove knowledge efficiently by leveraging an *approximate lower bound*.
+  - This approach establishes a gap between the prover's actual knowledge and the threshold needed to convince the verifier.
+  - The gap enables compact proofs and efficient verification.
+- ALBA supports both centralized and decentralized setups, as well as weighted and unweighted datasets, making it useful for applications such as blockchain protocols, voting systems, and multisignature schemes.
 
 ## Overview
-- **The protocol**
-    - The protocol addresses the problem of succinctly proving knowledge of a large set of verifiable evidence.
-    - The prover convinces the verifier by revealing only a subset of this evidence, thus achieving efficiency in both proof size and communication.
-    - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover wants to convince the verifier that the set contains more than $n_f$ elements, where $n_f$ is a threshold strictly smaller than $n_p$.
-        - This creates an _approximate_ lower bound, as the verifier is convinced that $S_p$ meets or exceeds a threshold, though the actual size might be greater.
-    - ALBA achieves efficiency by making use of the gap between the provable lower bound and the actual size, enabling rapid verification without compromising security. The greater the gap, the smaller the proof, and the faster its generation.
+- **The Protocol**
+  - The protocol addresses the challenge of succinctly proving knowledge of a large set of verifiable evidence.
+  - The prover convinces the verifier by revealing only a subset of this evidence, achieving efficiency in both proof size and communication.
+  - Given a large set $S_p$ that satisfies a predicate $R$ such that $|S_p| \geq n_p$, the prover aims to convince the verifier that the set contains more than $n_f$ elements, where $n_f$ is a threshold strictly smaller than $n_p$.
+    - This establishes an _approximate_ lower bound because the prover's proof guarantees the presence of more than $n_f$ elements, but the actual set size $|S_p|$ is typically greater. The term "approximate" reflects that the bound is loose rather than tight.
+    - $n_p$ might be smaller than $|S_p|$ for various practical reasons:
+      - *Uncertainty about* $|S_p|$: In scenarios like probabilistic lotteries, not all elements of the set are sent, and the actual number depends on the lottery draw.
+      - *Timeliness*: The prover may want to generate a proof as soon as possible without waiting to collect all elements in the dataset. Even with $n < n_p$ (and $n > n_f$), there is a chance of successfully generating a proof.
+  - ALBA achieves efficiency by leveraging the gap between the provable lower bound ($n_f$) and the actual set size ($|S_p|$). This gap enables compact proofs and rapid verification without compromising security. The larger the ratio $n_p / n_f$, the smaller the proof and the faster its generation.
 - **Historical context**
     - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques or interactive protocols.
     - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
 - **Design goals**
-    - ALBA aims to minimize both proof size and computational load, making it feasible for high-throughput settings like blockchain networks.
-    - The protocol is versatile and adaptable, supporting non-interactive proofs in both the random oracle and common reference string model as well as allowing multi-prover scenario in decentralized environments.
-        - This makes it of special interest for multi-party environment, such as a blockchain where many parties collectively validate transactions.
+  - *Efficiency*: Ensure fast proof generation and verification with minimal computational and communication overhead.
+  - *Scalability*: Handle large datasets with low thresholds, suitable for high-throughput applications like blockchains.
+  - *Flexibility*: Support a range of configurations, including weighted/unweighted and centralized/decentralized setups.
+  - *Practical Usability*: Provide developers with an implementation that bridges theoretical concepts and real-world use cases.
 - **Setup and interaction models**
-    - Non-interactive Model:
-        - ALBA provides a non-interactive proof of knowledge in the random oracle model (_NIROPK_), where the verifier can extract knowledge directly from observing queries.
-    - Decentralized Model:
-        - ALBA is also adapted for decentralized, multi-prover settings, where several entities hold parts of $S_p$ and communicate over a network to jointly prove possession of evidence, achieving efficiency in both communication and computation.
+  - *Centralized Model*:
+    - A single prover generates a proof by selecting subsets of elements that satisfy certain conditions, outputting a compact certificate for the verifier.
+  - *Decentralized Model*:
+    - Multiple participants contribute their elements to an aggregator, who combines them into a single proof.
+    - This model is particularly efficient in scenarios requiring distributed collaboration, such as proof-of-stake blockchains or voting protocols.
+  - *Weighted and Unweighted Configurations*:
+    - In the unweighted setting, the proof involves demonstrating possession of a minimum number of elements.
+    - In the weighted setting, each element has an associated integer weight, and the prover demonstrates that the total weight meets or exceeds the required threshold.
+  - *Proof Construction Methods*:
+    - *Telescope*: Filters and narrows down subsets of elements through staged conditions, optimizing for speed and size.
+    - *Lottery*: Probabilistically selects elements in decentralized environments, supporting both weighted and unweighted setups.
