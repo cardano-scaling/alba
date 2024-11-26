@@ -137,7 +137,7 @@ impl Params {
         let error = 8f64.recip();
         let valid_proof_probability = case.valid_proof_probability(params.search_width);
         // Checking the completness error difference is bounded by the error
-        if (completeness_error(proof_size, params.search_width, valid_proof_probability)
+        if (completeness_error(proof_size, search_width, valid_proof_probability)
             / completeness_error( proof_size, search_width, params.valid_proof_probability))
         .log2() // Computes log2(2^-l1 / 2^-l2) = (-l1) - (-l2)
         .abs() // Computes |l1 - l2|
