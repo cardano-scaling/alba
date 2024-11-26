@@ -1,5 +1,5 @@
 //! Criterion helper functions including new Measurements and wrappers on
-//! BenchmarId and BenchmarkGroup
+//! BenchmarkId and BenchmarkGroup
 
 use alba as _;
 use blake2 as _;
