@@ -27,6 +27,11 @@ name = "centralized_step"
 harness = false
 path = "benches/centralized_telescope.rs"
 
+[[bench]]
+name = "centralized_proof"
+harness = false
+path = "benches/centralized_proof.rs"
+
 [lints.rust]
 missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"
