@@ -240,7 +240,7 @@ impl Telescope {
     /// use alba::centralized_telescope::telescope::Telescope;
     /// use alba::centralized_telescope::params::Params;
     /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
-    /// let telescope = Telescope::from(128.0, 128.0, 1_000, 750, params);
+    /// let telescope = Telescope::from_unsafe(128.0, 128.0, 1_000, 750, params);
     /// ```
     pub fn from_unsafe(
         soundness_param: f64,
