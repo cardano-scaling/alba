@@ -4,6 +4,9 @@
 // Defines the internal parameters and provide functions for their generation
 pub mod params;
 
+// Defines different scenarios of parameter generation
+mod cases;
+
 // Defines the proof structure and provide high level functions, i.e. the depth
 // first search algorithm (DFS) and indexed proving function, as well as helper
 // hash functions

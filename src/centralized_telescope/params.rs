@@ -1,4 +1,5 @@
 //! ALBA's Params structure comprising internal parameters
+use super::cases::{Case, Cases, High, Mid, Small};
 use std::f64::consts::LOG2_E;
 
 /// Params structure comprising internal parameters
@@ -14,204 +15,6 @@ pub struct Params {
     pub valid_proof_probability: f64,
     /// Maximum number of DFS calls permitted to find a proof
     pub dfs_bound: u64,
-}
-
-pub(super) struct Small {
-    completeness_param: f64,
-}
-
-pub(super) struct Mid {
-    completeness_param: f64,
-    completeness_param1: f64,
-    set_size: u64,
-}
-
-pub(super) struct High {
-    completeness_param: f64,
-    completeness_param2: f64,
-}
-
-pub(super) enum Cases {
-    Small,
-    Mid,
-    High,
-}
-
-/// Trait to compute internal parameters depending on which case we are
-pub(super) trait Case {
-    /// Trait constructor
-    fn new(completeness_param: f64, set_size: u64, proof_size: f64) -> Self;
-
-    /// Returns the maximum number of retries
-    fn max_retries(&self) -> u64;
-
-    /// Returns the search width
-    fn search_width(&self, proof_size: f64) -> u64;
-
-    /// Returns the valid proof probability
-    fn valid_proof_probability(&self, search_width: u64) -> f64;
-
-    /// Returns the DFS bound
-    fn dfs_bound(&self, proof_size: f64, search_width: u64) -> u64;
-
-    /// Returns Params
-    fn create_params(&self, proof_size: f64) -> Params {
-        let search_width = self.search_width(proof_size);
-        Params {
-            proof_size: proof_size as u64,
-            max_retries: self.max_retries(),
-            search_width,
-            valid_proof_probability: self.valid_proof_probability(search_width),
-            dfs_bound: self.dfs_bound(proof_size, search_width),
-        }
-    }
-}
-
-impl Cases {
-    pub(super) fn which(completeness_param: f64, set_size: u64, proof_size: u64) -> Cases {
-        let set_size_f64 = set_size as f64;
-        let proof_size_f64 = proof_size as f64;
-        let ratio = 9.0 * set_size_f64 * LOG2_E / ((17.0 * proof_size_f64).powi(2));
-        let s1 = ratio - 7.0;
-        let s2 = ratio - 2.0;
-
-        if s1 < 1.0 || s2 < 1.0 {
-            // Small case, i.e. set_size <= λ^2
-            Cases::Small
-        } else {
-            let completeness_param2 = completeness_param.min(s2);
-            if proof_size_f64 < completeness_param2 {
-                // Case 3, Theorem 14, i.e.  set_size >= λ^3
-                Cases::High
-            } else {
-                // Case 2, Theorem 13, i.e. λ^2 < set_size < λ^3
-                Cases::Mid
-            }
-        }
-    }
-}
-
-impl Case for Small {
-    fn new(completeness_param: f64, _set_size: u64, _proof_size: f64) -> Self {
-        Self { completeness_param }
-    }
-
-    fn max_retries(&self) -> u64 {
-        self.completeness_param as u64
-    }
-
-    fn search_width(&self, proof_size: f64) -> u64 {
-        (32.0 * (12f64).ln() * proof_size).ceil() as u64
-    }
-
-    fn valid_proof_probability(&self, search_width: u64) -> f64 {
-        2.0 * 12f64.ln() / search_width as f64
-    }
-
-    fn dfs_bound(&self, proof_size: f64, search_width: u64) -> u64 {
-        (8.0 * (proof_size + 1.0) * search_width as f64 / (12f64).ln()).ceil() as u64
-    }
-}
-
-impl Case for High {
-    fn new(completeness_param: f64, set_size: u64, proof_size: f64) -> Self {
-        let ratio = 9.0 * set_size as f64 * LOG2_E / ((17.0 * proof_size).powi(2));
-        let s2 = ratio - 2.0;
-        let completeness_param2 = completeness_param.min(s2);
-
-        Self {
-            completeness_param,
-            completeness_param2,
-        }
-    }
-
-    fn max_retries(&self) -> u64 {
-        (self.completeness_param / self.completeness_param2).ceil() as u64
-    }
-
-    fn search_width(&self, proof_size: f64) -> u64 {
-        (16.0 * proof_size * (self.completeness_param2 + 2.0) / LOG2_E).ceil() as u64
-    }
-
-    fn valid_proof_probability(&self, search_width: u64) -> f64 {
-        (4.0 + 2.0 * self.completeness_param2) / (search_width as f64 * LOG2_E)
-    }
-
-    fn dfs_bound(&self, proof_size: f64, search_width: u64) -> u64 {
-        let search_width_f64 = search_width as f64;
-        ((1.0 + proof_size.log2() * (self.completeness_param2 + 2.0).recip())
-            * 3.0
-            * proof_size
-            * search_width_f64
-            / 4.0
-            + proof_size
-            + search_width_f64)
-            .floor() as u64
-    }
-}
-
-impl Mid {
-    fn max_vertices_visited(proof_size: f64, l1: f64) -> f64 {
-        fn factorial_check(max_v: f64, l1: f64) -> bool {
-            let bound = (-l1).exp2();
-            let mut factor = (max_v.ceil() as u64).saturating_add(1);
-            let max_v_2 = max_v + 2.0;
-            let exp_1_over_max_v = max_v.recip().exp();
-            let mut ratio =
-                (14.0 * max_v * max_v * max_v_2 * exp_1_over_max_v) / (max_v_2 - exp_1_over_max_v);
-            while factor != 0 {
-                ratio /= factor as f64;
-                if ratio <= bound {
-                    return true;
-                }
-                factor = factor.saturating_sub(1);
-            }
-            false
-        }
-        let mut max_v = proof_size;
-        while !factorial_check(max_v, l1) {
-            max_v += 1.0;
-        }
-        max_v
-    }
-}
-
-impl Case for Mid {
-    fn new(completeness_param: f64, set_size: u64, proof_size: f64) -> Self {
-        let ratio = 9.0 * set_size as f64 * LOG2_E / ((17.0 * proof_size).powi(2));
-        let s1 = ratio - 7.0;
-        let completeness_param1 = completeness_param.min(s1);
-
-        Self {
-            completeness_param,
-            completeness_param1,
-            set_size,
-        }
-    }
-
-    fn max_retries(&self) -> u64 {
-        (self.completeness_param / self.completeness_param1).ceil() as u64
-    }
-
-    fn search_width(&self, proof_size: f64) -> u64 {
-        (16.0 * proof_size * (self.completeness_param1 + 7.0) / LOG2_E).ceil() as u64
-    }
-
-    fn valid_proof_probability(&self, search_width: u64) -> f64 {
-        2.0 * (self.completeness_param1 + 7.0) / (LOG2_E * search_width as f64)
-    }
-
-    fn dfs_bound(&self, proof_size: f64, search_width: u64) -> u64 {
-        let search_width_f64 = search_width as f64;
-        let lbar = (self.completeness_param1 + 7.0) / LOG2_E;
-        let max_v = Mid::max_vertices_visited(proof_size, self.completeness_param1);
-        let exponential = (2.0 * proof_size * max_v * lbar / self.set_size as f64
-            + 7.0 * proof_size / max_v)
-            .exp();
-
-        ((max_v * lbar + search_width_f64) * proof_size * exponential + search_width_f64).floor()
-            as u64
-    }
 }
 
 impl Params {
@@ -241,7 +44,138 @@ impl Params {
         }
     }
 
-    pub(super) fn proof_size(
+    pub(super) fn check_from(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: Params,
+    ) -> bool {
+        let proof_size_f64 = params.proof_size as f64;
+
+        match Cases::which(completeness_param, set_size, proof_size_f64 as u64) {
+            Cases::Small => {
+                let small = Small::new(completeness_param, set_size, proof_size_f64);
+                Params::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &small,
+                )
+            }
+            Cases::Mid => {
+                let mid = Mid::new(completeness_param, set_size, proof_size_f64);
+                Params::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &mid,
+                )
+            }
+            Cases::High => {
+                let high = High::new(completeness_param, set_size, proof_size_f64);
+                Params::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &high,
+                )
+            }
+        }
+    }
+
+    /// Check that internal parameters are consistent wit user parameters
+    fn check_case(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: Params,
+        case: &impl Case,
+    ) -> bool {
+        fn completeness_error(u: f64, d: u64, q: f64) -> f64 {
+            (-(q - u * q * q / 2.0) * d as f64).exp()
+        }
+        fn soundness_error(np: u64, nf: u64, u: f64, d: u64, q: f64) -> f64 {
+            (nf as f64 / np as f64).powf(u) * d as f64 * q
+        }
+        let mut bool = true;
+
+        // Checks the proof size given is at least as big as one computed from user parameters
+        let proof_size = params.proof_size as f64;
+        if Params::proof_size(
+            soundness_param,
+            completeness_param,
+            set_size as f64,
+            lower_bound as f64,
+        ) > proof_size
+        {
+            bool = false;
+        }
+
+        // Check that the number of max retries is at least as big as one
+        // computed from given user parameters
+        if case.max_retries() > params.max_retries {
+            bool = false;
+        }
+
+        // Check that the search width is at least as big as the one computed
+        // from given user parameters and given proof size
+        let search_width = case.search_width(proof_size);
+        if search_width > params.search_width {
+            bool = false;
+        };
+
+        // Check that the valid proof probability is close enough from the one
+        // computed from the given user and internal parameters
+        let error = 8f64.recip();
+        let valid_proof_probability = case.valid_proof_probability(params.search_width);
+        // Checking the completness error difference is bounded by the error
+        if (completeness_error(proof_size, params.search_width, valid_proof_probability)
+            / completeness_error( proof_size, search_width, params.valid_proof_probability))
+        .log2() // Computes log2(2^-l1 / 2^-l2) = (-l1) - (-l2)
+        .abs() // Computes |l1 - l2|
+            > error
+        {
+            bool = false;
+        };
+        // Checking the soundness error difference is bounded by the error
+        if (soundness_error(
+            set_size,
+            lower_bound,
+            proof_size,
+            params.search_width,
+            params.valid_proof_probability,
+        ) / soundness_error(
+            set_size,
+            lower_bound,
+            proof_size,
+            params.search_width,
+            valid_proof_probability,
+        ))
+        .log2()// Computes log2(2^-l1 / 2^-l2) =  (-l1) - (-l2)
+        .abs() // Computes |l1 - l2|
+            > error
+        {
+            bool = false;
+        }
+
+        // Check that the DFS bound is at least as big as the one given by the user and internal parametesr.
+        let dfs_bound = case.dfs_bound(proof_size, search_width);
+        if dfs_bound > params.dfs_bound {
+            bool = false;
+        };
+
+        bool
+    }
+
+    fn proof_size(
         soundness_param: f64,
         completeness_param: f64,
         set_size: f64,
