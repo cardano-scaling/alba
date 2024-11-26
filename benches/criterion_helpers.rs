@@ -1,0 +1,152 @@
+//! Criterion helper functions including new Measurements and wrappers on
+//! BenchmarkId and BenchmarkGroup
+
+use alba as _;
+use blake2 as _;
+use rand as _;
+use rand_chacha as _;
+use rand_core as _;
+
+use criterion::{
+    measurement::{Measurement, ValueFormatter},
+    BenchmarkId, Criterion, Throughput,
+};
+
+/// Helper function creating a Benchmark ID
+pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) -> BenchmarkId {
+    BenchmarkId::new(
+        bench_name,
+        format!("(λ: {l}, Sp:{sp} ({pc}%), n_p:{np}, n_f:{nf})"),
+    )
+}
+
+/// Helper function to create series of benchmarks
+#[allow(clippy::too_many_arguments)]
+pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
+    c: &mut Criterion<T>,
+    lambdas: &[f64],
+    s_p: &[u64],
+    n_p: &[u64],
+    n_f: &[u64],
+    group_name: String,
+    bench_name: &str,
+    f: &dyn Fn(f64, u64, u64, u64, u64, u64) -> V,
+) {
+    let mut group = c.benchmark_group(group_name);
+
+    for &l in lambdas {
+        for &sp in s_p {
+            for &np in n_p {
+                for &nf in n_f {
+                    // Benchmark where the prover only has access to np percent elements of Sp,
+                    // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
+                    let low = sp.saturating_mul(np).div_ceil(100);
+                    group.bench_function(bench_id(bench_name, np, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, low, n));
+                    });
+
+                    // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
+                    let mean = np.saturating_add(100).div_ceil(2);
+                    let mid: u64 = sp.saturating_add(low).div_ceil(2);
+                    group.bench_function(bench_id(bench_name, mean, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, mid, n));
+                    });
+
+                    // Benchmark where the prover only has access to all elements of Sp
+                    group.bench_function(bench_id(bench_name, 100, l, sp, np, nf), move |b| {
+                        b.iter_custom(|n| f(l, sp, np, nf, sp, n));
+                    });
+                }
+            }
+        }
+    }
+    group.finish();
+}
+
+// Measurements
+
+/// Structure to count the number of DFS calls per proof
+#[derive(Debug, Clone, Copy)]
+pub struct Steps;
+
+impl Measurement for Steps {
+    type Intermediate = u64;
+    type Value = u64;
+
+    fn start(&self) -> Self::Intermediate {
+        0
+    }
+
+    fn end(&self, _i: Self::Intermediate) -> Self::Value {
+        0
+    }
+
+    fn add(&self, v1: &Self::Value, v2: &Self::Value) -> Self::Value {
+        v1.saturating_add(*v2)
+    }
+
+    fn zero(&self) -> Self::Value {
+        0
+    }
+
+    fn to_f64(&self, value: &Self::Value) -> f64 {
+        *value as f64
+    }
+
+    fn formatter(&self) -> &dyn ValueFormatter {
+        &StepsFormatter
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+struct StepsFormatter;
+
+impl ValueFormatter for StepsFormatter {
+    fn format_value(&self, value: f64) -> String {
+        format!("{value:.4} steps")
+    }
+
+    fn format_throughput(&self, throughput: &Throughput, value: f64) -> String {
+        match throughput {
+            Throughput::Bytes(b) => format!("{:.4} spb", value / *b as f64),
+            Throughput::Elements(b) => format!("{value:.4} steps/{b}"),
+            Throughput::BytesDecimal(b) => format!("{:.4} spb (decimal)", value / *b as f64),
+        }
+    }
+
+    fn scale_values(&self, _typical_value: f64, _values: &mut [f64]) -> &'static str {
+        "steps"
+    }
+
+    fn scale_throughputs(
+        &self,
+        _typical_value: f64,
+        throughput: &Throughput,
+        values: &mut [f64],
+    ) -> &'static str {
+        match throughput {
+            Throughput::Bytes(n) => {
+                for val in values {
+                    *val /= *n as f64;
+                }
+                "spb"
+            }
+            Throughput::Elements(n) => {
+                for val in values {
+                    *val /= *n as f64;
+                }
+                "spe"
+            }
+            Throughput::BytesDecimal(n) => {
+                for val in values {
+                    *val /= *n as f64;
+                }
+                "spb (decimal)"
+            }
+        }
+    }
+
+    fn scale_for_machines(&self, _values: &mut [f64]) -> &'static str {
+        "steps"
+    }
+}

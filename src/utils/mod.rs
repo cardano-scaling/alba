@@ -1,3 +1,6 @@
+//! Types and functions shared between algorithms as well as helper test
+//! functions
+
 pub(crate) mod sample;
 
 pub(crate) mod types;
