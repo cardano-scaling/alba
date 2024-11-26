@@ -8,7 +8,7 @@ use std::time::{Duration, Instant};
 use alba::centralized_telescope::{algorithm, init, params::Params, setup::Setup};
 
 pub mod criterion_helpers;
-use criterion_helpers::{benchmarks, Repetitions, Steps};
+use criterion_helpers::{benchmarks, Steps};
 
 #[path = "../src/utils/test_utils.rs"]
 mod test_utils;
@@ -136,44 +136,9 @@ fn step_benches(c: &mut Criterion<Steps>) {
     );
 }
 
-/// Bench the number of repetitions, i.e. the "r" parameter, of Alba centralized prover
-fn repetition_benches(c: &mut Criterion<Repetitions>) {
-    #[allow(clippy::unit_arg)]
-    fn prove_repetitions(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
-        let mut rng = ChaCha20Rng::from_entropy();
-        let mut total_repetitions = 0u64;
-        for _ in 0..n {
-            // Setup
-            let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
-            // Truncate the dataset to give truncate_size elements to the prover
-            dataset.truncate(truncate_size as usize);
-            // Bench
-            black_box({
-                let (_, r, _) = algorithm::bench(&bench_setup, &dataset);
-                total_repetitions = total_repetitions.saturating_add(r).saturating_add(1);
-            });
-        }
-        total_repetitions
-    }
-
-    benchmarks::<u64, u64, Repetitions>(
-        c,
-        L,
-        SP,
-        NP,
-        NF,
-        format!("{} - {}", NAME, "Repetitions"),
-        "Prove",
-        &prove_repetitions,
-    );
-}
-
 mod criterion_groups {
     #![allow(missing_docs)]
-    use super::{
-        criterion_group, repetition_benches, step_benches, time_benches, Criterion, Duration,
-        Repetitions, Steps,
-    };
+    use super::{criterion_group, step_benches, time_benches, Criterion, Duration, Steps};
 
     // Benchmarking proving and verifying time
     criterion_group!(name = centralized_time;
@@ -186,16 +151,9 @@ mod criterion_groups {
         config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30));
         targets = step_benches
     );
-
-    // Benchmarking the number of repetitions, i.e. prove_index calls, per proof
-    criterion_group!(name = centralized_repetitions;
-        config = Criterion::default().with_measurement(Repetitions).measurement_time(Duration::from_secs(30));
-        targets = repetition_benches
-    );
 }
 
 criterion_main!(
     criterion_groups::centralized_time,
     criterion_groups::centralized_step,
-    criterion_groups::centralized_repetitions
 );
