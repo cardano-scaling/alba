@@ -20,17 +20,17 @@ Beyond voting, ALBA's versatility makes it suitable for various use cases requir
 ALBA's core construction, the _centralized telescope_, operates as follows:  
 The prover holds a set of $n_p$ elements (e.g. signatures, data points, or weighted items) that satisfy a predicate. 
 The verifier needs to be convinced that the prover knows more than $n_f$ elements, where $n_f < n_p$. 
-ALBA generates a proof by choosing a subset of, potentially repeated, elements through a random walk satisfying some oracle checks at each step, outputting a tuple significantly smaller than $n_f$.
+ALBA generates a proof by choosing a subset of, potentially repeated, elements through a random walk satisfying some random oracle checks at each step, outputting a tuple significantly smaller than $n_f$.
 The larger the ratio $n_p / n_f$, the smaller the proof size, making ALBA practical for scenarios involving large datasets and low thresholds.
 
 ALBA also supports *weighted elements*, where each item has an integer weight. 
-In this case the prover demonstrates possession of elements with a total weight of at least $n_p$, while convincing the verifier that the total weight exceeds $n_f$.
+In this case the prover has in possession elements with a total weight of at least $n_p$ and convinces the verifier that the total weight exceeds $n_f$.
 In *decentralized settings*, ALBA adapts to distributed data environments. 
 Multiple participants play a lottery and send their elements to an aggregator accordingly, which then combines them into a single, compact proof for the verifier.
 
 ALBA can seamlessly handle both *weighted/unweighted* and *centralized/decentralized* configurations. 
 This flexibility is particularly valuable in applications like *proof-of-stake blockchains*, where weights represent stake amounts. 
-ALBA there ensures that  honest participants' stakes outweigh malicious contributions, providing robust security in distributed systems.
+ALBA there ensures that honest participants' stakes outweigh malicious contributions, providing robust security in distributed systems.
 The *decentralized construction* of ALBA stands out for its flexibility, offering tradeoffs between proof size and communication complexity. 
 This feature allows protocol designers to optimize ALBA for various decentralized applications.
 

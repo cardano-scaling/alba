@@ -2,7 +2,7 @@
 - A trivial solution to this problem would be for the prover to provide the entire dataset or all sequence elements to the verifier. However, this approach is inefficient due to the large size of the data and communication costs.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
 - ALBA is designed to prove knowledge efficiently by leveraging an *approximate lower bound*.
-  - This approach establishes a gap between the prover's actual knowledge and the threshold needed to convince the verifier.
+  - This approach requires a gap between the prover's actual knowledge and the threshold needed to convince the verifier.
   - The gap enables compact proofs and efficient verification.
 - ALBA supports both centralized and decentralized setups, as well as weighted and unweighted datasets, making it useful for applications such as blockchain protocols, voting systems, and multisignature schemes.
 
@@ -17,7 +17,7 @@
       - *Timeliness*: The prover may want to generate a proof as soon as possible without waiting to collect all elements in the dataset. Even with $n < n_p$ (and $n > n_f$), there is a chance of successfully generating a proof.
   - ALBA achieves efficiency by leveraging the gap between the provable lower bound ($n_f$) and the actual set size ($|S_p|$). This gap enables compact proofs and rapid verification without compromising security. The larger the ratio $n_p / n_f$, the smaller the proof and the faster its generation.
 - **Historical context**
-    - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques or interactive protocols.
+    - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques and interactive protocols.
     - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
 - **Design goals**
   - *Efficiency*: Ensure fast proof generation and verification with minimal computational and communication overhead.
