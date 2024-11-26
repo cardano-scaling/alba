@@ -16,6 +16,8 @@ mod test_utils;
 // Global variables
 const NAME: &str = "Centralized";
 // Benchmark parameters
+// We bench every combination of securiy parameters, dataset cardinality, set size and lower bounds
+// The parameters chosen correspond to cases of interest for Cardano's Peras and Leios protocols.
 const L: &[f64] = &[50.0, 80.0, 128.0]; // Security parameter
 const SP: &[u64] = &[1_000]; // Size of set to lower bound
 const NP: &[u64] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
