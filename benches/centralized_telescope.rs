@@ -16,7 +16,7 @@ mod test_utils;
 // Global variables
 const NAME: &str = "Centralized";
 // Benchmark parameters
-const L: &[f64] = &[50.0, 128.0]; // Security parameter
+const L: &[f64] = &[50.0, 80.0, 128.0]; // Security parameter
 const SP: &[u64] = &[1_000]; // Size of set to lower bound
 const NP: &[u64] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
 const NF: &[u64] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
