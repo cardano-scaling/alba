@@ -87,5 +87,5 @@ Run tests with `cargo test`. Run benchmarks with `cargo bench`.
 ### Documentation
 Compile the documentation by:
 ```shell
-RUSTDOCFLAGS="--html-in-header docs/assets/katex-header.html" cargo doc --no-deps --open
+cargo doc --no-deps --open
 ```
