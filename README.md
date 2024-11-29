@@ -65,6 +65,7 @@ Using these constructions, the library supports eight ALBA schemes, covering a w
 
 
 ### Disclaimer
+> :warning:
 > This code is NOT fit for production, it's not been optimised, thoroughly tested, nor audited by competent cryptographers.
 > Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
 
