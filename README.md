@@ -3,8 +3,7 @@ This is a Rust library of _Approximate Lower Bound Arguments_ proposed in the [p
 
 ## Introduction
 ALBA is a cryptographic primitive that enables a prover to convince a verifier that their dataset includes at least a minimum number of elements meeting a specific condition, called a predicate, without revealing the entire dataset.
-The core idea of ALBA is to efficiently prove knowledge by leveraging an *approximate lower bound*. 
-This approach introduces a controlled gap between the prover's actual knowledge and the threshold required for the verifier to be convinced. 
+The core idea of ALBA is to introduce a controlled gap between the prover's actual knowledge and the threshold required for the verifier to be convinced. 
 This gap not only gives ALBA its name (_Approximate Lower Bound Argument_) but also enables highly efficient algorithms for generating compact proofs.
 ALBA proofs are particularly small and efficient in scenarios with significant discrepancy between the dataset size and the threshold to prove, or involving weight oracles, and are generated significantly faster than traditional SNARKs.
 Its main applications include large-scale decentralized signature schemes and other blockchain scenarios where it improves communication efficiency among multiple provers sharing a common witness.
@@ -47,10 +46,10 @@ These constructions form the foundation for the various configurations supported
 
 The *Telescope* construction allows the prover to build a sequence of elements that satisfy staged hash-based conditions.
 This process efficiently filters relevant elements, narrowing down the data to subsets that meet the required criteria.
-By introducing bounded repetitions and constraints on the prover's search, the construction ensures scalability and efficiency for large datasets.
+By introducing bounded repetitions and constraints such as pre-hashing on the prover's search, the construction ensures scalability and efficiency for large datasets.
 
 The *Lottery* construction offers a decentralized approach where participants probabilistically decide whether to share their elements with an aggregator. 
-The aggregator collects enough shared elements to generate a proof. 
+The aggregator collects enough elements and concatenates them to generate a proof. 
 This method is inherently decentralized and can also handle weighted scenarios by incorporating element weights into the lottery process.
 
 Using these constructions, the library supports eight ALBA schemes, covering a wide range of configurations:
@@ -63,8 +62,7 @@ Using these constructions, the library supports eight ALBA schemes, covering a w
 - Centralized weighted Simple Lottery (Sections 4.1, 5)
 - Decentralized weighted Simple Lottery (Sections 4.1, 5)
 
-
-### ⚠️ Disclaimer
+## ⚠️ Disclaimer
 This code is NOT fit for production, it's not been optimised, thoroughly tested, nor audited by competent cryptographers.
 Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
 
