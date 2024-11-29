@@ -64,28 +64,31 @@ Using these constructions, the library supports eight ALBA schemes, covering a w
 - Decentralized weighted Simple Lottery (Sections 4.1, 5)
 
 
-### Disclaimer
-> :warning:
-> This code is NOT fit for production, it's not been optimised, thoroughly tested, nor audited by competent cryptographers.
-> Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
+### ⚠️ Disclaimer
+This code is NOT fit for production, it's not been optimised, thoroughly tested, nor audited by competent cryptographers.
+Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
 
 ## Documentation
-👉 We deliver comprehensive [documentation][crate::docs] aimed at connecting theory with practical implementation.
+📖 We deliver comprehensive [documentation][crate::docs] aimed at connecting theory with practical implementation.
 
-👉 Checkout website on this [link](https://alba.cardano-scaling.org).
+🌐 Checkout website on this [link](https://alba.cardano-scaling.org).
 
 ## Compiling
-
-### Library
 Compile the library by:
 ```shell
 cargo build --release
 ```
 
-### Tests and Benchmarks
-Run tests with `cargo test`. Run benchmarks with `cargo bench`. 
+Run tests with: 
+```shell
+cargo test
+```
 
-### Documentation
+Run benchmarks with: 
+```shell
+cargo bench
+```
+
 Compile the documentation by:
 ```shell
 cargo doc --no-deps --open
