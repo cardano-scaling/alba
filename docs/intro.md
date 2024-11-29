@@ -25,14 +25,18 @@
   - *Flexibility*: Support a range of configurations, including weighted/unweighted and centralized/decentralized setups.
   - *Practical Usability*: Provide developers with an implementation that bridges theoretical concepts and real-world use cases.
 - **Setup and interaction models**
-  - *Centralized Model*:
-    - A single prover generates a proof by selecting subsets of elements that satisfy certain conditions, outputting a compact certificate for the verifier.
-  - *Decentralized Model*:
-    - Multiple participants contribute their elements to an aggregator, who combines them into a single proof.
-    - This model is particularly efficient in scenarios requiring distributed collaboration, such as proof-of-stake blockchains or voting protocols.
-  - *Weighted and Unweighted Configurations*:
-    - In the unweighted setting, the proof involves demonstrating possession of a minimum number of elements.
-    - In the weighted setting, each element has an associated integer weight, and the prover demonstrates that the total weight meets or exceeds the required threshold.
-  - *Proof Construction Methods*:
-    - *Telescope*: Filters and narrows down subsets of elements through staged conditions, optimizing for speed and size.
-    - *Lottery*: Probabilistically selects elements in decentralized environments, supporting both weighted and unweighted setups.
+  - *Interaction models*
+    - *Centralized model*: In the centralized setup, a single prover is responsible for generating a proof. The prover selects subsets of elements from their dataset that satisfy specific conditions and outputs a compact certificate for the verifier. This approach is ideal for scenarios where a single entity holds all the necessary data.
+    - *Decentralized model*: In decentralized environments, multiple participants (provers) collaborate to create a proof. Each participant contributes elements to an aggregator, who combines these contributions into a single proof. This model is particularly suited for distributed systems like proof-of-stake blockchains or secure voting protocols, where data is naturally spread across multiple parties.
+  - *Weighted and unweighted configurations*
+    - *Unweighted configuration*: Provers demonstrate possession of a minimum number of elements that satisfy the required conditions.
+    - *Weighted configuration*: Each element has an integer weight. The prover demonstrates that the total weight of their elements meets or exceeds a specific threshold.
+  - *Proof construction methods*: The ALBA protocol supports two main constructions for generating proofs, both of which can be used in centralized or decentralized, weighted or unweighted setups:
+    - *Telescope construction*
+      - Filters and narrows down subsets of elements through staged, hash-based conditions.
+      - Provides a configurable tradeoff between communication complexity and proof size, allowing flexibility in applications.
+      - Especially useful when optimizing for smaller proof sizes is a priority.
+    - *Lottery construction*
+      - Probabilistically selects elements for inclusion in the proof.
+      - Optimized for the best communication complexity, though at the cost of larger proof sizes compared to the telescope method.
+      - Ideal for decentralized settings requiring minimal communication overhead.
