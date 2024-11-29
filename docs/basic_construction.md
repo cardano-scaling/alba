@@ -60,52 +60,61 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 ### Functions
 
 #### Proving
-- Input:
-  - $S_p$: A set of elements.
-- Output:
-  - $\pi$: A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
-
 ---
 > $\mathsf{Prove}(S_p) \rightarrow \pi$
-> - **for** each $t \in \[d\]$:
+> - Input:
+>   - $S_p:~~$ A set of elements.
+> - Output:
+>   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+> ---
+> - **for** each $~~ t \in \[d\]$:
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], 1, S_p)$
->   - **if** $\pi ~!= \emptyset$:
->     - **return** $\pi$.
-> - **return** $\emptyset$.
+>   - **if** $~~ \pi ~=\not \emptyset$:
+>     - **return** $~~ \pi$.
+> - **return** $~~ \emptyset$.
 ---
 
 #### Depth-first search
-- Input:
-  - $t$: Search counter
-  - $slist$: Element sequence.
-  - $v$: Retry counter.
-  - $S_p$: A set of elements.
-- Output:
-  - $\pi$: A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
-
 ---
 > $\mathsf{DFS}(t, slist, v, S_p) \rightarrow \pi$
-> - **if** $\quad v > u$:
->   - **if** $\mathsf{H}_2(t, slist) = 1$:
+> - Input:
+>   - $t:~~$ Search counter
+>   - $slist:~~$ Element sequence.
+>   - $v:~~$ Retry counter.
+>   - $S_p:~~$ A set of elements.
+> - Output:
+>   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+> ---
+> - **if** $~~ v > u$:
+>   - **if** $~~ \mathsf{H}_2(t, slist) = 1$:
 >     - $\pi \leftarrow (t, slist)$
->     - **return** $\pi$.
->   - **return** $\emptyset$.
-> - **for** each $s \in S_p$:
+>     - **return** $~~ \pi$.
+>   - **return** $~~ \emptyset$.
+> - **for** each $~~ s \in S_p$:
 >   - $newlist \leftarrow slist \cup \[s\]$
->   - **if** $\mathsf{H}_1(t, newlist) = 1$:
+>   - **if** $~~ \mathsf{H}_1(t, newlist) = 1$:
 >     - $\pi \leftarrow \mathsf{DFS}(t, newlist, v+1, S_p)$
->     - **if** $\pi ~!= \emptyset$:
->       - **if** $\pi$.
-> - **return** $\emptyset$.
+>     - **if** $~~ \pi ~=\not \emptyset$:
+>       - **return** $~~ \pi$.
+> - **return** $~~ \emptyset$.
 ---
 
 #### Verification
-- Input:
-  - $\pi = (t, s_1, ..., s_u)$.
-- Output:
-  - $0/1$.
-
 ---
 > $\mathsf{Verify}(\pi) \leftarrow 0/1$
 > 
+> - Input:
+>   - $\pi = (t, s_1, ..., s_u)$.
+> - Output:
+>   - $0/1$.
+> ---
+> - **if** $~~ t \in\not  \[d\]$:
+>   - **return** $~~ 0$.
+> - **for** $~~ i = 1\ldots u$:
+>   - **if** $~~ \mathsf{H}_1(t, s_1, \ldots, s_i) ~=\not 1$:
+>     - **return** $~~0$.
+> - **return** $~~ \mathsf{H}_2(t, s_1, \ldots, s_u)$.
 ---
+
+
+
