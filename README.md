@@ -57,7 +57,7 @@ Using these constructions, the library supports eight ALBA schemes, covering a w
 - _Lottery_ (Section 4.1), whether centralized or not, unweighted or not (Section 5).
 
 ## ⚠️ Disclaimer
-This code is NOT fit for production, it has not been optimised, thoroughly tested, nor audited.
+This code is NOT fit for production, it has not been optimized, thoroughly tested, nor audited.
 Its one and only purpose is to help people who are more familiar with code than equations to prototype larger protocols using ALBA.
 
 ## Documentation

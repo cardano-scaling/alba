@@ -1,8 +1,8 @@
-- Assume that a prover has a large collection of data. They want to convince a verifier that their set contains at least a minimum number of elements satisfying a specific condition, known as a predicate. This remains true even if the prover only shares a portion of their data.
+- Assume that a prover has a large collection of data. They want to convince a verifier that their set contains at least a minimum number of elements satisfying a specific predicate, known as a predicate. This remains true even if the prover only shares a portion of their data.
 - A trivial solution to this problem would be for the prover to provide the entire dataset or the minimum number of distinct elements to the verifier. However, this approach is inefficient due to the large size of the data and communication costs.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
 - ALBA is designed to prove knowledge efficiently by leveraging an *approximate lower bound*.
-  - This approach requires a gap between the prover's actual knowledge and the threshold needed to convince the verifier.
+  - This approach exploits the gap between the prover's actual knowledge and the threshold needed to convince the verifier.
   - The gap enables compact proofs and efficient verification.
 - ALBA supports both centralized and decentralized setups, as well as weighted and unweighted datasets, making it useful for applications such as blockchain protocols, voting systems, and multisignature schemes.
 
