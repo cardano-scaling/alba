@@ -27,3 +27,9 @@ assignees: ""
 ## Expected behavior
 
 <!-- A description of what you expect to happen instead. -->
+
+
+## Tasks
+
+<!-- Split the issue in separate tasks. If the issue is big, you may create an issue per task -->
+- [ ] <!-- task title and description -->
