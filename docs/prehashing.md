@@ -63,10 +63,27 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 > ---
 
 ## Functions
-### Prehashing
+#### Proving
+---
+> $\mathsf{Prove}(S_p) \rightarrow \pi$
+> - Input:
+    >   - $S_p:~~$ A set of elements.
+> - Output:
+    >   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+> ---
+> - $bins \leftarrow $ { }
+> - **for** each $~~ i \in 1, \ldots, n_p:$
+>   - $bins\[i\] \leftarrow \[~\]$
+> - **for** each $~~ s \in S_p:$
+>   - $ind \leftarrow \mathsf{H}_0(s)$
+>   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup \[s\]$
+> - **for** each $~~ t \in 1, \ldots, d:$
+>   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], bins)$
+>   - **if** $~~ \pi ~=\not \emptyset:$
+>     - **return** $~~ \pi.$
+> - **return** $~~ \emptyset.$
+---
 
-### Depth fist search
+#### Depth fist search
 
-### Proving
-
-### Verifying
+#### Verifying
