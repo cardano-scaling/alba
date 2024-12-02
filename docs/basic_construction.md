@@ -1,0 +1,108 @@
+# Telescope - Basic Construction
+**ALBA** provides a method for a prover to convince a verifier that the prover knows at least $n_f$ elements satisfying a predicate $R$, while only presenting a small subset of elements as proof. 
+This construction uses a recursive filtering process, guided by random oracles, to produce succinct and efficient proofs.
+
+## Overview
+- The prover builds a proof by creating tuples (sequences) of elements from $S_p$, the set of known elements. 
+- The process begins with roots as starting points and expands them step-by-step. 
+- At each step, only tuples that satisfy specific conditions, as determined by a random oracle, are kept for further extension.
+- The random oracle acts as a filter to ensure that the prover selects only a small subset of elements that is highly unlikely to satisfy the conditions by chance alone.
+- The proof construction uses *Depth-First Search (DFS)* over a conceptual tree, where each path represents a potential tuple. 
+- The DFS ensures efficiency by pruning invalid branches early.
+
+### The Tree Structure
+- Each root $t \in \[d\]$ is treated as the starting node of a tree.
+- The tree has $u$ levels, where $u$ is the length of the proof tuple.
+- At level $i$, nodes represent tuples of the form $(t, s_1, s_2, \ldots, s_i)$, where $t$ is the root, and $s_1, \ldots, s_i$ are elements selected from $S_p$.
+
+### Tuple Construction via DFS
+- The prover constructs tuples recursively using DFS.
+- At each level $i$, the prover:
+  - Extends the current tuple by adding an element $s_{i+1}$ from $S_p$.
+  - Checks tuple validity using a random oracle $H_1$. A tuple $(t, s_1, \ldots, s_{i+1})$ is valid if:
+  $$
+  H_1(t, s_1, \ldots, s_{i+1}) = 1
+  $$
+  - If the tuple fails the $H_1$ check, it is discarded, and the DFS does not explore its descendants.
+- The process continues until a valid tuple of length $u$ is found, or all possibilities are exhausted.
+
+#### Example: how DFS works
+- Choose a root $t \in \[d\]$ and initialize the search with $(t)$.
+  - At each step, extend the current tuple $(t, s_1, \ldots, s_i)$ by trying every element $s_{i+1} \in S_p$.
+  - Check if $H_1(t, s_1, \ldots, s_{i+1}) = 1$:
+    - If true, recursively extend the tuple.
+    - If false, backtrack and try the next candidate for $s_{i+1}$.
+- Stop when a valid tuple $(t, s_1, \ldots, s_u)$ is found and satisfies $H_2(t, s_1, \ldots, s_u) = 1$.
+
+
+## Prover Algorithm
+The prover's objective is to convince the verifier that they know a large subset of elements $S_p$ without revealing the entire set.
+Instead, the prover constructs a compact proof $(t, s_1, ..., s_u)$ that satisfies the following:
+- The proof demonstrates that the prover possesses knowledge of elements in $S_p$ satisfying a predicate $R$, with the assurance that $|S_p| > n_f$, where $n_f < n_p$.
+- The prover outputs only a small sequence of $u$ elements from $S_p$, rather than transmitting the full set, ensuring communication efficiency.
+- By using random oracles $H_1$ and $H_2$, the prover ensures that:
+  - The proof is hard to forge by an adversary who knows fewer than $n_f$ elements.
+  - Only the prover, with access to a large $S_p$, can construct a valid proof with high probability.
+- The constructed tuple $(t, s_1, ..., s_u)$ satisfies:
+  - $H_1(t, s_1, ..., s_i) = 1$ for all prefixes up to length $i$,
+  - $H_2(t, s_1, ..., s_u) = 1$ for the final tuple.
+
+In summary, the prover's task is to use recursive construction via DFS to find and output a valid tuple that demonstrates knowledge of $S_p$ without directly revealing the full set.
+
+### Function $\mathsf{Prove}$
+- Input:
+  - $S_p$: A set of elements.
+- Output:
+  - $\pi$: A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+
+---
+$\mathsf{Prove}(S_p) \rightarrow \pi$
+- **for** each $t \in \[d\]$:
+  - $\pi \leftarrow \mathsf{DFS}(t, \[~\], 1, S_p)$
+  - **if** $\pi ~!= \emptyset$:
+    - **return** $\pi$.
+- **return** $\emptyset$.
+---
+
+### Function $\mathsf{DFS}$
+- Input:
+  - $t$: Search counter
+  - $slist$: Element sequence.
+  - $v$: Retry counter.
+  - $S_p$: A set of elements.
+- Output:
+  - $\pi$: A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+
+---
+$\mathsf{DFS}(t, slist, v, S_p) \rightarrow \pi$
+- **if** $\quad v > u$:
+  - **if** $\mathsf{H}_2(t, slist) = 1$:
+    - $\pi \leftarrow (t, slist)$
+    - **return** $\pi$.
+  - **return** $\emptyset$.
+- **for** each $s \in S_p$:
+  - $newlist \leftarrow slist \cup \[s\]$
+  - **if** $\mathsf{H}_1(t, newlist) = 1$:
+    - $\pi \leftarrow \mathsf{DFS}(t, newlist, v+1, S_p)$
+    - **if** $\pi ~!= \emptyset$:
+      - **if** $\pi$.
+- **return** $\emptyset$.
+---
+
+## Verifier Algorithm
+The verifier's objective is to validate the prover's claim by ensuring that the submitted proof $(t, s_1, ..., s_u)$ satisfies the conditions of the ALBA protocol. Specifically:
+- Verify that the proof tuple satisfies the required conditions of the random oracles $H_1$ and $H_2$.
+  - Ensure that the proof adheres to the structure specified in the protocol.
+- The verifier ensures that the proof was generated by a prover possessing a large subset $S_p$. If the prover knows fewer than $n_f$ elements, the probability of passing verification should be negligible.
+- The verifier performs efficient checks proportional to the size of the proof $u$, making the process scalable.
+
+### Function $\mathsf{Verify}$
+- Input:
+  - $\pi = (t, s_1, ..., s_u)$.
+- Output:
+  - $0/1$.
+
+---
+$\mathsf{Verify}(\pi) \leftarrow 0/1$
+
+---
