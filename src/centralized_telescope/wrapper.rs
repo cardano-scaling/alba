@@ -18,8 +18,8 @@ impl Wrapper {
         Self::create_with_setup(&setup)
     }
 
-    /// Initialize ALBA with `Setup`. This function is unsafe to use and should
-    /// be avoided.
+    /// This function is unsafe to use and should be avoided.
+    /// Initialize ALBA with `Setup`.
     pub fn create_with_setup(setup: &Setup) -> Self {
         Self { setup: *setup }
     }
