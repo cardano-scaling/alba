@@ -67,9 +67,9 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 ---
 > $\mathsf{Prove}(S_p) \rightarrow \pi$
 > - Input:
-    >   - $S_p:~~$ A set of elements.
+>   - $S_p:~~$ A set of elements.
 > - Output:
-    >   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+>   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
 > ---
 > - $bins \leftarrow $ { }
 > - **for** each $~~ i \in 1, \ldots, n_p:$
