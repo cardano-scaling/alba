@@ -53,14 +53,8 @@ The aggregator collects enough elements and concatenates them to generate a proo
 This method is inherently decentralized and can also handle weighted scenarios by incorporating element weights into the lottery process.
 
 Using these constructions, the library supports eight ALBA schemes, covering a wide range of configurations:
-- Centralized unweighted Telescope Bounded (Section 3.2.2)
-- Decentralized unweighted Telescope Bounded (Sections 3.2.2, 4.2)
-- Centralized weighted Telescope Bounded (Sections 3.2.2, 5)
-- Decentralized weighted Telescope Bounded (Sections 3.2.2, 4.2, 5)
-- Centralized unweighted Simple Lottery (Section 4.1)
-- Decentralized unweighted Simple Lottery (Section 4.1)
-- Centralized weighted Simple Lottery (Sections 4.1, 5)
-- Decentralized weighted Simple Lottery (Sections 4.1, 5)
+- _Telescope bounded_ (Section 3.2.2), whether centralized or not (Section 4.2), unweighted or not (Section 5),
+- _Lottery_ (Section 4.1), whether centralized or not, unweighted or not (Section 5).
 
 ## ⚠️ Disclaimer
 This code is NOT fit for production, it has not been optimised, thoroughly tested, nor audited.

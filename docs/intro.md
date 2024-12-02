@@ -15,7 +15,7 @@
     - $n_p$ might be smaller than $|S_p|$ for various practical reasons:
       - *Uncertainty about* $|S_p|$: In scenarios like probabilistic lotteries, not all elements of the set are sent, and the actual number depends on the lottery draw.
       - *Timeliness*: The prover may want to generate a proof as soon as possible without waiting to collect all elements in the dataset. Even with $n < n_p$ (and $n > n_f$) elements, there is a chance of successfully generating a proof. 
-  - ALBA achieves efficiency by leveraging the gap between the provable lower bound ($n_f$) and the actual set size ($|S_p|$). This gap enables compact proofs and rapid verification without compromising security. The larger the ratio $n_p / n_f$, the smaller the proof and the faster its generation.
+  - ALBA achieves efficiency by leveraging the gap between the provable lower bound ($n_f$) and the prover set size ($n_p$). This gap enables compact proofs and rapid verification without compromising security. The larger the ratio $n_p / n_f$, the smaller the proof and the faster its generation.
 - **Historical context**
     - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques and interactive protocols.
     - Previous methods were largely theoretical and less efficient for practical, large-scale applications.
