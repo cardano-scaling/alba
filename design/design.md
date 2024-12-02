@@ -371,25 +371,6 @@ For example, the ALBA implementation should work with a signature type that
 exposes the underlying data as a `u8` slice.
 The exact interfaces will need to be determined.
 
-### Parameter calculation
-ALBA has two kinds of parameters: user-friendly parameters such as
-$\lambda_{sec}$, $\lambda_{rel}$, $n_p$, $n_f$,
-and algorithm specific parameters such as $u$, $d$ and $q$.
-
-Our implementation will have parameter derivation code converting user-friendly
-to algorithm specific parameters.
-However, this should be decoupled from the ALBA algorithms:
-through documentation, we will ask the developer to run parameter
-derivation manually in advance and then hardcode the output algorithm specific
-parameters in their application.
-The ALBA functions such as `prove` and `verify` will thus receive as input
-the algorithm specific parameters.
-
-The rationale is that we want to be able to evolve parameter derivation
-(e.g., to optimize parameters for performance or make the derivation logic
-more rigorous) while maintaining backward compatibility with previous versions
-of the library.
-
 ## Roadmap
 We have already implemented the Telescope Bounded scheme
 in the centralized unweighted setting.
