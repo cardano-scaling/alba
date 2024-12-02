@@ -1,6 +1,6 @@
 # ALBA implementation design document
 
-[@tolikzinovyev](https://github.com/tolikzinovyev) November 2024
+[@tolikzinovyev](https://github.com/tolikzinovyev) December 2024
 
 ## Introduction
 
