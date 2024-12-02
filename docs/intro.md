@@ -1,5 +1,5 @@
 - Assume that a prover has a large collection of data. They want to convince a verifier that their set contains at least a minimum number of elements satisfying a specific condition, known as a predicate. This remains true even if the prover only shares a portion of their data.
-- A trivial solution to this problem would be for the prover to provide the entire dataset or all sequence elements to the verifier. However, this approach is inefficient due to the large size of the data and communication costs.
+- A trivial solution to this problem would be for the prover to provide the entire dataset or the minimum number of distinct elements to the verifier. However, this approach is inefficient due to the large size of the data and communication costs.
 - The Approximate Lower Bound Argument (ALBA) protocol is a new cryptographic primitive that solves this problem efficiently.
 - ALBA is designed to prove knowledge efficiently by leveraging an *approximate lower bound*.
   - This approach requires a gap between the prover's actual knowledge and the threshold needed to convince the verifier.
@@ -14,7 +14,7 @@
     - This establishes an _approximate_ lower bound because the prover's proof guarantees the presence of more than $n_f$ elements, but the actual set size $|S_p|$ is typically greater. The term "approximate" reflects that the bound is loose rather than tight.
     - $n_p$ might be smaller than $|S_p|$ for various practical reasons:
       - *Uncertainty about* $|S_p|$: In scenarios like probabilistic lotteries, not all elements of the set are sent, and the actual number depends on the lottery draw.
-      - *Timeliness*: The prover may want to generate a proof as soon as possible without waiting to collect all elements in the dataset. Even with $n < n_p$ (and $n > n_f$), there is a chance of successfully generating a proof.
+      - *Timeliness*: The prover may want to generate a proof as soon as possible without waiting to collect all elements in the dataset. Even with $n < n_p$ (and $n > n_f$) elements, there is a chance of successfully generating a proof. 
   - ALBA achieves efficiency by leveraging the gap between the provable lower bound ($n_f$) and the actual set size ($|S_p|$). This gap enables compact proofs and rapid verification without compromising security. The larger the ratio $n_p / n_f$, the smaller the proof and the faster its generation.
 - **Historical context**
     - The concept builds on classic approaches in proof systems, where similar challenges in communication complexity were addressed by using probabilistic techniques and interactive protocols.
