@@ -26,7 +26,7 @@ the verifier that he knows more than $n_f$ elements of interest.
 Hence the name, *approximate* lower bound argument.
 The larger the ratio $n_p / n_f$ is, the smaller the ALBA certificate is.
 
-ALBA also works in the weighted regime where data elements can have
+ALBA also works in the *weighted* regime where data elements can have
 an integer weight.
 The prover who possesses elements of total weight at least $n_p$ is able to
 convince the verifier that he knows elements of total weight more than $n_f$.
@@ -36,8 +36,8 @@ significantly exceeds the amount of malicious stake;
 thus, for example, the honest nodes can use ALBA to efficiently certify some
 information, like a ledger snapshot, while malicious nodes cannot.
 
-Additionally, ALBA supports a decentralized setting where knowledge of the data
-elements is spread out across multiple provers;
+Additionally, ALBA supports a *decentralized* setting where knowledge of
+the data elements is spread out across multiple provers;
 some will send a message to an aggregator who in turn
 will produce a proof for the verifier.
 The primitive in this setting is called decentralized ALBA.
@@ -146,14 +146,16 @@ example of how the ALBA library can be used.
 
 The requirements for our (general) ALBA implementation can be roughly split
 in five groups: 
-1. definitions: what do the ALBA schemes we implement guarantee, under what
-assumptions?
-2. correctness: does our implementation provide the same guarantees of
+1. [definitions](#definitions):
+what do the ALBA schemes we implement guarantee, under what assumptions?
+2. [correctness](#correctness):
+does our implementation provide the same guarantees of
 soundness and completeness as the ALBA schemes on paper?
-3. performance: proof size, communication complexity, computational complexity.
-4. interfaces: the applications should be able to use our
-implementation relatively easily
-5. repository: code readability, documentation, etc
+3. [performance](#performance):
+proof size, communication complexity, computational complexity.
+4. [interfaces](#interfaces):
+the applications should be able to use our implementation relatively easily
+5. [repository](#repository): code readability, documentation, etc.
 
 ### Definitions
 
