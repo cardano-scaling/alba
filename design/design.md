@@ -58,7 +58,7 @@ The lottery has slightly better communication complexity but a significantly
 worse proof size.
 
 See the [website](https://alba.cardano-scaling.org),
-[README](https://github.com/cardano-scaling/alba/blob/main/README.md) or
+[docs](https://github.com/cardano-scaling/alba/tree/main/docs) or
 the [paper](https://eprint.iacr.org/2023/1655) to get a more detailed overview
 of ALBA.
 
