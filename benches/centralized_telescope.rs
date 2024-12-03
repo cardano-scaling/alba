@@ -7,38 +7,33 @@ use std::time::{Duration, Instant};
 
 use alba::centralized_telescope::{algorithm, init, params::Params, setup::Setup};
 
-pub mod criterion_helpers;
-use criterion_helpers::{benchmarks, Steps};
-
+pub mod benchmark_helpers;
+use benchmark_helpers::{benchmarks, BenchParam, Steps};
 #[path = "../src/utils/test_utils.rs"]
 mod test_utils;
 
+// Benchmark parameters to use
+const PARAMS: &[BenchParam; 2] = &[benchmark_helpers::LOW_PARAM, benchmark_helpers::MID_PARAM];
+
 // Global variables
 const NAME: &str = "Centralized";
-// Benchmark parameters
-// We bench every combination of securiy parameters, dataset cardinality, set size and lower bounds
-// The parameters chosen correspond to cases of interest for Cardano's Peras and Leios protocols.
-const L: &[f64] = &[50.0, 80.0, 128.0]; // Security parameter
-const SP: &[u64] = &[1_000]; // Size of set to lower bound
-const NP: &[u64] = &[80, 90, 95, 98]; // Alba's np parameter, |Sp| >= np
-const NF: &[u64] = &[67, 75]; // Alba's nf parameter,  |Sp| >= np > nf
 
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
-pub fn centralized_setup(
-    rng: &mut ChaCha20Rng,
-    l: f64,
-    sp: u64,
-    np: u64,
-    nf: u64,
-) -> (Vec<[u8; 32]>, Setup) {
+pub fn centralized_setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 32]>, Setup) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, sp);
+    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, params.set_card);
     let params = Params {
-        soundness_param: l,
-        completeness_param: l,
-        set_size: np.saturating_mul(sp).div_ceil(100),
-        lower_bound: nf.saturating_mul(sp).div_ceil(100),
+        soundness_param: params.lambda_sec,
+        completeness_param: params.lambda_rel,
+        set_size: params
+            .set_size_per
+            .saturating_mul(params.set_card)
+            .div_ceil(100),
+        lower_bound: params
+            .lower_bound_per
+            .saturating_mul(params.set_card)
+            .div_ceil(100),
     };
     (dataset, init::make_setup(&params))
 }
@@ -46,12 +41,12 @@ pub fn centralized_setup(
 /// Bench the duration of both the proving and verifiying algorithm of Alba centralized
 fn time_benches(c: &mut Criterion) {
     #[allow(clippy::unit_arg)]
-    fn prove_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
+    fn prove_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
         for _ in 0..n {
             // Setup
-            let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
+            let (mut dataset, bench_setup) = centralized_setup(&mut rng, params);
             // Truncate the dataset to give truncate_size elements to the prover
             dataset.truncate(truncate_size as usize);
             // Bench
@@ -63,12 +58,12 @@ fn time_benches(c: &mut Criterion) {
     }
 
     #[allow(clippy::unit_arg)]
-    fn verify_duration(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> Duration {
+    fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_duration = Duration::ZERO;
         for _ in 0..n {
             // Setup
-            let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
+            let (mut dataset, bench_setup) = centralized_setup(&mut rng, params);
             // Truncate the dataset to give truncate_size elements to the prover
             dataset.truncate(truncate_size as usize);
             // Prove
@@ -85,10 +80,7 @@ fn time_benches(c: &mut Criterion) {
 
     benchmarks::<Instant, Duration, WallTime>(
         c,
-        L,
-        SP,
-        NP,
-        NF,
+        PARAMS,
         format!("{} - {}", NAME, "Time"),
         "Prove",
         &prove_duration,
@@ -96,10 +88,7 @@ fn time_benches(c: &mut Criterion) {
 
     benchmarks::<Instant, Duration, WallTime>(
         c,
-        L,
-        SP,
-        NP,
-        NF,
+        PARAMS,
         format!("{} - {}", NAME, "Time"),
         "Verify",
         &verify_duration,
@@ -109,12 +98,12 @@ fn time_benches(c: &mut Criterion) {
 /// Bench the number of steps, i.e. DFS calls, of Alba centralized prover
 fn step_benches(c: &mut Criterion<Steps>) {
     #[allow(clippy::unit_arg)]
-    fn prove_steps(l: f64, sp: u64, np: u64, nf: u64, truncate_size: u64, n: u64) -> u64 {
+    fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
         let mut rng = ChaCha20Rng::from_entropy();
         let mut total_steps = 0u64;
         for _ in 0..n {
             // Setup
-            let (mut dataset, bench_setup) = centralized_setup(&mut rng, l, sp, np, nf);
+            let (mut dataset, bench_setup) = centralized_setup(&mut rng, param);
             // Truncate the dataset to give truncate_size elements to the prover
             dataset.truncate(truncate_size as usize);
             // Bench
@@ -128,10 +117,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
 
     benchmarks::<u64, u64, Steps>(
         c,
-        L,
-        SP,
-        NP,
-        NF,
+        PARAMS,
         format!("{} - {}", NAME, "Steps"),
         "Prove",
         &prove_steps,
