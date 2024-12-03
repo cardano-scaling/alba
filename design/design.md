@@ -11,35 +11,34 @@ We aim to create a high quality reference implementation of ALBA sufficient
 for accurately prototyping larger protocols utilizing this primitive.
 Applications that could benefit, at least in the Cardano universe, include
 Mithril, Peras, Leios and cross-chain bridges.
-These use cases will generally guide the development of our library, though
-our aim is to also allow the open-source community to study and experiment
-with ALBA.
+While these use cases will guide the development of our library, one can
+imagine other applications / protocols that can utilize ALBA, and
+our aim is to allow the open-source community to study and experiment
+with it.
 
 ### Overview of ALBA
+
 ALBA is a cryptographic primitive that allows one to prove knowledge of
 some number of data elements of some kind.
-For example, one can prove knowledge of $n$ cryptographic signatures signing
-the same message, effectively constructing a multisignature scheme.
-ALBA, however, requires that there is a gap between what the prover knows and
-what the verifier is convinced the prover knows.
-Specifically, given parameters $n_f$ and $n_p$ such that $n_f < n_p$,
-the prover who possesses $n_p$ element of interest is able to convince
-the verifier that he knows $> n_f$ elements of interest.
-Hence, the lower bound argument is *approximate*.
+Given parameters $n_f$ and $n_p$ such that $n_f < n_p$,
+the prover who possesses $n_p$ elements of interest is able to convince
+the verifier that he knows more than $n_f$ elements of interest.
+Hence the name, *approximate* lower bound argument.
 The larger the ratio $n_p / n_f$ is, the smaller the ALBA certificate is.
 
-ALBA can also work in the weighted regime where data elements can have
+ALBA also works in the weighted regime where data elements can have
 an integer weight.
-Then the prover who possesses elements of total weight $\ge n_p$ is able to
-convince the verifier that he knows elements of total weight $> n_f$.
+The prover who possesses elements of total weight at least $n_p$ is able to
+convince the verifier that he knows elements of total weight more than $n_f$.
 Such a gap between $n_p$ and $n_f$ exists naturally in secure distributed
 systems including proof-of-stake blockchains where the amount of honest stake
-significantly exceeds the amount of malicious stake.
+significantly exceeds the amount of malicious stake;
+thus, for example, the honest nodes can use ALBA to efficiently certify some
+information, like a ledger snapshot, while malicious nodes cannot.
 
 Additionally, ALBA supports a decentralized setting where knowledge of the data
-elements is spread out across multiple provers that need to communicate to
-create a proof.
-More concretely, the provers send a message to an aggregator who in turn
+elements is spread out across multiple provers;
+some will send a message to an aggregator who in turn
 will produce a proof for the verifier.
 The primitive in this setting is called decentralized ALBA.
 Its main construction, called decentralized Telescope,
@@ -58,7 +57,8 @@ protocol (todo: add link).
 The lottery has slightly better communication complexity but a significantly
 worse proof size.
 
-See the [website](https://alba.cardano-scaling.org) or
+See the [website](https://alba.cardano-scaling.org),
+[README](https://github.com/cardano-scaling/alba/blob/main/README.md) or
 the [paper](https://eprint.iacr.org/2023/1655) to get a more detailed overview
 of ALBA.
 
@@ -141,7 +141,7 @@ of signatures, VRF, etc.
 2. We will use the generic ALBA library to implement a multisignature scheme,
 either as a small example in this repository or a full-fledged library in a
 separate repository.
-Either way, the multi-signature implementation would serve as a flagship
+Either way, the multisignature implementation would serve as a flagship
 example of how the ALBA library can be used.
 
 The requirements for our (general) ALBA implementation can be roughly split
@@ -295,10 +295,11 @@ The following is the full list of eight implemented schemes.
 * Centralized+decentralized weighted simple lottery (section 4.1 + 5)
 
 #### Discussion
+
 We will not implement ALBA schemes (1) and (2) for the following reasons.
-The basic Telescope is way slower and offers almost no advantages over
+1. The basic Telescope is way slower and offers almost no advantages over
 the other Telescope schemes.
-Telescope with Prehashing is only applicable when the number of honest
+2. Telescope with Prehashing is only applicable when the number of honest
 prover's elements $n_p$ is large
 (about a million for typical parameters) and it offers no advantage
 over Telescope Bounded except for a tiny difference in the certificate size
@@ -327,6 +328,7 @@ We should be able to reuse most of the logic between different schemes anyway,
 so the overhead shouldn't be large.
 
 ### Choice of hash function
+
 The "random" functions $H_0$, $H_1$, $H_2$ and others in the ALBA constructions
 need to be implemented using some concrete function, either a cryptographic
 hash function modeled as a random oracle or a
@@ -366,12 +368,14 @@ it is provided for demonstration / prototyping only and should not be used in
 production.
 
 ### Generic data elements
+
 Similar to the above, we should also let data elements have a generic type.
 For example, the ALBA implementation should work with a signature type that
 exposes the underlying data as a `u8` slice.
 The exact interfaces will need to be determined.
 
 ## Roadmap
+
 We have already implemented the Telescope Bounded scheme
 in the centralized unweighted setting.
 Following that, we will have an implementation of the simple lottery, also
@@ -382,14 +386,9 @@ schemes, and implement those.
 Concurrently, we can think about how to test and benchmark our implementations,
 as well as, implement a generic hash function, generic data elements, etc.
 
-We should be in communication with our primary clients (Mithril, Peras, Leios)
-and consider their requirements if they change.
 Periodically, it would be good to demo our library to the internal / external
 community to spread awareness and gather early feedback.
 
-In the distant future, it will be possible to improve mathematical analysis and
-calculations to make our implementation rigorous and production-ready
-(see todo: section about correctness).
-We should potentially modify our ALBA schemes to make this task easier.
-For instance, replacing the binomial distribution with Poisson in the weighted
-setting would likely simplify the calculations.
+Finally, our library would benefit from future research to improve
+usability (see todo: section about definitions), correctness
+(see todo: section about correctness) and performance.
