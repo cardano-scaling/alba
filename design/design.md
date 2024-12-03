@@ -189,9 +189,9 @@ oracle would have no way of verifying that the public key owns any stake.
 Again, research is needed to construct the right ALBA scheme on
 paper before implementing it.
 
-For now, we can just implement the core component of (information-theoretic)
-ALBA that uses hashing to define valid element tuples, without introducing
-any grinding parameters or weight oracles.
+For now, we should implement the core component of (information-theoretic)
+ALBA that uses hashing to define valid element tuples as defined in the paper,
+without introducing grinding parameters or a weight oracle.
 
 ### Correctness
 
