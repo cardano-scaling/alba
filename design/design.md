@@ -394,8 +394,9 @@ production.
 
 ### Generic data elements
 
-Similar to the above, we should also let data elements have a generic type.
-For example, the ALBA implementation should work with a signature type that
+To make our library application agnostic and as applicable as possible,
+the data elements will have a generic type.
+For example, the ALBA implementation should work with any signature type that
 exposes the underlying data as a `u8` slice.
 The exact interfaces will need to be determined.
 
