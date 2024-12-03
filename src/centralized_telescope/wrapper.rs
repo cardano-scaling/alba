@@ -15,12 +15,12 @@ impl Wrapper {
     /// Initialize ALBA with `Params`.
     pub fn create(params: &Params) -> Self {
         let setup = make_setup(params);
-        Self::create_with_setup(&setup)
+        Self::create_unsafe(&setup)
     }
 
     /// This function is unsafe to use and should be avoided.
     /// Initialize ALBA with `Setup`.
-    pub fn create_with_setup(setup: &Setup) -> Self {
+    pub fn create_unsafe(setup: &Setup) -> Self {
         Self { setup: *setup }
     }
 
