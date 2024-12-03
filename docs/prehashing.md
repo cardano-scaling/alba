@@ -85,5 +85,42 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 ---
 
 #### Depth fist search
-
-#### Verifying
+---
+> $\mathsf{DFS}(t, slist, v, S_p) \rightarrow \pi$
+> - Input:
+>   - $t:~~$ Search counter
+>   - $slist:~~$ Element sequence.
+>   - $bins:~~$ A set of elements.
+> - Output:
+>   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+> ---
+> - **if** $~~ \mathsf{len}(slist) = u$:
+>   - **if** $~~ \mathsf{H}_2(t, slist) = 1$:
+>     - $\pi \leftarrow (t, slist)$
+>     - **return** $~~ \pi$.
+>   - **return** $~~ \emptyset$.
+> - $current$_$bin \leftarrow \mathsf{H}_1(t, slist)$
+> - **for** $~~ s \in bins\[current$_$bin\]$:
+>   - $newlist \leftarrow slist \cup \[s\]$
+>   - **if** $~~ \mathsf{H}_1(t, newlist) = 1$:
+>     - $\pi \leftarrow \mathsf{DFS}(t, newlist, bins)$
+>     - **if** $~~ \pi ~=\not \emptyset$:
+>       - **return** $~~ \pi$.
+> - **return** $~~ \emptyset$.
+---
+#### Verification
+---
+> $\mathsf{Verify}(\pi) \leftarrow 0/1$
+>
+> - Input:
+>   - $\pi = (t, s_1, ..., s_u)$.
+> - Output:
+>   - $0/1$.
+> ---
+> - **if** $~~ t \in\not  \[d\]$:
+>   - **return** $~~ 0$.
+> - **for** $~~ i = 1\ldots u$:
+>   - **if** $~~ \mathsf{H}_1(t, s_1, \ldots, s_i-_1 ) ~=\not \mathsf{H}_0(s_i)$:
+>     - **return** $~~0$.
+> - **return** $~~ \mathsf{H}_2(t, s_1, \ldots, s_u)$.
+---
