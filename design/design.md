@@ -52,8 +52,8 @@ Additionally, the decentralized Telescope ALBA construction gives rise to
 the only known multisignature scheme with a configurable tradeoff between
 proof size and (sublinear) communication complexity.
 The only other known way to achieve sublinear communication complexity is
-through a lottery as used, for example, by Algorand's sortition or the Mithril
-protocol (todo: add link).
+through a lottery as used, for example, by Algorand's sortition or
+the [Mithril](https://mithril.network) protocol.
 The lottery has slightly better communication complexity but a significantly
 worse proof size.
 
@@ -127,7 +127,7 @@ Mirthril, Peras and Leios.
 
 ALBA is a generic tool that lets one prove knowledge of any kind of data
 elements, but
-as noted in (todo: alba applications section), these three applications
+as noted [here](#applications-of-alba), these three applications
 don't need the full expressivity of ALBA, they really need
 a multisignature scheme, where the data elements would specifically be
 signatures.
@@ -240,7 +240,8 @@ therefore, using ALBA instead can only decrease the proof size.
 It is possible that Peras and Leios requirements on the proof size cannot
 be satisfied using ALBA alone.
 In that case, further techniques can be considered such as SNARKs and
-taking the stake distribution into account (todo: see fait-accompli).
+taking the stake distribution into account
+(see [Fait Accompli](https://eprint.iacr.org/2023/1273)).
 
 These protocols' requirements about communication and computational complexity
 are not currently known.
@@ -255,7 +256,7 @@ Rust implementation.
 Mithril is implemented in Rust and thus can use our implementation natively.
 
 Beyond this, there are no other clearly stated requirements.
-(todo: section about the solution) describes some design choices for
+The section [below](#proposed-design-choices) describes some design choices for
 the library's interfaces.
 
 ### Repository
@@ -276,7 +277,7 @@ This section describes various design choices for our implementation.
 ALBA comes in multiple different flavors.
 Two different setting dimensions, unweighted / weighted and
 centralized / decentralized, define four different ALBA variants.
-See (todo: overview section) for an overview.
+See [here](#overview-of-alba) for an overview.
 
 There also exist multiple ALBA schemes;
 currently four are known for the centralized unweighted setting:
@@ -404,5 +405,5 @@ Periodically, it would be good to demo our library to the internal / external
 community to spread awareness and gather early feedback.
 
 Finally, our library would benefit from future research to improve
-usability (see todo: section about definitions), correctness
-(see todo: section about correctness) and performance.
+usability (see [definitions requirements](#definitions)), correctness
+(see [correctness requirements](#correctness)) and performance.
