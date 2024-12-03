@@ -145,7 +145,7 @@ Either way, the multisignature implementation would serve as a flagship
 example of how the ALBA library can be used.
 
 The requirements for our (general) ALBA implementation can be roughly split
-in four groups: 
+in five groups: 
 1. definitions: what do the ALBA schemes we implement guarantee, under what
 assumptions?
 2. correctness: does our implementation provide the same guarantees of
@@ -153,6 +153,7 @@ soundness and completeness as the ALBA schemes on paper?
 3. performance: proof size, communication complexity, computational complexity.
 4. interfaces: the applications should be able to use our
 implementation relatively easily
+5. repository: code readability, documentation, etc
 
 ### Definitions
 
@@ -256,6 +257,15 @@ Mithril is implemented in Rust and thus can use our implementation natively.
 Beyond this, there are no other clearly stated requirements.
 (todo: section about the solution) describes some design choices for
 the library's interfaces.
+
+### Repository
+
+Our reference implementation should be easy to read, study, modify and
+experiment with.
+Hence, the source code should be readable, well structured and sufficiently
+documented.
+Documentation outside the source code (markdown, etc) should explain how to
+use the library with examples.
 
 ## Proposed design choices
 
