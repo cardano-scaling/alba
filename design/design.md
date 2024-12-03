@@ -117,6 +117,14 @@ For instance, the [paper](https://eprint.iacr.org/2023/1655) describes how
 this primitive can be used to optimize the prover running time of
 a Universally Composable SNARK.
 
+### Organization
+
+The following section describes goals and non-goals of this library, partly
+informed by the potential applications.
+[Proposed design choices](#proposed-design-choices) details some of
+the technical decisions for the library.
+[Roadmap](#roadmap) describes a rough plan for the development.
+
 ## Requirements
 
 We intend to make an implementation of ALBA that can be used in
