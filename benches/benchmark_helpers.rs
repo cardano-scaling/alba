@@ -12,11 +12,64 @@ use criterion::{
     BenchmarkId, Criterion, Throughput,
 };
 
+/// Benchmark parameters
+#[derive(Debug, Clone, Copy)]
+pub struct BenchParam {
+    /// Soundness Security parameter
+    pub lambda_sec: f64,
+    /// Completeness Security parameter  
+    pub lambda_rel: f64,
+    /// Alba's set cardinality (|Sp|)      
+    pub set_card: u64,
+    /// Alba's set_size (np) parameter in percentage of the set cardinality        
+    pub set_size_per: u64,
+    /// Alba's lower bound (nf) parameter in percentage of the set cardinality
+    pub lower_bound_per: u64,
+}
+
+// Benchmark parameters
+// The parameters chosen correspond to cases of interest for Cardano's Peras and Leios protocols.
+
+/// This case corresponds to the minimum security requirements with optimistic set_size
+pub const LOW_PARAM: BenchParam = BenchParam {
+    lambda_sec: 50.0,
+    lambda_rel: 50.0,
+    set_card: 1_000,
+    set_size_per: 90,
+    lower_bound_per: 67,
+};
+
+/// This case corresponds to medium security requirements with more realistic set_size
+pub const MID_PARAM: BenchParam = BenchParam {
+    lambda_sec: 80.0,
+    lambda_rel: 80.0,
+    set_card: 1_000,
+    set_size_per: 80,
+    lower_bound_per: 67,
+};
+
+/// This case corresponds to medium security requirements with more realistic set_size
+pub const HIGH_PARAM: BenchParam = BenchParam {
+    lambda_sec: 128.0,
+    lambda_rel: 128.0,
+    set_card: 1_000,
+    set_size_per: 80,
+    lower_bound_per: 67,
+};
+
 /// Helper function creating a Benchmark ID
-pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) -> BenchmarkId {
+pub fn bench_id(bench_name: &str, pc: u64, param: &BenchParam) -> BenchmarkId {
     BenchmarkId::new(
         bench_name,
-        format!("(λ: {l}, Sp:{sp} ({pc}%), n_p:{np}, n_f:{nf})"),
+        format!(
+            "(λsec/rel: {}-{}, Sp:{} ({}%), n_p:{}, n_f:{})",
+            param.lambda_sec,
+            param.lambda_rel,
+            param.set_card,
+            pc,
+            param.set_size_per,
+            param.lower_bound_per
+        ),
     )
 }
 
@@ -24,42 +77,37 @@ pub fn bench_id(bench_name: &str, pc: u64, l: f64, sp: u64, np: u64, nf: u64) ->
 #[allow(clippy::too_many_arguments)]
 pub fn benchmarks<I, V, T: Measurement<Intermediate = I, Value = V>>(
     c: &mut Criterion<T>,
-    lambdas: &[f64],
-    s_p: &[u64],
-    n_p: &[u64],
-    n_f: &[u64],
+    params: &[BenchParam],
     group_name: String,
     bench_name: &str,
-    f: &dyn Fn(f64, u64, u64, u64, u64, u64) -> V,
+    f: &dyn Fn(&BenchParam, u64, u64) -> V,
 ) {
     let mut group = c.benchmark_group(group_name);
 
-    for &l in lambdas {
-        for &sp in s_p {
-            for &np in n_p {
-                for &nf in n_f {
-                    // Benchmark where the prover only has access to np percent elements of Sp,
-                    // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
-                    let low = sp.saturating_mul(np).div_ceil(100);
-                    group.bench_function(bench_id(bench_name, np, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, low, n));
-                    });
+    for param in params {
+        // Benchmark where the prover only has access to np percent elements of Sp,
+        // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
+        let low = param
+            .set_card
+            .saturating_mul(param.set_size_per)
+            .div_ceil(100);
+        group.bench_function(bench_id(bench_name, param.set_size_per, param), move |b| {
+            b.iter_custom(|n| f(param, low, n));
+        });
 
-                    // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
-                    let mean = np.saturating_add(100).div_ceil(2);
-                    let mid: u64 = sp.saturating_add(low).div_ceil(2);
-                    group.bench_function(bench_id(bench_name, mean, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, mid, n));
-                    });
+        // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
+        let mean = param.set_size_per.saturating_add(100).div_ceil(2);
+        let mid: u64 = param.set_card.saturating_add(low).div_ceil(2);
+        group.bench_function(bench_id(bench_name, mean, param), move |b| {
+            b.iter_custom(|n| f(param, mid, n));
+        });
 
-                    // Benchmark where the prover only has access to all elements of Sp
-                    group.bench_function(bench_id(bench_name, 100, l, sp, np, nf), move |b| {
-                        b.iter_custom(|n| f(l, sp, np, nf, sp, n));
-                    });
-                }
-            }
-        }
+        // Benchmark where the prover only has access to all elements of Sp
+        group.bench_function(bench_id(bench_name, 100, param), move |b| {
+            b.iter_custom(|n| f(param, param.set_card, n));
+        });
     }
+
     group.finish();
 }
 
