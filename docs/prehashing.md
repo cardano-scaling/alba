@@ -120,7 +120,7 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 > - **if** $~~ t \in\not  \[d\]$:
 >   - **return** $~~ 0$.
 > - **for** $~~ i = 1\ldots u$:
->   - **if** $~~ \mathsf{H}_1(t, s_1, \ldots, s_i-_1 ) ~=\not \mathsf{H}_0(s_i)$:
+>   - **if** $~~ \mathsf{H_1} (t, s_1, \ldots, s_{i-1}) ~=\not \mathsf{H_0}(s_i)$:
 >     - **return** $~~0$.
 > - **return** $~~ \mathsf{H}_2(t, s_1, \ldots, s_u)$.
 ---
