@@ -7,12 +7,16 @@ Precomputed hashes enable quick verification of whether a new element can extend
 This adjustment is particularly advantageous when $S_p$ is large, as it compresses the data while maintaining the security and correctness of the proof system.
 
 ## Overview 
-- A hash function is applied to the prover's set $S_p$, creating a prehashed representation of each element in the set.
+- A hash function is applied to the elements of the prover's set $S_p$, creating a prehashed representation of each element in the set.
 - Proof tuples are constructed using the prehashed elements rather than the original set.
 
 ### Core components
-The construction with prehashing retains the same parameters and random oracles as described in [basic construction][crate::docs::basic#core-components]. 
+The construction with prehashing retains the same parameters as described in [basic construction][crate::docs::basic#core-components]. 
 Additionally, it incorporates a new hash function $H_0$, specifically introduced for prehashing the elements of the set $S_p$.
+For this construction, the random functions are as follows:
+- $H_0: ~~$ a random function, generating a uniformly random value in $\[n_p\]$.
+- $H_1: ~~$ a random function, generating a uniformly random value in $\[n_p\]$.
+- $H_2: ~~$ A random oracle returning $1$ with probability $q$, applied as a final test to determine if a tuple qualifies as a valid proof.
 
 ## Protocol
 - The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to a "bin" based on $H_0(s)$.
@@ -47,7 +51,7 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 >   - Add the third element $s_3 = B$ to extend the sequence to $(1, A, C, B)$.
 >   - Compute $H_1(1, A, C, B)$ and check if the prehash value of $B$ matches the current bin ($bin_2$). Since $H_0(B) = 1$, which does not match $bin_2$, this sequence extension fails.
 > - Backtracking:
->   - Backtrack and TRY a different element for $s_3$. Now, try $s_3 = D$.
+>   - Backtrack and try a different element for $s_3$. Now, try $s_3 = D$.
 >   - Compute $H_1(1, A, C, D)$. Since $H_0(D) = 3$ and does not match $bin_2$, this also fails.
 >   - Backtrack further but continue trying until a valid sequence is found.
 > - Since the prover couldn't find a valid sequence for $t = 1$, they now try $t = 2$ and start the DFS process again.
@@ -67,17 +71,17 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 ---
 > $\mathsf{Prove}(S_p) \rightarrow \pi$
 > - Input:
->   - $S_p:~~$ A set of elements.
+>   - $S_p:~~$ `prover_set`, a set of elements to be proven.
 > - Output:
->   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
 > ---
 > - $bins \leftarrow $ { }
-> - **for** each $~~ i \in 1, \ldots, n_p:$
+> - **for** each $~~ i \in \[1,~ n_p\]:$
 >   - $bins\[i\] \leftarrow \[~\]$
 > - **for** each $~~ s \in S_p:$
->   - $ind \leftarrow \mathsf{H}_0(s)$
+>   - $ind \leftarrow \mathsf{H_0}(s)$
 >   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup \[s\]$
-> - **for** each $~~ t \in 1, \ldots, d:$
+> - **for** each $~~ t \in \[1,~ d\]:$
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], bins)$
 >   - **if** $~~ \pi ~=\not \emptyset:$
 >     - **return** $~~ \pi.$
@@ -86,41 +90,41 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 
 #### Depth fist search
 ---
-> $\mathsf{DFS}(t, slist, v, S_p) \rightarrow \pi$
+> $\mathsf{DFS}(t, slist, S_p) \rightarrow \pi$
 > - Input:
->   - $t:~~$ Search counter
->   - $slist:~~$ Element sequence.
->   - $bins:~~$ A set of elements.
+>   - $t:~~$ `search_counter`, index of the current subtree being searched.
+>   - $slist:~~$ `element_sequence`, candidate element sequence.
+>   - $bins:~~$ `bins`, a hash-based partition of $S_p$ elements.
 > - Output:
->   - $\pi:~~$ A valid proof $(t, s_1, ..., s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
 > ---
-> - **if** $~~ \mathsf{len}(slist) = u$:
->   - **if** $~~ \mathsf{H}_2(t, slist) = 1$:
+> - **if** $~~ \mathsf{len}(slist) = u:$
+>   - **if** $~~ \mathsf{H_2}(t, slist) = 1:$
 >     - $\pi \leftarrow (t, slist)$
->     - **return** $~~ \pi$.
->   - **return** $~~ \emptyset$.
-> - $current$_$bin \leftarrow \mathsf{H}_1(t, slist)$
-> - **for** $~~ s \in bins\[current$_$bin\]$:
->   - $newlist \leftarrow slist \cup \[s\]$
->   - **if** $~~ \mathsf{H}_1(t, newlist) = 1$:
->     - $\pi \leftarrow \mathsf{DFS}(t, newlist, bins)$
->     - **if** $~~ \pi ~=\not \emptyset$:
->       - **return** $~~ \pi$.
-> - **return** $~~ \emptyset$.
+>     - **return** $~~ \pi.$
+>   - **return** $~~ \emptyset.$
+> - $bin_{current} \leftarrow \mathsf{H_1}(t, slist)$
+> - **for** each $~~ s \in bins\[bin_{current}\]:$
+>   - $slist_{new} \leftarrow slist \cup \[s\]$
+>   - **if** $~~ \mathsf{H_1}(t, slist_{new}) = 1:$
+>     - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, bins)$
+>     - **if** $~~ \pi ~=\not \emptyset:$
+>       - **return** $~~ \pi.$
+> - **return** $~~ \emptyset.$
 ---
 #### Verification
 ---
 > $\mathsf{Verify}(\pi) \leftarrow 0/1$
 >
 > - Input:
->   - $\pi = (t, s_1, ..., s_u)$.
+>   - $\pi:~~$ `proof`, a proof of the form $(t, s_1, \ldots, s_u)$.
 > - Output:
 >   - $0/1$.
 > ---
-> - **if** $~~ t \in\not  \[d\]$:
->   - **return** $~~ 0$.
-> - **for** $~~ i = 1\ldots u$:
+> - **if** $~~ t \in\not  \[d\]:$
+>   - **return** $~~ 0.$
+> - **for** each $~~ i \in \[1, ~u\]:$
 >   - **if** $~~ \mathsf{H_1} (t, s_1, \ldots, s_{i-1}) ~=\not \mathsf{H_0}(s_i)$:
->     - **return** $~~0$.
-> - **return** $~~ \mathsf{H}_2(t, s_1, \ldots, s_u)$.
+>     - **return** $~~0.$
+> - **return** $~~ \mathsf{H_2}(t, s_1, \ldots, s_u).$
 ---

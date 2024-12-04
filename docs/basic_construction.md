@@ -118,7 +118,7 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 > ---
 > - **if** $~~ t \in\not  \[d\]:$
 >   - **return** $~~ 0.$
-> - **for** $~~ i = \[1,~ u\]:$
+> - **for** each $~~ i = \[1,~ u\]:$
 >   - **if** $~~ \mathsf{H_1}(t, s_1, \ldots, s_i) ~=\not 1:$
 >     - **return** $~~0.$
 > - **return** $~~ \mathsf{H_2}(t, s_1, \ldots, s_u).$
