@@ -1,37 +1,48 @@
-//! Helper functions for Alba primitives
-use std::cmp::min;
+//! Sample functions for Alba primitives
 
-/// Takes as input a hash and range $n$ and samples an integer from Unif[0, n[.
-/// We do so by interpreting the hash as a random number and returns it modulo
-/// n (c.f. Appendix B, Alba paper).
-pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
-    // Computes the integer reprensation of hash* modulo n when n is not a
-    // power of two. *(up to 8 bytes, in little endian)
-    fn mod_not_power_of_2(hash: &[u8], n: u64) -> Option<u64> {
-        fn log_base2(x: u64) -> u64 {
-            u64::from(
-                u64::BITS
-                    .saturating_sub(x.leading_zeros())
-                    .saturating_sub(1),
-            )
-        }
-        let epsilon_fail: u64 = 1 << 40; // TODO: update
-        let k = log_base2(n.saturating_mul(epsilon_fail));
-        let new_n: u64 = 1 << k;
-        let d = new_n.div_ceil(n);
-        let i = mod_power_of_2(hash, new_n);
+type Hash = [u8; 16];
 
-        if i >= d.saturating_mul(n) {
+/// Shorten an N-byte array, keeping the first M bytes and dropping the rest.
+fn truncate_array<const N: usize, const M: usize>(arr: &[u8; N]) -> &[u8; M] {
+    const {
+        assert!(N >= M, "provided array is too small");
+    }
+    arr[..M].try_into().unwrap()
+}
+
+/// Shorten a `hash` array by keeping the first 16 bytes and dropping the rest.
+fn to_hash<const N: usize>(hash: &[u8; N]) -> &Hash {
+    truncate_array(hash)
+}
+
+/// Takes as input a hash and range `n` and samples an integer from Unif[0, n[.
+/// We do so by interpreting the hash as a random number and return it modulo
+/// n (c.f. Appendix B, Alba paper). With negligible probability returns None.
+/// `hash` must be at least 16 bytes.
+pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u64> {
+    let hash = to_hash(hash);
+
+    // Computes the integer representation of hash modulo n when n is not a
+    // power of two.
+    fn mod_not_power_of_2(hash: &Hash, n: u64) -> Option<u64> {
+        let n = n as u128;
+
+        // Equals 2^128 / n since n is not a power of two.
+        let d = u128::max_value() / n;
+        let i = u128::from_be_bytes(*hash);
+
+        if i >= d * n {
+            // We return here with probability (2^128 - d*n) / 2^128 < n / 2^128.
+            // For n <= 2^40, this is less than 2^-88.
             None
         } else {
-            Some(i.rem_euclid(n))
+            Some((i % n) as u64)
         }
     }
-    // Computes the integer reprensation of hash* modulo n when n is a power of
-    // two. *(up to 8 bytes, in little endian)
-    fn mod_power_of_2(hash: &[u8], n: u64) -> u64 {
-        debug_assert!(8u32.saturating_mul(hash.len() as u32) >= n.ilog2());
-        from_bytes_be(hash) & n.saturating_sub(1)
+    // Computes the integer representation of hash modulo n when n is a power of two.
+    fn mod_power_of_2(hash: &Hash, n: u64) -> u64 {
+        let bytes: &[u8; 8] = truncate_array(hash);
+        u64::from_be_bytes(*bytes) & (n - 1)
     }
 
     if n.is_power_of_two() {
@@ -41,34 +52,88 @@ pub(crate) fn sample_uniform(hash: &[u8], n: u64) -> Option<u64> {
     }
 }
 
-/// Takes as input a hash and probability q and returns true with
-/// probability q otherwise false according to a Bernoulli distribution
-/// (c.f. Appendix B, Alba paper).
-pub(crate) fn sample_bernoulli(hash: &[u8], q: f64) -> bool {
-    // For error parameter ɛ̝, find an approximation x/y of q with (x,y) in N²
-    // such that 0 < q - x/y <= ɛ̝
-    let epsilon_fail: u64 = 1 << 40; // TOOD: update
-    let mut x: u64 = q.ceil() as u64;
-    let mut y: u64 = 1;
-    while {
-        let difference = q - (x as f64 / y as f64);
-        difference >= 1.0 / epsilon_fail as f64 || difference < 0.0
-    } {
-        y = y.saturating_mul(2);
-        x = (q * (y as f64)).round() as u64;
-    }
-    // Output i in [0; y-1] from hash
-    debug_assert!(8.0 * hash.len() as f32 >= (y as f32).log2());
-    let i = from_bytes_be(hash) & y.saturating_sub(1);
-    // Return true if i < x
+/// Takes as input a `hash` and probability `q` and returns true with some
+/// probability in [q - ε, q] for a negligible ε, otherwise false, according
+/// to a Bernoulli distribution (c.f. Appendix B, Alba paper).
+/// `hash` must be at least 16 bytes.
+pub(crate) fn sample_bernoulli<const N: usize>(hash: &[u8; N], q: f64) -> bool {
+    let hash = to_hash(hash);
+
+    // We find an approximation x/y of q such that 0 <= q - x/y <= ε, where y = 2^128
+    // and ε is a negligible number. Here ε is in the order of 2^-64 since the f64
+    // calculation below has 64-bit precision. This is the best we can do since q
+    // (which is f64) can already be 2^-64 away from the intended value.
+
+    // Equals 2^128. We don't use f64::powi() since that function is non-deterministic.
+    // See its documentation.
+    const Y: f64 = (u128::pow(2, 127) as f64) * 2.0;
+    // It is possible that Y*q is bigger than the maximum value of u128. In that case,
+    // the casting using `as` saturates the result to the maximum allowed value, see
+    // https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html#fixing-unsoundness-in-casts.
+    // This can affect the error ε by at most 2^-128.
+    let x = (Y * q).floor() as u128;
+    println!("x: {x}");
+    let i = u128::from_be_bytes(*hash);
+
+    // Return true iff i < x.
     i < x
 }
 
-// Returns the integer representation of, up to the 8 first bytes of, the
-// input bytes in little endian
-fn from_bytes_be(bytes: &[u8]) -> u64 {
-    let mut array = [0u8; 8];
-    let bytes = &bytes[..min(8, bytes.len())];
-    array[..bytes.len()].copy_from_slice(bytes);
-    u64::from_be_bytes(array)
+#[cfg(test)]
+mod tests {
+    use super::sample_bernoulli;
+    use super::sample_uniform;
+    use test_case::test_case;
+
+    type Hash = [u8; 16];
+
+    fn u64_to_hash(x: u64) -> Hash {
+        let mut res: Hash = Default::default();
+        res[..8].copy_from_slice(&x.to_be_bytes());
+        res
+    }
+
+    #[test_case(u64_to_hash(0), 1, 0; "n1_0")]
+    #[test_case(u64_to_hash(1), 1, 0; "n1_1")]
+    #[test_case(u64_to_hash(2), 1, 0; "n1_2")]
+    #[test_case(u64_to_hash(0), 2, 0; "n2_0")]
+    #[test_case(u64_to_hash(1), 2, 1; "n2_1")]
+    #[test_case(u64_to_hash(2), 2, 0; "n2_2")]
+    #[test_case(u64_to_hash(3), 2, 1; "n2_3")]
+    #[test_case(u64_to_hash(0), 4, 0; "n4_0")]
+    #[test_case(u64_to_hash(1), 4, 1; "n4_1")]
+    #[test_case(u64_to_hash(2), 4, 2; "n4_2")]
+    #[test_case(u64_to_hash(3), 4, 3; "n4_3")]
+    #[test_case(u64_to_hash(4), 4, 0; "n4_4")]
+    #[test_case(u64_to_hash(41), 32, 9; "n16")]
+    #[test_case(0u128.to_be_bytes(), 3, 0; "n3_0")]
+    #[test_case(1u128.to_be_bytes(), 3, 1; "n3_1")]
+    #[test_case(2u128.to_be_bytes(), 3, 2; "n3_2")]
+    #[test_case(3u128.to_be_bytes(), 3, 0; "n3_3")]
+    #[test_case(40u128.to_be_bytes(), 17, 6; "n17")]
+    fn sample_uniform_valid(hash: Hash, n: u64, expected: u64) {
+        assert_eq!(expected, sample_uniform(&hash, n).unwrap());
+    }
+
+    #[test]
+    fn sample_uniform_invalid() {
+        // (2^128 - 1) is not divisible by 18 since the first is odd and the second
+        // is even.
+        assert_eq!(None, sample_uniform(&u128::max_value().to_be_bytes(), 18));
+    }
+
+    #[test_case(0u128.to_be_bytes(), 0.0, false; "q0_0")]
+    #[test_case(1u128.to_be_bytes(), 0.0, false; "q0_1")]
+    #[test_case(0u128.to_be_bytes(), 1.0, true; "q1_0")]
+    #[test_case((u128::max_value() - 1).to_be_bytes(), 1.0, true; "q1_large")]
+    #[test_case(0u128.to_be_bytes(), 0.3, true; "q_third_0")]
+    #[test_case((u128::max_value() / 3 - 2u128.pow(73)).to_be_bytes(), 1.0/3.0, true;
+        "q_third_mid_left")]
+    #[test_case((u128::max_value() / 3 + 1).to_be_bytes(), 1.0/3.0, false;
+        "q_third_mid_right")]
+    #[test_case((u128::max_value() - 9).to_be_bytes(), 1.0/3.0, false;
+        "q_third_large")]
+    fn sample_bernoulli_all(hash: Hash, q: f64, expected: bool) {
+        assert_eq!(expected, sample_bernoulli(&hash, q));
+    }
 }
