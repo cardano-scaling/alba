@@ -4,3 +4,6 @@
 
 #[doc = include_str!("../docs/varmap.md")]
 pub mod variables {}
+
+#[doc = include_str!("../docs/bounded.md")]
+pub mod bounded {}
