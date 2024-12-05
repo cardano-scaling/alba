@@ -21,15 +21,14 @@ The random functions used are:
 - $H_2 ~~:$ A final check determining the validity of the full sequence. Returns $1$ with the probability $q$.
 
 ## Protocol
-
-### Example walkthrough
-
-## Functions
-
-#### Proving
-
-#### Prove index
-
-#### Depth-first search
-
-#### Verification
+The protocol ensures the prover can successfully construct a valid proof even when $n_p$ is small by employing retries, hash-based binning, and bounded DFS. 
+- Each element $s \in S_p$ is prehashed using a randomized hash function $H_0(v, s)$ for a specific retry index $v$.
+- The result of $H_0(v, s)$ assigns $s$ to a bin, effectively partitioning the prover's set $S_p$ into smaller groups for efficient search.
+- The prover attempts $r$ retries, each indexed by $v \in \[1, r\]$, to amplify the completeness of the protocol.
+- For each retry, a fresh partitioning of $S_p$ is generated using $H_0$, providing a randomized search space for the proof construction.
+- For each retry $v$, the prover initializes a bounded DFS process:
+  - Starting from each $t \in \[1, d\]$, the prover attempts to construct a valid sequence $(v, t, s_1, \ldots, s_u)$.
+  - The DFS explores elements within the bins precomputed by $H_0$, reducing unnecessary checks and focusing on valid extensions.
+  - The DFS search is restricted by a predefined limit to prevent runaway computation.
+- When a sequence of length $u$ is constructed, it is validated using $H_2$, which determines whether the sequence qualifies as a valid proof.
+- If $H_2(v, t, s_1, \ldots, s_u) = 1$, the sequence is accepted as a valid proof.

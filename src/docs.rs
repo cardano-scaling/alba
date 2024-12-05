@@ -6,4 +6,4 @@
 pub mod variables {}
 
 #[doc = include_str!("../docs/bounded.md")]
-pub mod bounded {}
+pub mod centralized {}
