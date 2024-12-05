@@ -1,5 +1,5 @@
 # Telescope - Basic Construction
-**ALBA** provides a method for a prover to convince a verifier that the prover knows at least $n_f$ elements satisfying a predicate $R$, while only presenting a small subset of elements as proof. 
+**ALBA** provides a method for a prover to convince a verifier that the prover knows at more than $n_f$ elements satisfying a predicate $R$, while only presenting a small subset of elements as proof. 
 This construction uses a recursive filtering process, guided by random oracles, to produce succinct and efficient proofs.
 
 ## Overview
@@ -48,13 +48,13 @@ This construction uses a recursive filtering process, guided by random oracles, 
 ### Prover Algorithm
 The prover's objective is to convince the verifier that they know a large subset of elements $S_p$ without revealing the entire set.
 Instead, the prover constructs a compact proof $(t, s_1, ..., s_u)$ that satisfies the following:
-- The proof demonstrates that the prover possesses knowledge of a set $S_p$ satisfying a predicate $R$, with the assurance that $|S_p| > n_f$, where $n_f$ is a threshold strictly smaller than $n_p$￼and $|S_p| \geq n_p$.
+- The proof demonstrates that the prover possesses knowledge of a set $S_p$ satisfying a predicate $R$, with the assurance that $|S_p| > n_f$, where $n_f$ is a threshold strictly smaller than $n_p$ and $|S_p| \geq n_p$.
 - The prover outputs only a small sequence of $u$ elements from $S_p$, rather than transmitting the full set, ensuring communication efficiency.
 - By using random oracles $H_1$ and $H_2$, the prover ensures that:
-  - The proof is hard to forge by an adversary who knows fewer than $n_f$ elements.
+  - The proof is hard to forge by an adversary who knows at most $n_f$ elements.
   - Only the prover, with access to a large $S_p$, can construct a valid proof with high probability.
 - The constructed tuple $(t, s_1, ..., s_u)$ satisfies:
-  - $H_1(t, s_1, ..., s_i) = 1$ for all prefixes up to length $i$,
+  - $H_1(t, s_1, ..., s_i) = 1$ for all prefixes up to length $u$,
   - $H_2(t, s_1, ..., s_u) = 1$ for the final tuple.
 
 In summary, the prover's task is to use recursive construction via DFS to find and output a valid tuple that demonstrates knowledge of $S_p$ without directly revealing the full set.
@@ -109,7 +109,7 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 
 #### Verification
 ---
-> $\mathsf{Verify}(\pi) \leftarrow 0/1$
+> $\mathsf{Verify}(\pi) \rightarrow 0/1$
 > 
 > - Input:
 >   - $\pi:~~$ `proof`, a proof of the form $(t, s_1, \ldots, s_u)$.
