@@ -58,7 +58,7 @@ jobs:
         run: cargo doc --no-deps --verbose
 
       - name: Cache Cargo registry
-        if: ${{ env.push_main == true }}
+        if: ${{ env.push_main == 'true' }}
         uses: actions/cache@v3
         with:
           path: ~/.cargo/registry
@@ -67,7 +67,7 @@ jobs:
             ${{ runner.os }}-cargo-registry-
 
       - name: Cache Cargo build
-        if: ${{ env.push_main == true }}
+        if: ${{ env.push_main == 'true' }}
         uses: actions/cache@v3
         with:
           path: target
