@@ -3,6 +3,7 @@
 type Hash = [u8; 16];
 
 /// Shorten an N-byte array, keeping the first M bytes and dropping the rest.
+/// Checks that N >= M at compile time.
 fn truncate_array<const N: usize, const M: usize>(arr: &[u8; N]) -> &[u8; M] {
     const {
         assert!(N >= M, "provided array is too small");
