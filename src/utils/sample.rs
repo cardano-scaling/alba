@@ -19,16 +19,17 @@ fn to_hash<const N: usize>(hash: &[u8; N]) -> &Hash {
 /// We do so by interpreting the hash as a random number and return it modulo
 /// n (c.f. Appendix B, Alba paper). With negligible probability returns None.
 /// `hash` must be at least 16 bytes.
+#[allow(clippy::arithmetic_side_effects)]
 pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u64> {
     let hash = to_hash(hash);
 
     // Computes the integer representation of hash modulo n when n is not a
     // power of two.
     fn mod_not_power_of_2(hash: &Hash, n: u64) -> Option<u64> {
-        let n = n as u128;
+        let n = u128::from(n);
 
         // Equals 2^128 / n since n is not a power of two.
-        let d = u128::max_value() / n;
+        let d = u128::MAX / n;
         let i = u128::from_be_bytes(*hash);
 
         if i >= d * n {
@@ -80,6 +81,7 @@ pub(crate) fn sample_bernoulli<const N: usize>(hash: &[u8; N], q: f64) -> bool {
 }
 
 #[cfg(test)]
+#[allow(clippy::arithmetic_side_effects)]
 mod tests {
     use super::sample_bernoulli;
     use super::sample_uniform;
@@ -119,19 +121,19 @@ mod tests {
     fn sample_uniform_invalid() {
         // (2^128 - 1) is not divisible by 18 since the first is odd and the second
         // is even.
-        assert_eq!(None, sample_uniform(&u128::max_value().to_be_bytes(), 18));
+        assert_eq!(None, sample_uniform(&u128::MAX.to_be_bytes(), 18));
     }
 
     #[test_case(0u128.to_be_bytes(), 0.0, false; "q0_0")]
     #[test_case(1u128.to_be_bytes(), 0.0, false; "q0_1")]
     #[test_case(0u128.to_be_bytes(), 1.0, true; "q1_0")]
-    #[test_case((u128::max_value() - 1).to_be_bytes(), 1.0, true; "q1_large")]
+    #[test_case((u128::MAX - 1).to_be_bytes(), 1.0, true; "q1_large")]
     #[test_case(0u128.to_be_bytes(), 0.3, true; "q_third_0")]
-    #[test_case((u128::max_value() / 3 - 2u128.pow(73)).to_be_bytes(), 1.0/3.0, true;
+    #[test_case((u128::MAX / 3 - 2u128.pow(73)).to_be_bytes(), 1.0/3.0, true;
         "q_third_mid_left")]
-    #[test_case((u128::max_value() / 3 + 1).to_be_bytes(), 1.0/3.0, false;
+    #[test_case((u128::MAX / 3 + 1).to_be_bytes(), 1.0/3.0, false;
         "q_third_mid_right")]
-    #[test_case((u128::max_value() - 9).to_be_bytes(), 1.0/3.0, false;
+    #[test_case((u128::MAX - 9).to_be_bytes(), 1.0/3.0, false;
         "q_third_large")]
     fn sample_bernoulli_all(hash: Hash, q: f64, expected: bool) {
         assert_eq!(expected, sample_bernoulli(&hash, q));
