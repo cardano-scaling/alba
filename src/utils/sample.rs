@@ -73,7 +73,6 @@ pub(crate) fn sample_bernoulli<const N: usize>(hash: &[u8; N], q: f64) -> bool {
     // https://blog.rust-lang.org/2020/07/16/Rust-1.45.0.html#fixing-unsoundness-in-casts.
     // This can affect the error ε by at most 2^-128.
     let x = (Y * q).floor() as u128;
-    println!("x: {x}");
     let i = u128::from_be_bytes(*hash);
 
     // Return true iff i < x.
