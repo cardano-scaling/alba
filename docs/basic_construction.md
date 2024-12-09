@@ -9,22 +9,12 @@ The prover constructs a proof by creating tuples (sequences) of elements from $S
    - If the check is successful, the tuple is kept and may be extended further.
    - If the check fails, the tuple is discarded.
 
-This process is guided by a random oracle, which acts as a probabilistic filter. 
-The oracle ensures that only tuples meeting specific validity conditions are extended, reducing the search space and excluding invalid tuples early.
+This process is guided by a random oracle, which evaluates the validity of each tuple. 
+At each step, the random oracle performs a check, and only tuples that satisfy this check are extended further. 
+This ensures that the proof construction process proceeds efficiently by discarding invalid tuples early.
 
 The proof construction employs *Depth-First Search (DFS)* over a conceptual tree, where each path represents a potential tuple. 
 DFS ensures efficiency by systematically exploring valid branches and pruning invalid ones.
-
-
-
-The prover builds a proof by creating tuples (sequences) of elements from $S_p$, the set of elements. 
-- The tuples are initialized with starting values and expanded step-by-step as elements are added during the proof construction process. 
-- At each step, the prover takes a tuple, extends it with an element from $S_p$, and performs a random oracle check. 
-  - If the check is successful, the tuple is kept and may be extended further; otherwise, it is discarded.
-- The random oracle serves as a probabilistic filter, allowing the prover to extend tuples only when they meet specific validity conditions, thereby reducing the search space and ensuring that invalid tuples are excluded.
-- The proof construction uses *Depth-First Search (DFS)* over a conceptual tree, where each path represents a potential tuple. 
-
-The DFS ensures efficiency by pruning invalid branches early.
 
 ### Core Components
 - **Parameters**:
@@ -55,9 +45,9 @@ The DFS ensures efficiency by pruning invalid branches early.
 #### Example: how DFS works
 - Choose a root $t \in \[d\]$ and initialize the search with $(t)$.
   - At each step, extend the current tuple $(t, s_1, \ldots, s_i)$ by trying every element $s \in S_p$.
-  - Check if $H_1(t, s_1, \ldots, s_{i+1}) = 1$:
+  - Check if $H_1(t, s_1, \ldots, s_i) = 1$:
     - If true, recursively extend the tuple.
-    - If false, backtrack and try the next candidate for $s_{i+1}$.
+    - If false, backtrack and try the next candidate for $s_i$.
 - Stop when a valid tuple $(t, s_1, \ldots, s_u)$ is found and satisfies $H_2(t, s_1, \ldots, s_u) = 1$.
 
 ## The Protocol
