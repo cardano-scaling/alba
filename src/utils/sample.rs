@@ -1,6 +1,6 @@
 //! Sample functions for Alba primitives
 
-type Hash = [u8; 16];
+type Seed = [u8; 16];
 
 /// Shorten an N-byte array, keeping the first M bytes and dropping the rest.
 /// Checks that N >= M at compile time.
@@ -11,22 +11,17 @@ fn truncate_array<const N: usize, const M: usize>(arr: &[u8; N]) -> &[u8; M] {
     arr[..M].try_into().unwrap()
 }
 
-/// Shorten a `hash` array by keeping the first 16 bytes and dropping the rest.
-fn to_hash<const N: usize>(hash: &[u8; N]) -> &Hash {
-    truncate_array(hash)
-}
-
 /// Takes as input a hash and range `n` and samples an integer from Unif[0, n[.
 /// We do so by interpreting the hash as a random number and return it modulo
 /// n (c.f. Appendix B, Alba paper). With negligible probability returns None.
 /// `hash` must be at least 16 bytes.
 #[allow(clippy::arithmetic_side_effects)]
 pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u64> {
-    let hash = to_hash(hash);
+    let hash: &Seed = truncate_array(hash);
 
     // Computes the integer representation of hash modulo n when n is not a
     // power of two.
-    fn mod_not_power_of_2(hash: &Hash, n: u64) -> Option<u64> {
+    fn mod_not_power_of_2(hash: &Seed, n: u64) -> Option<u64> {
         let n = u128::from(n);
 
         // Equals 2^128 / n since n is not a power of two.
@@ -42,7 +37,7 @@ pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u
         }
     }
     // Computes the integer representation of hash modulo n when n is a power of two.
-    fn mod_power_of_2(hash: &Hash, n: u64) -> u64 {
+    fn mod_power_of_2(hash: &Seed, n: u64) -> u64 {
         let bytes: &[u8; 8] = truncate_array(hash);
         u64::from_be_bytes(*bytes) & (n - 1)
     }
@@ -59,7 +54,7 @@ pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u
 /// to a Bernoulli distribution (c.f. Appendix B, Alba paper).
 /// `hash` must be at least 16 bytes.
 pub(crate) fn sample_bernoulli<const N: usize>(hash: &[u8; N], q: f64) -> bool {
-    let hash = to_hash(hash);
+    let hash: &Seed = truncate_array(hash);
 
     // We find an approximation x/y of q such that 0 <= q - x/y <= ε, where y = 2^128
     // and ε is a negligible number. Here ε is in the order of 2^-64 since the f64
