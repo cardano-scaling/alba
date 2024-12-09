@@ -1,8 +1,8 @@
 # Telescope - Construction with Prehashing
 
 **Construction with Prehashing** optimizes the basic Telescope ALBA protocol by reducing the computational cost of checking sequences.
-In the basic approach, each sequence extension required multiple evaluations of the random oracle $H_1$, which could be computationally expensive.
-The **prehashing technique** precomputes hash values for individual elements using $H_0$, allowing the prover to perform fewer operations when constructing sequences.
+In the basic approach, we would attempt to extend a given sequence "blindly" with all elements of Sp. Finding the correct extension required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
+Instead, in the **prehashing technique**, we filter the elements to extend a sequence with. We do so by precomputing hash values using a new oracle $H_0$ before running the DFS algorithm, and associating each element and bin with these. This minimizes the number of operations when constructing the sequences.
 Precomputed hashes enable quick verification of whether a new element can extend a sequence, avoiding the need to check every combination in full detail.
 This adjustment is particularly advantageous when $S_p$ is large, as it compresses the data while maintaining the security and correctness of the proof system.
 
@@ -19,13 +19,14 @@ For this construction, the random functions are as follows:
 - $H_2: ~~$ A random oracle returning $1$ with probability $q$, applied as a final test to determine if a tuple qualifies as a valid proof.
 
 ## Protocol
-- The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to a "bin" based on $H_0(s)$.
-- These precomputed "bins" help decide if a sequence can be extended, treating elements as "balls" placed in corresponding bins.
+- The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to the "bin" numbered $H_0(s)$.
+- A sequence is similarly associated to a bin, by hashing the sequence with $H_1$.
+- These precomputed "bins" show how a sequence can be extended, the "balls" in the bins being the potential extension of the sequence.
 - When constructing sequences, the prover checks if the current sequence and the next element fall into the same bin. If they do, the sequence is extended; otherwise, a different element is tried.
 - The prover starts constructing sequences from $t \in 1, \ldots, d$ and aims to build sequences of length $u$.
 - The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
 - This avoids checking all possible extensions, dramatically reducing the prover’s workload.
-- After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is valid if $H_2(t, s_1, \dots, s_u) = 1$.
+- After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is a valid proof if $H_2(t, s_1, \dots, s_u) = 1$.
 
 ### Example walkthrough
 Let's assume the prover's set $S_p$ contains the elements $\{A, B, C, D\}$, and the prover needs to build sequences of length $u = 3$. 
