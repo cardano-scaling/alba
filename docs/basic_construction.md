@@ -1,14 +1,30 @@
 # Telescope - Basic Construction
-**ALBA** provides a method for a prover to convince a verifier that the prover knows stricly more than $n_f$ elements satisfying a predicate $R$, while only presenting a smaller subset of elements as proof. 
+**ALBA** provides a method for a prover to convince a verifier that the prover knows strictly more than $n_f$ elements satisfying a predicate $R$, while only presenting a smaller subset of elements as proof. 
 This construction uses a recursive filtering process, guided by random oracles, to produce succinct and efficient proofs.
 
 ## Overview
-- The prover builds a proof by creating tuples (sequences) of elements from $S_p$, the set of elements. 
-- The process begins with roots as starting points and expands them step-by-step. 
-- At each step, only tuples that satisfy specific conditions, as determined by a random oracle, are kept for further extension.
-- The random oracle acts as a filter to ensure that the prover selects only a small subset of elements that is highly unlikely to satisfy the conditions by chance alone.
+The prover constructs a proof by creating tuples (sequences) of elements from $S_p$, the set of known elements. 
+1. The process begins by initializing tuples with starting values and expanding them step-by-step during the proof construction process.
+2. At each step, the prover extends the current tuple by adding an element from $S_p$ and performs a random oracle check:
+   - If the check is successful, the tuple is kept and may be extended further.
+   - If the check fails, the tuple is discarded.
+
+This process is guided by a random oracle, which acts as a probabilistic filter. 
+The oracle ensures that only tuples meeting specific validity conditions are extended, reducing the search space and excluding invalid tuples early.
+
+The proof construction employs *Depth-First Search (DFS)* over a conceptual tree, where each path represents a potential tuple. 
+DFS ensures efficiency by systematically exploring valid branches and pruning invalid ones.
+
+
+
+The prover builds a proof by creating tuples (sequences) of elements from $S_p$, the set of elements. 
+- The tuples are initialized with starting values and expanded step-by-step as elements are added during the proof construction process. 
+- At each step, the prover takes a tuple, extends it with an element from $S_p$, and performs a random oracle check. 
+  - If the check is successful, the tuple is kept and may be extended further; otherwise, it is discarded.
+- The random oracle serves as a probabilistic filter, allowing the prover to extend tuples only when they meet specific validity conditions, thereby reducing the search space and ensuring that invalid tuples are excluded.
 - The proof construction uses *Depth-First Search (DFS)* over a conceptual tree, where each path represents a potential tuple. 
-- The DFS ensures efficiency by pruning invalid branches early.
+
+The DFS ensures efficiency by pruning invalid branches early.
 
 ### Core Components
 - **Parameters**:
@@ -30,14 +46,15 @@ This construction uses a recursive filtering process, guided by random oracles, 
 ### Tuple Construction via DFS
 - The prover constructs tuples recursively using DFS.
 - At each level $i$, the prover:
-  - Extends the current tuple by adding an element $s_{i+1}$ from $S_p$.
-  - Checks tuple validity using the random oracle $H_1$. A tuple $(t, s_1, \ldots, s_{i+1})$ is valid if $H_1(t, s_1, \ldots, s_{i+1}) = 1$.
+  - Extends the current tuple by adding an element $s$ from $S_p$.
+  - Checks tuple validity using the random oracle $H_1$. A tuple $(t, s_1, \ldots, s_i)$ is valid if $H_1(t, s_1, \ldots, s_i) = 1$.
   - If the tuple fails the $H_1$ check, it is discarded, and the DFS does not explore its descendants.
+  - Otherwise, the prover recursively calls DFS on the newly extended tuple to continue the construction process.
 - The process continues until a valid tuple of length $u$ is found, or all possibilities are exhausted.
 
 #### Example: how DFS works
 - Choose a root $t \in \[d\]$ and initialize the search with $(t)$.
-  - At each step, extend the current tuple $(t, s_1, \ldots, s_i)$ by trying every element $s_{i+1} \in S_p$.
+  - At each step, extend the current tuple $(t, s_1, \ldots, s_i)$ by trying every element $s \in S_p$.
   - Check if $H_1(t, s_1, \ldots, s_{i+1}) = 1$:
     - If true, recursively extend the tuple.
     - If false, backtrack and try the next candidate for $s_{i+1}$.
@@ -46,13 +63,13 @@ This construction uses a recursive filtering process, guided by random oracles, 
 ## The Protocol
 
 ### Prover Algorithm
-The prover's objective is to convince the verifier that they know a large subset of elements $S_p$ without revealing the entire set.
+The prover's objective is to convince the verifier that they know a large subset of elements $S_p$, with size exceeding the threshold $n_f$, without revealing the entire set or any specific subset of size greater than $n_f$.
 Instead, the prover constructs a compact proof $(t, s_1, ..., s_u)$ that satisfies the following:
 - The proof demonstrates that the prover possesses knowledge of a set $S_p$ satisfying a predicate $R$, with the assurance that $|S_p| > n_f$, where $n_f$ is a threshold strictly smaller than $n_p$ and $|S_p| \geq n_p$.
 - The prover outputs only a small sequence of $u$ elements from $S_p$, rather than transmitting the full set, ensuring communication efficiency.
 - By using random oracles $H_1$ and $H_2$, the prover ensures that:
-  - The proof is hard to forge by an adversary who knows at most $n_f$ elements.
-  - Only the prover, with access to a large $S_p$, can construct a valid proof with high probability.
+  - The proof is hard to forge by an adversary who knows at most $n_f$ elements from $S_p$.
+  - A prover who knows a subset $S_p$ with size greater than $n_f$ can construct a valid proof with high probability, leveraging the filtering and validation mechanisms of $H_1$ and $H_2$.
 - The constructed tuple $(t, s_1, ..., s_u)$ satisfies:
   - $H_1(t, s_1, ..., s_i) = 1$ for all prefixes up to length $u$,
   - $H_2(t, s_1, ..., s_u) = 1$ for the final tuple.
