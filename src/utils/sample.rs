@@ -113,6 +113,13 @@ mod tests {
     }
 
     #[test]
+    fn sample_uniform_long_hash() {
+        let mut hash: [u8; 40] = [0; 40];
+        hash[..16].copy_from_slice(&40u128.to_be_bytes());
+        assert_eq!(6, sample_uniform(&hash, 17).unwrap());
+    }
+
+    #[test]
     fn sample_uniform_invalid() {
         // (2^128 - 1) is not divisible by 18 since the first is odd and the second
         // is even.
@@ -130,7 +137,16 @@ mod tests {
         "q_third_mid_right")]
     #[test_case((u128::MAX - 9).to_be_bytes(), 1.0/3.0, false;
         "q_third_large")]
-    fn sample_bernoulli_all(hash: Hash, q: f64, expected: bool) {
+    fn sample_bernoulli_basic(hash: Hash, q: f64, expected: bool) {
         assert_eq!(expected, sample_bernoulli(&hash, q));
+    }
+
+    #[test]
+    fn sample_bernoulli_long_hash() {
+        let mut hash: [u8; 40] = [0; 40];
+        assert!(sample_bernoulli(&hash, 0.3));
+
+        hash[..16].copy_from_slice(&(u128::MAX - 9).to_be_bytes());
+        assert!(!sample_bernoulli(&hash, 0.3));
     }
 }
