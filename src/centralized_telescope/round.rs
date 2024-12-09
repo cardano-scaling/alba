@@ -1,5 +1,7 @@
 //! ALBA's Round structure and associated functions
 
+#![doc = include_str!("../../docs/centralized_telescope/round.md")]
+
 use super::types::Hash;
 use crate::utils::sample;
 use crate::utils::types::Element;
