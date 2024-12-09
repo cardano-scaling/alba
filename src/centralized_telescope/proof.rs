@@ -1,6 +1,6 @@
 //! ALBA's Proof structure
 
-#![doc = include_str!("../../docs/centralized/proof.md")]
+#![doc = include_str!("../../docs/centralized_telescope/proof.md")]
 
 use crate::utils::types::Element;
 
