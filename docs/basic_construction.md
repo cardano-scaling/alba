@@ -59,7 +59,7 @@ Instead, the prover constructs a compact proof $(t, s_1, ..., s_u)$ that satisfi
 - The prover outputs only a small sequence of $u$ elements from $S_p$, rather than transmitting the full set, ensuring communication efficiency.
 - By using random oracles $H_1$ and $H_2$, the prover ensures that:
   - The proof is hard to forge by an adversary who knows at most $n_f$ elements from $S_p$.
-  - A prover who knows a subset $S_p$ with size greater than $n_f$ can construct a valid proof with high probability, leveraging the filtering and validation mechanisms of $H_1$ and $H_2$.
+  - A prover who knows a subset $S_p$ with size greater than $n_p$ can construct a valid proof with high probability, leveraging the filtering and validation mechanisms of $H_1$ and $H_2$.
 - The constructed tuple $(t, s_1, ..., s_u)$ satisfies:
   - $H_1(t, s_1, ..., s_i) = 1$ for all prefixes up to length $u$,
   - $H_2(t, s_1, ..., s_u) = 1$ for the final tuple.
