@@ -7,3 +7,15 @@ pub mod variables {}
 
 #[doc = include_str!("../docs/basic_construction.md")]
 pub mod basic {}
+
+#[doc = include_str!("../docs/centralized_telescope/main.md")]
+pub mod centralized {
+    #[doc = include_str!("../docs/centralized_telescope/params.md")]
+    pub mod params {}
+
+    #[doc = include_str!("../docs/centralized_telescope/proof.md")]
+    pub mod proof {}
+
+    #[doc = include_str!("../docs/centralized_telescope/round.md")]
+    pub mod round {}
+}

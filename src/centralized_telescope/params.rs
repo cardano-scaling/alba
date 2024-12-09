@@ -1,5 +1,7 @@
 //! ALBA's Setup structure
 
+#![doc = include_str!("../../docs/centralized_telescope/params.md")]
+
 /// Setup input parameters
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
