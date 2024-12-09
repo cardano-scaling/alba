@@ -11,14 +11,14 @@ use blake2::{Blake2s256, Digest};
 /// Alba's proving algorithm, based on a depth-first search algorithm.
 /// Calls up to setup.max_retries times the prove_index function and returns an empty
 /// proof if no suitable candidate is found.
-pub fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
+pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
     // Run prove_index up to max_retries times
     (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
 }
 
 /// Alba's verification algorithm, returns true if the proof is
 /// successfully verified, following the DFS verification, false otherwise.
-pub fn verify(setup: &Setup, proof: &Proof) -> bool {
+pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     if proof.search_counter >= setup.search_width
         || proof.retry_counter >= setup.max_retries
         || proof.element_sequence.len() as u64 != setup.proof_size

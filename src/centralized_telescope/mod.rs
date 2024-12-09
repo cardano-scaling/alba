@@ -3,7 +3,7 @@
 
 #![doc = include_str!("../../docs/centralized_telescope/main.md")]
 
-pub mod algorithm;
+mod algorithm;
 
 pub mod init;
 
@@ -16,3 +16,8 @@ mod round;
 pub mod setup;
 
 mod types;
+
+mod wrapper;
+
+// Re-exports
+pub use wrapper::Wrapper as CentralizedTelescope;
