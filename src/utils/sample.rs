@@ -24,7 +24,7 @@ pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u
     fn mod_not_power_of_2(hash: &Seed, n: u64) -> Option<u64> {
         let n = u128::from(n);
 
-        // Equals 2^128 / n since n is not a power of two.
+        // Equals floor(2^128 / n) since n is not a power of two.
         let d = u128::MAX / n;
         let i = u128::from_be_bytes(*hash);
 
