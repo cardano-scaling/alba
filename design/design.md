@@ -237,6 +237,7 @@ For completeness, the following is a discussion of what some potential
 applications might require.
 
 #### Applications' requirements
+
 Here we consider Peras, Leios and Mithril.
 
 Peras requires the ALBA proof to fit in a single block.
