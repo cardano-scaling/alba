@@ -235,16 +235,22 @@ There are three performance metrics in consideration:
 
 The space complexity (memory usage) is not considered since it is very small
 in any ALBA scheme.
+When evaluating performance, one should keep in mind that there exists
+a tradeoff between the proof size and communication complexity in
+decentralized ALBA.
+We do not currently have fixed performance requirements for our library.
+For completeness, the following is a discussion of what some potential
+applications might require.
 
-Our three main applications, Mithril, Peras and Leios, will be offered a
-tradeoff between proof size and communication complexity.
+#### Applications' requirements
+Here we consider Peras, Leios and Mithril.
 
 Peras requires the ALBA proof to fit in a single block.
-It is only needed if Peras goes into cooldown which we should expect to
+It is only needed if Peras goes into cooldown which should be expected to
 happen rarely.
-Depending on how ALBA is used, the lower bound parameter $n_f$ will be set
+Depending on how ALBA is used, the lower bound parameter $n_f$ would be set
 to either 50% or 75% of the total stake.
-Leios will produce ALBA proofs very frequently.
+Leios would produce ALBA proofs very frequently.
 Their requirement on proof size -- below 5 kilobytes.
 Mithril currently uses a lottery;
 therefore, using ALBA instead can only decrease the proof size.
