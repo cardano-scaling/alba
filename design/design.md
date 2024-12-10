@@ -167,7 +167,7 @@ Taking an ALBA protocol we implement, can you construct (on paper) a larger
 protocol, such as Mithril, and mathematically prove its guarantees such as
 completeness and soundness?
 Currently, ALBA schemes satisfying the definitions in the ALBA paper cannot
-be used to construct Mithril, Peras and Leios.
+be used to construct applications such as Mithril, Peras and Leios.
 
 First, all three require a multisignature scheme secure against
 grinding attacks.
@@ -207,9 +207,8 @@ Ideally, our implementation should also make this guarantee.
 
 However, at this point, this is not our goal, since achieving that would
 require significant additional effort.
-We need to roll out a reference implemenentation so that our primary clients
-(Mithril, Peras, Leios) can incorporate it in their prototypes, and also so
-that the external community can study and experiment with ALBA as well.
+We need to roll out a reference implemenentation so that engineers can starts
+studying and prototyping with ALBA.
 
 The following is a list of known discrepancies that prevent us from making
 the rigorous guarantees about soundness and completeness errors.
@@ -263,10 +262,8 @@ in the order of a second.
 
 ### Interfaces
 
-Peras and Leios are implemented in Haskell and thus require bindings to our
-Rust implementation.
-Mithril is implemented in Rust and thus can use our implementation natively.
-
+Some larger protocols (e.g., Peras and Leios) are implemented in Haskell and
+thus require bindings to our Rust implementation.
 Beyond this, there are no other clearly stated requirements.
 The section [below](#proposed-design-choices) describes some design choices for
 the library's interfaces.
