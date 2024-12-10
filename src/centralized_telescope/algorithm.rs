@@ -52,22 +52,27 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     proof_hash(setup, &round)
 }
 
-/// Alba's proving algorithm used for benchmarking, returning a boolean
-/// according to whether a proof has been found as well as the number of steps
-/// and reties done.
-pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, bool) {
-    let mut steps: u64 = 0;
-    let mut retries: u64 = 0;
-    for retry_counter in 0..setup.max_retries {
-        let (dfs_calls, proof_opt) =
-            prove_index(setup, prover_set, retry_counter.saturating_add(1));
-        steps = steps.saturating_add(dfs_calls);
-        retries = retry_counter;
-        if proof_opt.is_some() {
-            return (steps, retry_counter, true);
+/// Internal module for testing and benchmarking purposes
+pub mod internal {
+    use super::*;
+
+    /// Alba's proving algorithm used for benchmarking, returning a boolean
+    /// according to whether a proof has been found as well as the number of steps
+    /// and reties done.
+    pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, bool) {
+        let mut steps: u64 = 0;
+        let mut retries: u64 = 0;
+        for retry_counter in 0..setup.max_retries {
+            let (dfs_calls, proof_opt) =
+                prove_index(setup, prover_set, retry_counter.saturating_add(1));
+            steps = steps.saturating_add(dfs_calls);
+            retries = retry_counter;
+            if proof_opt.is_some() {
+                return (steps, retry_counter, true);
+            }
         }
+        (steps, retries, false)
     }
-    (steps, retries, false)
 }
 
 /// Indexed proving algorithm, returns the total number of DFS calls done

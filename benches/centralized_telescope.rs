@@ -108,7 +108,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
             dataset.truncate(truncate_size as usize);
             // Bench
             black_box({
-                let (steps, _, _) = algorithm::bench(&bench_setup, &dataset);
+                let (steps, _, _) = algorithm::internal::bench(&bench_setup, &dataset);
                 total_steps = total_steps.saturating_add(steps);
             });
         }
