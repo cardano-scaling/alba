@@ -8,8 +8,9 @@ This is the first design document for our Rust implementation of
 Approximate Lower Bound Arguments (ALBA) intended to guide the development
 of the library.
 We aim to create a high quality reference implementation of ALBA sufficient
-for accurately prototyping larger protocols utilizing this primitive.
-Applications that could benefit, at least in the Cardano universe, include
+for accurately prototyping larger protocols utilizing this primitive such as
+protocols for voting and multisignatures schemes.
+In the Cardano universe, projects that can benefit from ALBA include
 Mithril, Peras, Leios and cross-chain bridges.
 While these use cases will guide the development of our library, one can
 imagine other applications / protocols that can utilize ALBA, and
@@ -37,12 +38,12 @@ thus, for example, the honest nodes can use ALBA to efficiently certify some
 information, like a ledger snapshot, while malicious nodes cannot.
 
 Additionally, ALBA supports a *decentralized* setting where knowledge of
-the data elements is spread out across multiple provers;
+the data elements is spread out across multiple parties;
 some will send a message to an aggregator who in turn
 will produce a proof for the verifier.
 The primitive in this setting is called decentralized ALBA.
 Its main construction, called decentralized Telescope,
-provides a tradeoff between the proof size and the number of provers that
+provides a tradeoff between the proof size and the number of parties that
 communicate, leaving it up to protocol designers to make an optimal choice
 for their application.
 
