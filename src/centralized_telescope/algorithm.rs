@@ -12,8 +12,8 @@ use blake2::{Blake2s256, Digest};
 /// Calls up to setup.max_retries times the prove_index function and returns an empty
 /// proof if no suitable candidate is found.
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
-    // Run prove_index up to max_retries times
-    (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
+    let (_, _, proof_opt) = make_proof(setup, prover_set);
+    proof_opt
 }
 
 /// Alba's verification algorithm, returns true if the proof is
@@ -54,10 +54,18 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
 
 /// Alba's proving algorithm used for benchmarking, returning a boolean
 /// according to whether a proof has been found as well as the number of steps
-/// and reties done.
+/// and retries done.
 pub(super) fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+    make_proof(setup, prover_set)
+}
+
+/// Internal proving algorithm used by public facing benchmarking and proving
+/// functions.
+pub(super) fn make_proof(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
     let mut steps: u64 = 0;
     let mut retries: u64 = 0;
+
+    // Run prove_index up to max_retries times
     for retry_counter in 0..setup.max_retries {
         let (dfs_calls, proof_opt) =
             prove_index(setup, prover_set, retry_counter.saturating_add(1));
