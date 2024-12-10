@@ -21,17 +21,17 @@ criterion = { version = "0.5.1", features = ["html_reports"]}
 [[bench]]
 name = "centralized_time"
 harness = false
-path = "benches/centralized_telescope.rs"
+path = "benches/centralized_telescope/time.rs"
 
 [[bench]]
 name = "centralized_step"
 harness = false
-path = "benches/centralized_telescope.rs"
+path = "benches/centralized_telescope/step.rs"
 
 [[bench]]
 name = "centralized_proof"
 harness = false
-path = "benches/centralized_proof.rs"
+path = "benches/centralized_telescope/size.rs"
 
 [lints.rust]
 missing-copy-implementations = "warn"
