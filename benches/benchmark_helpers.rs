@@ -125,6 +125,7 @@ impl Measurement for Steps {
         0
     }
 
+    // This step should never happen
     fn end(&self, _i: Self::Intermediate) -> Self::Value {
         0
     }
