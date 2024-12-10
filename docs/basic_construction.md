@@ -51,6 +51,30 @@ DFS ensures efficiency by systematically exploring valid branches and pruning in
 - Stop when a valid tuple $(t, s_1, \ldots, s_u)$ is found and satisfies $H_2(t, s_1, \ldots, s_u) = 1$.
 
 ## The Protocol
+### Parameter Generation
+The parameter generation process for the basic construction is designed to ensure the protocol achieves the desired levels of *security* and *efficiency*.
+The internal parameters of ALBA, such as $u$, $d$, $q$, are computed based on the security parameters, $n_f$, $n_p$ .
+- Security parameters:
+  - $\lambda_{sec}: $ defines the probability that an adversary, who knows at most $n_f$ elements, can construct a valid proof. It controls the protocol's resistance to adversarial attacks by making forgery negligibly likely.
+  - $\lambda_{rel}: $ defines the probability that an honest prover, with knowledge of a sufficiently large set $S_p$, can successfully generate a valid proof. It ensures the practicality of the protocol for honest participants, emphasizing the importance of feasibility in proof construction.
+- Relationship between the parameters:
+  - The proof length $u$ is directly proportional to the security parameters and inversely proportional to the logarithm of the ratio $n_p / n_f$. 
+    - This means that as the prover's set size $n_p$ grows compared to the threshold $n_f$, the required proof length decreases logarithmically, reflecting the reduced adversarial advantage.
+      $$
+        u \leftarrow \Bigg\lceil \frac{\lambda_{sec} + \log \lambda_{rel} + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil.
+      $$
+  - The maximum number of subtrees to search $d$ depends linearly on both the proof length $u$ and the security parameter $\lambda_{rel}$. 
+    - It directly influences the ability to find a valid proof.
+    - Increasing $d$ improves the chances of constructing a valid proof, ensuring robustness in the presence of random oracle checks.
+      $$
+        d \leftarrow \Bigg\lceil \frac{2 u \lambda_{rel}}{\log e}\Bigg\rceil.
+      $$
+  - The probability that a tuple of full size is selected $q$ is inversely proportional to $d$, approximating $\lambda_{rel} / d$. 
+    - Since $d$ is linked to $u$, $q$ is approximately inversely proportional to $u$.
+      $$
+        q \leftarrow \frac{2 \lambda_{rel}}{d \log e}.
+      $$
+    - A smaller $q$ reduces the chance of accepting invalid proofs, enhancing security, but also decreases the probability of finding a valid proof, necessitating a larger $d$.
 
 ### Prover Algorithm
 The prover's objective is to convince the verifier that they know a large subset of elements $S_p$, with size exceeding the threshold $n_f$, without revealing the entire set or any specific subset of size greater than $n_f$.
@@ -74,7 +98,6 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 - The verifier performs efficient checks proportional to the proof size $u$, making the process scalable.
 
 ### Functions
-
 #### Proving
 ---
 > $\mathsf{Prove}(S_p) \rightarrow \pi$
