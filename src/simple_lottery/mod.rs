@@ -6,3 +6,14 @@ pub mod init;
 pub mod params;
 
 pub mod setup;
+
+pub mod proof;
+
+mod types;
+
+mod algorithm;
+
+mod wrapper;
+
+// Re-exports
+pub use wrapper::Wrapper as SimpleLottery;
