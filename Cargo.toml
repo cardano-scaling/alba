@@ -10,11 +10,33 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 
 [dependencies]
 blake2 = "0.10.6"
-rand_core = "0.6.4"
 
 [dev-dependencies]
+rand = "0.8.5"
+rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 test-case = "3.3.1"
+criterion = { version = "0.5.1", features = ["html_reports"]}
+
+[[bench]]
+name = "centralized_number_steps"
+harness = false
+path = "benches/centralized_telescope/number_steps.rs"
+
+[[bench]]
+name = "centralized_proof_size"
+harness = false
+path = "benches/centralized_telescope/proof_size.rs"
+
+[[bench]]
+name = "centralized_proving_time"
+harness = false
+path = "benches/centralized_telescope/proving_time.rs"
+
+[[bench]]
+name = "centralized_verifying_time"
+harness = false
+path = "benches/centralized_telescope/verifying_time.rs"
 
 [lints.rust]
 missing-copy-implementations = "warn"

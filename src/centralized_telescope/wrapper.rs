@@ -35,4 +35,11 @@ impl Wrapper {
     pub fn verify(&self, proof: &Proof) -> bool {
         algorithm::verify(&self.setup, proof)
     }
+
+    /// Alba's proof bencharmarking algorithm.
+    /// Returns the number of DFS calls done, the number of trees searched and
+    /// a proof if found
+    pub fn bench_prove(&self, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+        algorithm::bench(&self.setup, prover_set)
+    }
 }
