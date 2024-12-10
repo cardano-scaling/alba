@@ -3,7 +3,7 @@
 use rand_chacha::ChaCha20Rng;
 use rand_core::RngCore;
 
-use alba::centralized_telescope::{init, params::Params, setup::Setup};
+use alba::centralized_telescope::{params::Params, CentralizedTelescope};
 
 use crate::benchmark_helpers;
 
@@ -18,10 +18,10 @@ pub const PARAMS: &[benchmark_helpers::BenchParam; 2] =
 pub const NAME: &str = "Centralized";
 
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
-pub fn centralized_setup(
+pub fn setup(
     rng: &mut ChaCha20Rng,
     params: &benchmark_helpers::BenchParam,
-) -> (Vec<[u8; 32]>, Setup) {
+) -> (Vec<[u8; 32]>, CentralizedTelescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
     let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, params.set_card);
@@ -37,5 +37,6 @@ pub fn centralized_setup(
             .saturating_mul(params.set_card)
             .div_ceil(100),
     };
-    (dataset, init::make_setup(&params))
+    let telescope = CentralizedTelescope::create(&params);
+    (dataset, telescope)
 }

@@ -5,14 +5,12 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
 use std::time::Duration;
 
-use alba::centralized_telescope::algorithm;
+pub mod utils;
+use utils::{setup, NAME, PARAMS};
 
 #[path = "../benchmark_helpers.rs"]
 pub mod benchmark_helpers;
 use benchmark_helpers::{benchmarks, BenchParam, Steps};
-
-pub mod utils;
-use utils::{centralized_setup, PARAMS};
 
 /// Bench the number of steps, i.e. DFS calls, of Alba centralized prover
 fn step_benches(c: &mut Criterion<Steps>) {
@@ -22,12 +20,12 @@ fn step_benches(c: &mut Criterion<Steps>) {
         let mut total_steps = 0u64;
         for _ in 0..n {
             // Setup
-            let (mut dataset, bench_setup) = centralized_setup(&mut rng, param);
+            let (mut dataset, telescope) = setup(&mut rng, param);
             // Truncate the dataset to give truncate_size elements to the prover
             dataset.truncate(truncate_size as usize);
             // Bench
             black_box({
-                let (steps, _, _) = algorithm::internal::bench(&bench_setup, &dataset);
+                let (steps, _, _) = telescope.bench_prove(&dataset);
                 total_steps = total_steps.saturating_add(steps);
             });
         }
@@ -37,7 +35,7 @@ fn step_benches(c: &mut Criterion<Steps>) {
     benchmarks::<u64, u64, Steps>(
         c,
         PARAMS,
-        format!("{} - {}", utils::NAME, "Steps"),
+        format!("{} - {}", NAME, "Steps"),
         "Prove",
         &prove_steps,
     );
