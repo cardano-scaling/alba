@@ -129,19 +129,12 @@ the technical decisions for the library.
 
 ## Requirements
 
-We intend to make an implementation of ALBA that can be used in
-Mithril, Peras, Leios, cross-chain bridges and potentially other protocols
-inside and outside the Cardano universe.
-Our implementation will mostly be guided by our main "clients":
-Mirthril, Peras and Leios.
-
 ALBA is a generic tool that lets one prove knowledge of any kind of data
-elements, but
-as noted [here](#applications-of-alba), these three applications
+elements, but as noted [here](#applications-of-alba), applications often
 don't need the full expressivity of ALBA, they really need
 a multisignature scheme, where the data elements would specifically be
 signatures.
-Thus there is question of whether we want our library to provide a general
+Thus there is a question of whether we want our library to provide a general
 ALBA interface or simply an interface for a multisignature scheme.
 We will do both.
 1. We will implement the most generic version of ALBA to make it suitable for
