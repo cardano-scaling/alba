@@ -65,8 +65,9 @@ of ALBA.
 
 ### Applications of ALBA
 
-This cryptographic primitive has a number of applications, in the Cardano space
-and outside.
+This cryptographic primitive has a number of use cases.
+While ALBA is general purpose and not limited to Cardano,
+the following describes some applications that we currently have in mind.
 
 Mithril is a system that allows SPOs to certify the current state of the Cardano
 blockchain, allowing, for example, nodes to get up-to-date significantly faster
