@@ -108,7 +108,7 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 > ---
 > - **for** each $~~ t \in \[1,~ d\]:$
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], S_p)$
->   - **if** $~~ \pi ~=\not \emptyset:$
+>   - **if** $~~ \pi ~!= \emptyset:$
 >     - **return** $~~ \pi.$
 > - **return** $~~ \emptyset.$
 ---
@@ -123,16 +123,16 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 > - Output:
 >   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
 > ---
-> - **if** $~~ \mathsf{len}(slist) = u:$
->   - **if** $~~ \mathsf{H_2}(t, slist) = 1:$
+> - **if** $~~ \mathsf{len}(slist) == u:$
+>   - **if** $~~ \mathsf{H_2}(t, slist) == 1:$
 >     - $\pi \leftarrow (t, slist)$
 >     - **return** $~~ \pi.$
 >   - **return** $~~ \emptyset.$
 > - **for** each $~~ s_{new} \in S_p:$
 >   - $slist_{new} \leftarrow slist \cup \[s_{new}\]$
->   - **if** $~~ \mathsf{H_1}(t, slist_{new}) = 1:$
+>   - **if** $~~ \mathsf{H_1}(t, slist_{new}) == 1:$
 >     - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, S_p)$
->     - **if** $~~ \pi ~=\not \emptyset:$
+>     - **if** $~~ \pi ~!= \emptyset:$
 >       - **return** $~~ \pi.$
 > - **return** $~~ \emptyset.$
 ---
@@ -146,10 +146,10 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 > - Output:
 >   - $0/1$.
 > ---
-> - **if** $~~ t \in\not  \[d\]:$
+> - **if** $~~ t ∉  \[d\]:$
 >   - **return** $~~ 0.$
 > - **for** each $~~ i = \[1,~ u\]:$
->   - **if** $~~ \mathsf{H_1}(t, s_1, \ldots, s_i) ~=\not 1:$
+>   - **if** $~~ \mathsf{H_1}(t, s_1, \ldots, s_i) ~!= 1:$
 >     - **return** $~~0.$
 > - **return** $~~ \mathsf{H_2}(t, s_1, \ldots, s_u).$
 ---
