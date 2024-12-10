@@ -1,5 +1,7 @@
 //! Benchmarking centralized_telescope
 
+#![allow(unused_crate_dependencies)]
+
 use criterion::{black_box, criterion_group, criterion_main, measurement::WallTime, Criterion};
 use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;

@@ -1,6 +1,9 @@
 //! Criterion helper functions including new Measurements and wrappers on
 //! BenchmarkId and BenchmarkGroup
 
+#![allow(unused_attributes)]
+#![allow(unused_crate_dependencies)]
+
 use alba as _;
 use blake2 as _;
 use rand as _;

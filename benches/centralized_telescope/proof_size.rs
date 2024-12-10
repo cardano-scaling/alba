@@ -1,4 +1,6 @@
 //! Benchmarking centralized_telescope's proof size
+#![allow(unused_crate_dependencies)]
+
 use alba::centralized_telescope::{init, params::Params};
 
 #[path = "../benchmark_helpers.rs"]
