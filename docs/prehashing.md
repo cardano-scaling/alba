@@ -36,6 +36,34 @@ For this construction, the random functions are as follows:
 The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
 This avoids checking all possible extensions, dramatically reducing the prover’s workload.
 
+### Parameter generation
+The parameters for the construction with prehashing are carefully selected to balance *security* and *efficiency*.
+Based on the security parameters ($\lambda_{sec}$, $\lambda_{rel}$) and $n_f$, $n_p$, the parameters such as $u$, $d$, and $q$ are computed.
+As described in the basic construction, $\lambda_{sec}$ sets the probability that an adversary with at most $n_f$ elements can produce a valid proof.
+$\lambda_{rel}$ ensures that an honest prover, with a sufficiently large set $S_p$, can reliably generate a valid proof.
+
+- The proof size $u$ is proportional to $\lambda_{sec} + \log\lambda_{rel}$ and inversely proportional to $\log(n_p / n_f)$:
+  - As the prover's set size $n_p$ increases relative to $n_f$, the required proof length decreases logarithmically, reducing the adversary's advantage.
+  - $u$ influences other parameters like $d$, reinforcing its importance in the protocol's efficiency.
+- The maximum number of subtrees to search, $d$, scales linearly with the proof size $u$ and the security parameter $\lambda_{rel}$.
+  - A higher value of $d$ increases the likelihood of constructing a valid proof, ensuring robustness in random oracle evaluations.
+- The probability that a tuple of full size is selected, $q$, is inversely proportional to $d$ and approximates $\lambda_{rel} / d$:
+  - Since $d$ is related to $u$, $q$ is also approximately inversely proportional to $u$.
+  - A smaller $q$ improves security by lowering the chance of accepting invalid proofs but decreases the probability of finding valid proofs, requiring a larger $d$ to compensate.
+
+$$
+u \coloneqq \Bigg\lceil \frac{\lambda_{sec} + \log (\lambda_{rel} + \log 3) + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil,
+$$
+$$
+d \coloneqq \Bigg\lceil \frac{16 u (\lambda_{rel} + \log 3)}{\log e}\Bigg\rceil , \quad q \coloneqq \frac{2 (\lambda_{rel} + \log 3)}{d \log e}.
+$$
+Furthermore, to maintain a high probability of successfully constructing a valid proof, $n_p$ must satisfy:
+$$
+n_p \geq \frac{d^2 \log e}{9(\lambda_{rel} + \log 3)}.
+$$
+- This condition ensures that the prover's set is large enough to achieve a well-distributed hashing of elements into bins.
+- If $n_p$ is too small, bins may not be sufficiently populated, reducing the chances of constructing valid tuples.
+
 ### Example walkthrough
 Let's assume the prover's set $S_p$ contains the elements $\{A, B, C, D\}$, and the prover needs to build sequences of length $u = 3$. 
 The prover is working with $d = 2$ distinct sequences (i.e., the prover will try to construct a sequence for each $t = 1$ and $t = 2$).
