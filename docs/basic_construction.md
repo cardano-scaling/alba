@@ -71,9 +71,11 @@ The internal parameters of ALBA, such as $u$, $d$, $q$, are computed based on th
       $$
   - The probability that a tuple of full size is selected $q$ is inversely proportional to $d$, approximating $\lambda_{rel} / d$. 
     - Since $d$ is linked to $u$, $q$ is approximately inversely proportional to $u$.
-    $$
-    q \coloneqq \frac{2 \lambda_{rel}}{d \log e}.
-    $$
+    
+      $$
+        q \coloneqq \frac{2 \lambda_{rel}}{d \log e}.
+      $$
+    
     - A smaller $q$ reduces the chance of accepting invalid proofs, enhancing security, but also decreases the probability of finding a valid proof, necessitating a larger $d$.
 
 ### Prover Algorithm
