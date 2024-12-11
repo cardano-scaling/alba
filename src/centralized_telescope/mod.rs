@@ -1,7 +1,9 @@
 //! ALBA's bounded DFS scheme using Blake2b as hash function.
 //! (c.f. Section 3.2.2 of Alba paper)
 
-pub mod algorithm;
+#![doc = include_str!("../../docs/centralized_telescope/main.md")]
+
+mod algorithm;
 
 pub mod init;
 
@@ -14,3 +16,8 @@ mod round;
 pub mod setup;
 
 mod types;
+
+mod wrapper;
+
+// Re-exports
+pub use wrapper::Wrapper as CentralizedTelescope;
