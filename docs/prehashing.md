@@ -84,7 +84,7 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 > - Output:
 >   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
-> - $bins \leftarrow $ { }
+> - $bins \leftarrow$ { }
 > - **for** each $~~ i \in \[1,~ n_p\]:$
 >   - $bins\[i\] \leftarrow \[~\]$
 > - **for** each $~~ s \in S_p:$
