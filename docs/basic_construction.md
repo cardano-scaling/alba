@@ -55,25 +55,25 @@ DFS ensures efficiency by systematically exploring valid branches and pruning in
 The parameter generation process for the basic construction is designed to ensure the protocol achieves the desired levels of *security* and *efficiency*.
 The internal parameters of ALBA, such as $u$, $d$, $q$, are computed based on the security parameters, $n_f$, $n_p$ .
 - Security parameters:
-  - $\lambda_{sec}: $ defines the probability that an adversary, who knows at most $n_f$ elements, can construct a valid proof. It controls the protocol's resistance to adversarial attacks by making forgery negligibly likely.
-  - $\lambda_{rel}: $ defines the probability that an honest prover, with knowledge of a sufficiently large set $S_p$, can successfully generate a valid proof. It ensures the practicality of the protocol for honest participants, emphasizing the importance of feasibility in proof construction.
+  - $\lambda_{sec}:$ defines the probability that an adversary, who knows at most $n_f$ elements, can construct a valid proof. It controls the protocol's resistance to adversarial attacks by making forgery negligibly likely.
+  - $\lambda_{rel}:$ defines the probability that an honest prover, with knowledge of a sufficiently large set $S_p$, can successfully generate a valid proof. It ensures the practicality of the protocol for honest participants, emphasizing the importance of feasibility in proof construction.
 - Relationship between the parameters:
   - The proof length $u$ is directly proportional to the security parameters and inversely proportional to the logarithm of the ratio $n_p / n_f$. 
     - This means that as the prover's set size $n_p$ grows compared to the threshold $n_f$, the required proof length decreases logarithmically, reflecting the reduced adversarial advantage.
       $$
-        u \leftarrow \Bigg\lceil \frac{\lambda_{sec} + \log \lambda_{rel} + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil.
+        u \coloneqq \Bigg\lceil \frac{\lambda_{sec} + \log \lambda_{rel} + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil.
       $$
   - The maximum number of subtrees to search $d$ depends linearly on both the proof length $u$ and the security parameter $\lambda_{rel}$. 
     - It directly influences the ability to find a valid proof.
     - Increasing $d$ improves the chances of constructing a valid proof, ensuring robustness in the presence of random oracle checks.
       $$
-        d \leftarrow \Bigg\lceil \frac{2 u \lambda_{rel}}{\log e}\Bigg\rceil.
+        d \coloneqq \Bigg\lceil \frac{2 u \lambda_{rel}}{\log e}\Bigg\rceil.
       $$
   - The probability that a tuple of full size is selected $q$ is inversely proportional to $d$, approximating $\lambda_{rel} / d$. 
     - Since $d$ is linked to $u$, $q$ is approximately inversely proportional to $u$.
-      $$
-        q \leftarrow \frac{2 \lambda_{rel}}{d \log e}.
-      $$
+    $$
+    q \coloneqq \frac{2 \lambda_{rel}}{d \log e}.
+    $$
     - A smaller $q$ reduces the chance of accepting invalid proofs, enhancing security, but also decreases the probability of finding a valid proof, necessitating a larger $d$.
 
 ### Prover Algorithm
@@ -104,13 +104,13 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 > - Input:
 >   - $S_p:~~$ `prover_set`, a set of elements to be proven.
 > - Output:
->   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
 > - **for** each $~~ t \in \[1,~ d\]:$
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], S_p)$
->   - **if** $~~ \pi ~!= \emptyset:$
+>   - **if** $~~ \pi ~!= \bot:$
 >     - **return** $~~ \pi.$
-> - **return** $~~ \emptyset.$
+> - **return** $~~ \bot.$
 ---
 
 #### Depth-first search
@@ -121,20 +121,20 @@ The verifier's objective is to validate the prover's claim by ensuring that the 
 >   - $slist:~~$ `element_sequence`, candidate element sequence.
 >   - $S_p:~~$ `prover_set`, a set of elements to be proven.
 > - Output:
->   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
 > - **if** $~~ \mathsf{len}(slist) == u:$
 >   - **if** $~~ \mathsf{H_2}(t, slist) == 1:$
 >     - $\pi \leftarrow (t, slist)$
 >     - **return** $~~ \pi.$
->   - **return** $~~ \emptyset.$
+>   - **return** $~~ \bot.$
 > - **for** each $~~ s_{new} \in S_p:$
 >   - $slist_{new} \leftarrow slist \cup \[s_{new}\]$
 >   - **if** $~~ \mathsf{H_1}(t, slist_{new}) == 1:$
 >     - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, S_p)$
->     - **if** $~~ \pi ~!= \emptyset:$
+>     - **if** $~~ \pi ~!= \bot:$
 >       - **return** $~~ \pi.$
-> - **return** $~~ \emptyset.$
+> - **return** $~~ \bot.$
 ---
 
 #### Verification
