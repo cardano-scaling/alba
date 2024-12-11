@@ -10,9 +10,9 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 
 [dependencies]
 blake2 = "0.10.6"
-rand_core = "0.6.4"
 
 [dev-dependencies]
+rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 test-case = "3.3.1"
 
@@ -26,7 +26,6 @@ redundant-lifetimes = "warn"
 unit-bindings = "warn"
 unnameable-types = "warn"
 unsafe_code = "warn"
-unused_crate_dependencies = "warn"
 unused-import-braces = "warn"
 unused-lifetimes = "warn"
 unused-qualifications = "warn"
@@ -39,6 +38,7 @@ cast_precision_loss = "allow"
 cast_sign_loss = "allow"
 derive_partial_eq_without_eq = "allow"
 doc_markdown = "allow"
+items_after_statements = "allow"
 missing_panics_doc = "allow"
 module_name_repetitions = "allow"
 must_use_candidate = "allow"
