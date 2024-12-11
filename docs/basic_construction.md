@@ -60,21 +60,19 @@ The internal parameters of ALBA, such as $u$, $d$, $q$, are computed based on th
 - Relationship between the parameters:
   - The proof length $u$ is directly proportional to the security parameters and inversely proportional to the logarithm of the ratio $n_p / n_f$. 
     - This means that as the prover's set size $n_p$ grows compared to the threshold $n_f$, the required proof length decreases logarithmically, reflecting the reduced adversarial advantage.
-      $$
-        u \coloneqq \Bigg\lceil \frac{\lambda_{sec} + \log \lambda_{rel} + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil.
-      $$
   - The maximum number of subtrees to search $d$ depends linearly on both the proof length $u$ and the security parameter $\lambda_{rel}$. 
     - It directly influences the ability to find a valid proof.
     - Increasing $d$ improves the chances of constructing a valid proof, ensuring robustness in the presence of random oracle checks.
-      $$
-        d \coloneqq \Bigg\lceil \frac{2 u \lambda_{rel}}{\log e}\Bigg\rceil.
-      $$
   - The probability that a tuple of full size is selected $q$ is inversely proportional to $d$, approximating $\lambda_{rel} / d$. 
     - Since $d$ is linked to $u$, $q$ is approximately inversely proportional to $u$.
-$$
-q \coloneqq \frac{2 \lambda_{rel}}{d \log e}.
-$$
     - A smaller $q$ reduces the chance of accepting invalid proofs, enhancing security, but also decreases the probability of finding a valid proof, necessitating a larger $d$.
+      
+$$
+u \coloneqq \Bigg\lceil \frac{\lambda_{sec} + \log \lambda_{rel} + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil, 
+$$
+$$
+d \coloneqq \Bigg\lceil \frac{2 u \lambda_{rel}}{\log e}\Bigg\rceil , \quad q \coloneqq \frac{2 \lambda_{rel}}{d \log e}.
+$$
 
 ### Prover Algorithm
 The prover's objective is to convince the verifier that they know a large subset of elements $S_p$, with size exceeding the threshold $n_f$, without revealing the entire set or any specific subset of size greater than $n_f$.
