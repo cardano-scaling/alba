@@ -1,13 +1,20 @@
 # Telescope - Construction with Prehashing
 
 **Construction with Prehashing** optimizes the basic Telescope ALBA protocol by reducing the computational cost of checking sequences.
-In the basic approach, we would attempt to extend a given sequence "blindly" with all elements of Sp. Finding the correct extension required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
-Instead, in the **prehashing technique**, we filter the elements to extend a sequence with. We do so by precomputing hash values using a new oracle $H_0$ before running the DFS algorithm, and associating each element and bin with these. This minimizes the number of operations when constructing the sequences.
-Precomputed hashes enable quick verification of whether a new element can extend a sequence, avoiding the need to check every combination in full detail.
+Here, a sequence means an ordered set of elements or tuples that meet certain hash conditions in the protocol.
+In the basic approach, we would attempt to extend a given sequence "blindly" with all elements of $S_p$. 
+Finding the correct extension required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
+Instead, in the **prehashing technique**, we filter the elements to extend a sequence with. 
+We do so by precomputing hash values using a new oracle $H_0$ before running the DFS algorithm, and associating each element and bin with these.
+
+Precomputed hashes enable quick verification of whether a new element can extend a sequence. 
+The elements are first sorted into bins based on their hash values. 
+During verification, only the content of the relevant bin is checked, rather than examining all possible combinations. 
+On average, each bin contains just one element, making this approach significantly faster and more efficient.
 This adjustment is particularly advantageous when $S_p$ is large, as it compresses the data while maintaining the security and correctness of the proof system.
 
 ## Overview 
-- A hash function is applied to the elements of the prover's set $S_p$, creating a prehashed representation of each element in the set.
+- A hash function is applied to the elements of the prover's set $S_p$, creating a prehashed representation of each element in the set, which is also sorted into bins based on the hash values.
 - Proof tuples are constructed using the prehashed elements rather than the original set.
 
 ### Core components
@@ -22,11 +29,12 @@ For this construction, the random functions are as follows:
 - The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to the "bin" numbered $H_0(s)$.
 - A sequence is similarly associated to a bin, by hashing the sequence with $H_1$.
 - These precomputed "bins" show how a sequence can be extended, the "balls" in the bins being the potential extension of the sequence.
-- When constructing sequences, the prover checks if the current sequence and the next element fall into the same bin. If they do, the sequence is extended; otherwise, a different element is tried.
+- When constructing sequences, the prover selects elements directly from the current bin to extend the sequence, continuing this process until the sequence reaches the required length $u$.
 - The prover starts constructing sequences from $t \in 1, \ldots, d$ and aims to build sequences of length $u$.
-- The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
-- This avoids checking all possible extensions, dramatically reducing the prover’s workload.
 - After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is a valid proof if $H_2(t, s_1, \dots, s_u) = 1$.
+
+The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
+This avoids checking all possible extensions, dramatically reducing the prover’s workload.
 
 ### Example walkthrough
 Let's assume the prover's set $S_p$ contains the elements $\{A, B, C, D\}$, and the prover needs to build sequences of length $u = 3$. 
@@ -74,7 +82,7 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 > - Input:
 >   - $S_p:~~$ `prover_set`, a set of elements to be proven.
 > - Output:
->   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
 > - $bins \leftarrow $ { }
 > - **for** each $~~ i \in \[1,~ n_p\]:$
@@ -84,9 +92,9 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 >   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup \[s\]$
 > - **for** each $~~ t \in \[1,~ d\]:$
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], bins)$
->   - **if** $~~ \pi ~=\not \emptyset:$
+>   - **if** $~~ \pi ~!= \bot:$
 >     - **return** $~~ \pi.$
-> - **return** $~~ \emptyset.$
+> - **return** $~~ \bot.$
 ---
 
 #### Depth fist search
@@ -97,35 +105,35 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 >   - $slist:~~$ `element_sequence`, candidate element sequence.
 >   - $bins:~~$ `bins`, a hash-based partition of $S_p$ elements.
 > - Output:
->   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\emptyset$.
+>   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
-> - **if** $~~ \mathsf{len}(slist) = u:$
->   - **if** $~~ \mathsf{H_2}(t, slist) = 1:$
+> - **if** $~~ \mathsf{len}(slist) == u:$
+>   - **if** $~~ \mathsf{H_2}(t, slist) == 1:$
 >     - $\pi \leftarrow (t, slist)$
 >     - **return** $~~ \pi.$
->   - **return** $~~ \emptyset.$
+>   - **return** $~~ \bot.$
 > - $bin_{current} \leftarrow \mathsf{H_1}(t, slist)$
 > - **for** each $~~ s \in bins\[bin_{current}\]:$
 >   - $slist_{new} \leftarrow slist \cup \[s\]$
->   - **if** $~~ \mathsf{H_1}(t, slist_{new}) = 1:$
+>   - **if** $~~ \mathsf{H_1}(t, slist_{new}) == 1:$
 >     - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, bins)$
->     - **if** $~~ \pi ~=\not \emptyset:$
+>     - **if** $~~ \pi ~!= \bot:$
 >       - **return** $~~ \pi.$
-> - **return** $~~ \emptyset.$
+> - **return** $~~ \bot.$
 ---
 #### Verification
 ---
-> $\mathsf{Verify}(\pi) \leftarrow 0/1$
+> $\mathsf{Verify}(\pi) \rightarrow 0/1$
 >
 > - Input:
 >   - $\pi:~~$ `proof`, a proof of the form $(t, s_1, \ldots, s_u)$.
 > - Output:
 >   - $0/1$.
 > ---
-> - **if** $~~ t \in\not  \[d\]:$
+> - **if** $~~ t ~∉ \[d\]:$
 >   - **return** $~~ 0.$
 > - **for** each $~~ i \in \[1, ~u\]:$
->   - **if** $~~ \mathsf{H_1} (t, s_1, \ldots, s_{i-1}) ~=\not \mathsf{H_0}(s_i)$:
+>   - **if** $~~ \mathsf{H_1} (t, s_1, \ldots, s_{i-1}) ~!= \mathsf{H_0}(s_i)$:
 >     - **return** $~~0.$
 > - **return** $~~ \mathsf{H_2}(t, s_1, \ldots, s_u).$
 ---
