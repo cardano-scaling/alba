@@ -13,7 +13,9 @@ This process is guided by a random oracle, which evaluates the validity of each 
 At each step, the random oracle performs a check, and only tuples that satisfy this check are extended further. 
 This ensures that the proof construction process proceeds efficiently by discarding invalid tuples early.
 
-The proof construction employs *Depth-First Search (DFS)* over a conceptual tree, where each node represents a set element, and each leaf represents a potential proof. To guarantee the generation of a proof, we iterate the DFS algorithm on several trees, each marked by a counter. An Alba proof can thus be seen as the Merkle proof of a polytree where each underlying tree's root is our counter.
+The proof construction employs *Depth-First Search (DFS)* over a conceptual tree, where each node represents a set element, and each leaf represents a potential proof. 
+To guarantee the generation of a proof, we iterate the DFS algorithm on several trees, each marked by a counter. 
+An Alba proof can thus be seen as the tree path of a poly-tree where each underlying tree's root is our counter.
 DFS ensures efficiency by systematically exploring valid branches and pruning invalid ones.
 
 ### Core Components
