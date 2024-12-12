@@ -54,6 +54,25 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     proof_hash(setup, &round)
 }
 
+/// Alba's proving algorithm used for benchmarking, returning a proof if found
+/// as well as the number of steps and retries done when generating it.
+pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+    let mut steps: u64 = 0;
+    let mut retries: u64 = 0;
+
+    // Run prove_index up to max_retries times
+    for retry_counter in 0..setup.max_retries {
+        let (dfs_calls, proof_opt) =
+            prove_index(setup, prover_set, retry_counter.saturating_add(1));
+        steps = steps.saturating_add(dfs_calls);
+        retries = retry_counter;
+        if proof_opt.is_some() {
+            return (steps, retry_counter, proof_opt);
+        }
+    }
+    (steps, retries, None)
+}
+
 /// Indexed proving algorithm, returns the total number of DFS calls done
 /// to find a proof and Some(proof) if found within setup.dfs_bound calls of DFS,
 /// otherwise None
