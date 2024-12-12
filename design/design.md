@@ -17,7 +17,22 @@ imagine other applications / protocols that can utilize ALBA, and
 our aim is to allow the open-source community to study and experiment
 with it.
 
-### Overview of ALBA
+The document is organized as follows.
+The [Overview of ALBA](#overview-of-alba) section describes the concept,
+properties, and key features of ALBA, including its different settings and
+use cases.
+The [Applications of ALBA](#applications-of-alba) section discusses applications
+to Cardano-related projects and broader cryptographic protocols.
+The [Requirements](#requirements) section outlines the functional and
+non-functional requirements of the library, categorized into _definitions_,
+_correctness_, _performance_, _interfaces_, and _repository considerations_.
+The [Proposed Design Choices](#proposed-design-choices) section elaborates on
+technical and architectural decisions, such as supported ALBA algorithms,
+the choice of hash function, and the use of generic data elements.
+Finally, the [Future Plans](#future-plans) section presents development
+and community engagement plans.
+
+## Overview of ALBA
 
 ALBA is a cryptographic primitive that allows one to prove knowledge of
 some number of data elements of some kind.
@@ -63,7 +78,7 @@ See the [website](https://alba.cardano-scaling.org),
 the [paper](https://eprint.iacr.org/2023/1655) to get a more detailed overview
 of ALBA.
 
-### Applications of ALBA
+## Applications of ALBA
 
 This cryptographic primitive has a number of use cases.
 While ALBA is general purpose and not limited to Cardano,
@@ -118,14 +133,6 @@ Applications of ALBA are not limited to Cardano and blockchains in general.
 For instance, the [paper](https://eprint.iacr.org/2023/1655) describes how
 this primitive can be used to optimize the prover running time of
 a Universally Composable SNARK.
-
-### Organization
-
-The following section describes goals and non-goals of this library, partly
-informed by the potential applications.
-[Proposed design choices](#proposed-design-choices) details some of
-the technical decisions for the library.
-[Roadmap](#roadmap) describes a rough plan for the development.
 
 ## Requirements
 
@@ -364,10 +371,13 @@ In our implementation, we will let users provide their own function.
 Hash functions evolve, old ones get broken (SHA-1), and so our ALBA
 implementation shouldn't get stuck with an inefficient / broken hash function.
 Moreover, the user might want to instantiate ALBA with a PRF (e.g. AES) instead
-of a hash function modeled as a random oracle for better theoretical guarantees.
+of a hash function modeled as a random oracle for better theoretical guarantees,
+or a circuit friendly hash function to be used in a proof system.
 With Rust's advanced trait system, making the hash function generic should be
 easy, and the runtime code performance should be fast due to compile time
 function resolution.
+The user would, however, be responsible for the security of the provided
+hash function.
 
 Moreover, we should *require* users to provide their own hash function.
 One reason is that when ALBA is used alongside other sub-protocols, that also
@@ -399,20 +409,23 @@ For example, the ALBA implementation should work with any signature type that
 exposes the underlying data as a `u8` slice.
 The exact interfaces will need to be determined.
 
-## Roadmap
+## Future plans
 
-We have already implemented the Telescope Bounded scheme
-in the centralized unweighted setting.
-Following that, we will have an implementation of the simple lottery, also
-in the centralized unweighted setting.
-After that we can think about good interfaces for our decentralized / weighted
-schemes, and implement those.
+We have successfully implemented the _Telescope Bounded_ scheme in the
+_centralized unweighted_ setting.
+Our next step will be to implement the _simple lottery_, also within the
+_centralized unweighted_ setting.
+Following these, we will focus on designing intuitive interfaces to support
+_decentralized_ and _weighted_ schemes, paving the way for their implementation.
 
-Concurrently, we can think about how to test and benchmark our implementations,
-as well as, implement a generic hash function, generic data elements, etc.
+Concurrently, we plan to develop testing and benchmarking methodologies to
+evaluate our implementations effectively,
+as well as, implement generic hash functions, generic data elements, etc.
 
-Periodically, it would be good to demo our library to the internal / external
-community to spread awareness and gather early feedback.
+To foster community engagement, we aim to periodically demonstrate our library
+to both internal and external audiences. 
+These demos will help raise awareness, gather early feedback, and identify
+areas for improvement.
 
 Finally, our library would benefit from future research to improve
 usability (see [definitions requirements](#definitions)), correctness
