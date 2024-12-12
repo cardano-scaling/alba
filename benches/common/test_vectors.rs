@@ -22,7 +22,7 @@ pub mod centralized {
         lower_bound_per: 60,
     };
 
-    /// This case corresponds to medium security requirements with more realistic set_size
+    /// This case corresponds to high security requirements with more realistic set_size
     const HIGH_PARAM: BenchParam = BenchParam {
         lambda_sec: 128.0,
         lambda_rel: 128.0,
