@@ -24,6 +24,11 @@ harness = false
 path = "benches/centralized_telescope/number_steps.rs"
 
 [[bench]]
+name = "centralized_proof_size"
+harness = false
+path = "benches/centralized_telescope/proof_size.rs"
+
+[[bench]]
 name = "centralized_proving_time"
 harness = false
 path = "benches/centralized_telescope/proving_time.rs"
