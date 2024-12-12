@@ -10,7 +10,7 @@ use blake2::{Blake2s256, Digest};
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
     let mut element_sequence = Vec::with_capacity(setup.proof_size as usize);
     for &element in prover_set {
-        if hash(setup, element) {
+        if lottery_hash(setup, element) {
             element_sequence.push(element);
         }
         if prover_set.len() as u64 >= setup.proof_size {
@@ -26,10 +26,10 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
         && proof
             .element_sequence
             .iter()
-            .all(|&element| hash(setup, element))
+            .all(|&element| lottery_hash(setup, element))
 }
 
-fn hash(setup: &Setup, element: Element) -> bool {
+fn lottery_hash(setup: &Setup, element: Element) -> bool {
     let mut hasher = Blake2s256::new();
     hasher.update(element);
     let digest: Hash = hasher.finalize().into();
