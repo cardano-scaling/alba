@@ -8,7 +8,8 @@ use crate::utils::types::Element;
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
 pub struct Wrapper {
-    setup: Setup,
+    /// Centralized telescope internal parameters
+    pub setup: Setup,
 }
 
 impl Wrapper {
