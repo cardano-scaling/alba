@@ -20,11 +20,11 @@ jobs:
           mdbook-version: '0.4.40'
 
       - name: 📓 Build website
-        run: mdbook build website
+        run: mdbook build docs/website
 
       - name: 🚀 Deploy
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./website/book
+          publish_dir: ./docs/website/book
           cname: alba.cardano-scaling.org
