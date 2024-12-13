@@ -1,4 +1,4 @@
-//! ALBA's bounded DFS scheme prove and verification functions
+//! Centralized Telescope's bounded DFS scheme prove and verification functions
 
 use super::params::Params;
 use super::proof::Proof;

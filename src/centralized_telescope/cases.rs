@@ -1,4 +1,5 @@
-//! ALBA's helper structures and trait for generating parameters
+//! Centralized Telescope's helper structures, traits and functions fo
+//! generating parameters
 
 use super::params::Params;
 use std::f64::consts::LOG2_E;

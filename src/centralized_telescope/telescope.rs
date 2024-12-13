@@ -1,3 +1,4 @@
+//! Customer facing Centralized Telescope structure
 use super::algorithm;
 use super::params::Params;
 use super::proof::Proof;
@@ -19,7 +20,25 @@ pub struct Telescope {
 }
 
 impl Telescope {
-    /// Initialize ALBA with `Params`.
+    /// Returns a `Telescope`` structure from input parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    ///
+    /// # Returns
+    ///
+    /// A `Telescope`` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let telescope = Telescope::create(128.0, 128.0, 1_000, 750);
+    /// ```
     pub fn create(
         soundness_param: f64,
         completeness_param: f64,
@@ -36,8 +55,29 @@ impl Telescope {
         }
     }
 
-    /// Initialize ALBA with user parameters and untrusted `Setup`, returning
-    /// the structure `Telescope` if internal parameters are secure, else None.+
+    /// Returns a `Telescope` structure from input and internal parameters if
+    /// the parameters verifies the paper bounds, otherwise None
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    /// * `params` - some centralized Telescope internal parameters
+    ///
+    /// # Returns
+    ///
+    /// A `Telescope` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
+    /// let telescope = Telescope::setup(128.0, 128.0, 1_000, 750, params);
+    /// ```
     pub fn setup(
         soundness_param: f64,
         completeness_param: f64,
@@ -55,8 +95,29 @@ impl Telescope {
         .then_some(Self::setup_unsafe(set_size, params))
     }
 
-    /// Initialize ALBA with `set_size` and unchecked `Setup`.
-    /// Use with caution, in tests or with trusted parameters.
+    /// Use with caution. Returns a `Telescope` structure from input and
+    /// internal parameters without checking the consistency between parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    /// * `params` - some centralized Telescope internal parameters
+    ///
+    /// # Returns
+    ///
+    /// A `Telescope` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
+    /// let telescope = Telescope::setup_unsafe(1_000, params);
+    /// ```
     pub fn setup_unsafe(set_size: u64, params: &Params) -> Self {
         Self {
             soundness_param: 0f64,
@@ -67,14 +128,57 @@ impl Telescope {
         }
     }
 
-    /// Alba's proving algorithm, based on a depth-first search algorithm.
-    /// Returns either a `Proof` or `None` if no proof is found.
+    /// Generates a Centralized Telescope proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current `Telescope` structure
+    /// * `prover_set` - an array of elements to generate an Alba proof on
+    ///
+    /// # Returns
+    ///
+    /// A `Proof` if found, `None` otherwise
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let set_size = 200;
+    /// let telescope = Telescope::create(128.0, 128.0, set_size, 150);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = telescope.prove(&prover_set).unwrap();
+    /// ```
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
         algorithm::prove(self.set_size, &self.params, prover_set)
     }
 
-    /// Alba's verification algorithm.
-    /// Returns true if and only if the proof is successfully verified.
+    /// Verifies a Centralized Telescope proof.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current `Telescope` structure
+    /// * `proof` - a centralized Telescope proof
+    ///
+    /// # Returns
+    ///
+    /// True if the verification is successful, false otherwise
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::telescope::Telescope;
+    /// let set_size = 200;
+    /// let telescope = Telescope::create(128.0, 128.0, set_size, 150);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = telescope.prove(&prover_set).unwrap();
+    /// assert!(telescope.verify(&proof));
+    /// ```
     pub fn verify(&self, proof: &Proof) -> bool {
         algorithm::verify(self.set_size, &self.params, proof)
     }
