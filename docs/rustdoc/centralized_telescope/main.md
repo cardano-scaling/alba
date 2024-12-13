@@ -1,34 +1,51 @@
 # Telescope - Construction with Bounded DFS
 
-In scenarios where $n_p$ is small, the probability of successfully constructing a valid proof in a single attempt decreases significantly compared to cases where $n_p$ is large.
-For large $n_p$, the prover can efficiently find valid tuples due to the abundance of elements satisfying the conditions, allowing the construction with prehashing to work seamlessly.
-However, with small $n_p$, the limited size of $S_p$ reduces the likelihood of constructing a valid proof within a single search.
-To overcome this, the approach leverages **retries with randomized indices** and **bounded DFS**, ensuring the prover can amplify the probability of success even with fewer elements while maintaining efficiency and security.
+In scenarios where $n_p$ is small, the parameters given for prehashed construction (relative to the security parameter, $\lambda$) are not optimal, resulting in a reduced probability of constructing a valid proof in a single attempt.
+For large $n_p$, the rapid growth in potential proof tuples ensures valid ones can be found efficiently, allowing the prehashed construction to work seamlessly.
+In contrast, small $n_p$ limits the search space, making the previous parameters inadequate.
+To address this, the **construction with bounded DFS** expands on the prehashed version with *retries*, *randomized indexing*, and *bounding* the DFS.
 
 ## Overview
-- This construction leverages retries and hash-based randomization to amplify the completeness when $n_p$ is small.
-- The prover retries multiple times ($r$ attempts) using different random indices $v$, increasing the chances of constructing a valid proof.
-- A bounded DFS search is employed to limit computational costs by setting a maximum number of steps.
+- When $n_p$ is large, the rapid growth in potential proof tuples increases the chances of finding a valid proof, making construction easier.
+- For small $n_p$, limited elements reduce the probability of finding a valid proof in a single attempt.
+- The generalized scheme compensates by using multiple retries indexed by $v$, where each retry applies fresh randomization via hash functions.
+- A bounded DFS search with a predefined step limit ensures computational efficiency and deterministic worst-case running time.
 
 ### Core components
-The generalized construction uses the same key parameters as prehashed construction but introduces:
-- Retries: Each retry is indexed by $v \in \[1, r\]$, where $r$ is chosen to ensure completeness.
-- Bounded Search: The DFS search depth is restricted by a parameter limit, which prevents excessive computation.
-
-The random functions used are:
-- $H_0 ~~:$ Prehashes elements of $S_p$ by generating a uniformly random value in $\[n_p\]$, creating bins for efficient filtering.
-- $H_1 ~~:$ Validates sequences by checking consistency with $H_0$. The function generates a uniformly random value in $\[n_p\]$.
-- $H_2 ~~:$ A final check determining the validity of the full sequence. Returns $1$ with the probability $q$.
+This generalized construction uses the same key parameters as prehashed construction but introduces:
+- Retries with index $v$: 
+  - The prover retries the proof generation process $r$ times.
+  - Each retry uses a different randomization index $v$, where $v \in \[1, r\]$, to diversify the search process.
+- Hash-based binning:
+  - Elements in $S_p$ are prehashed into bins using $H_0(v, \cdot)$, grouping elements based on their hash values.
+  - This process limits the search space for DFS, making it more efficient.
+- Bounded DFS:
+  - A depth-first search explores valid proof sequences of size $u$, using the bins for efficient lookup.
+  - The total number of steps is bounded by a limit to ensure efficiency.
 
 ## Protocol
-The protocol ensures the prover can successfully construct a valid proof even when $n_p$ is small by employing retries, hash-based binning, and bounded DFS.
-- Each element $s \in S_p$ is prehashed using a randomized hash function $H_0(v, s)$ for a specific retry index $v$.
-- The result of $H_0(v, s)$ assigns $s$ to a bin, effectively partitioning the prover's set $S_p$ into smaller groups for efficient search.
-- The prover attempts $r$ retries, each indexed by $v \in \[1, r\]$, to amplify the completeness of the protocol.
-- For each retry, a fresh partitioning of $S_p$ is generated using $H_0$, providing a randomized search space for the proof construction.
-- For each retry $v$, the prover initializes a bounded DFS process:
-    - Starting from each $t \in \[1, d\]$, the prover attempts to construct a valid sequence $(v, t, s_1, \ldots, s_u)$.
-    - The DFS explores elements within the bins precomputed by $H_0$, reducing unnecessary checks and focusing on valid extensions.
-    - The DFS search is restricted by a predefined limit to prevent runaway computation.
-- When a sequence of length $u$ is constructed, it is validated using $H_2$, which determines whether the sequence qualifies as a valid proof.
-- If $H_2(v, t, s_1, \ldots, s_u) = 1$, the sequence is accepted as a valid proof.
+1. **Initialization**:
+   - The prover begins by preparing for up to $r$ retries. 
+   - Each retry introduces a unique retry counter $v \in \[1, r\]$ to diversify the search space.
+   - Each retry is an independent attempt to construct a valid proof.
+2. **Prehashing**:
+   - For each retry, elements in $S_p$ are hashed using the hash function $H_0(v, s)$.
+   - This process groups elements based on their hash values, reducing the search space by allowing DFS to focus only on relevant elements.
+3. **Exploring starting points**:
+   - The prover iterates over all possible starting indices $t \in \[1, d\]$.
+   - For each $t$, the prover begins constructing a proof sequence $(t, s_1, ..., s_u)$, starting with $t$ and extending the sequence using elements from $S_p$ within their corresponding bins.
+4. **Bounded DFS**:
+   - A bounded DFS search is used to construct the sequence $(t, s_1, ..., s_u)$, with a shared step limit $B$ applied across all starting points $t$.
+   - At each step of DFS:
+     - The algorithm verifies if the current sequence $(t, s_1, ..., s_k)$ satisfies the intermediate condition $H_1(v, t, s_1, ..., s_k)$.
+     - If valid, it continues by appending new elements from the appropriate bin.
+     - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $r$, restarting the process with a new partitioning of elements.
+5. **Validation**:
+   - When the DFS has constructed a sequence of $u$ elements $(t, s_1, ..., s_u)$, it verifies whether the full sequence satisfies the final condition using $H_2(v, t, s_1, ..., s_u)$.
+   - If the sequence passes this check, it is accepted as a valid proof, and the prover outputs it.
+6. **Retry Mechanism**:
+   - If no valid proof is found for a given $t$ or if the step limit $B$ is exhausted for all $t$, the prover moves to the next retry by incrementing $v$.
+   - With the new $v$, the hash function $H_0(v, s)$ is applied to organize elements of $S_p$ into bins, and the process resumes from step 3.
+7. **Completion**:
+   - If a valid proof is found in any retry, the prover outputs the proof immediately.
+   - If all $r$ retries are exhausted without finding a valid proof, the process terminates, and the prover outputs $\bot$.
