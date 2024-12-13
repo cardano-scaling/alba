@@ -29,7 +29,7 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::Telescope;
     /// let telescope = Telescope::create(128.0, 128.0, 1_000, 750);
     /// ```
     pub fn create(
@@ -60,7 +60,7 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::Telescope;
     /// use alba::centralized_telescope::params::Params;
     /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
     /// let telescope = Telescope::setup(128.0, 128.0, 1_000, 750, params);
@@ -100,7 +100,7 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::Telescope;
     /// use alba::centralized_telescope::params::Params;
     /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
     /// let telescope = Telescope::setup_unsafe(1_000, params);
@@ -126,7 +126,7 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::Telescope;
     /// let set_size = 200;
     /// let telescope = Telescope::create(128.0, 128.0, set_size, 150);
     /// let mut prover_set = Vec::new();
@@ -153,7 +153,7 @@ impl Telescope {
     /// # Example
     ///
     /// ```
-    /// use alba::centralized_telescope::telescope::Telescope;
+    /// use alba::centralized_telescope::Telescope;
     /// let set_size = 200;
     /// let telescope = Telescope::create(128.0, 128.0, set_size, 150);
     /// let mut prover_set = Vec::new();
