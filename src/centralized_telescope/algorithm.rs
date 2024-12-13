@@ -2,7 +2,7 @@
 
 use super::proof::Proof;
 use super::round::Round;
-use super::setup::Setup;
+use super::params::Setup;
 use super::types::Hash;
 use crate::utils::sample;
 use crate::utils::types::Element;
