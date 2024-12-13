@@ -3,8 +3,6 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/main.md")]
 
-mod algorithm;
-
 mod cases;
 
 pub mod proof;
