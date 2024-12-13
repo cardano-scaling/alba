@@ -1,7 +1,7 @@
 //! Simple lottery prove and verify functions
 
 use super::proof::Proof;
-use super::setup::Setup;
+use super::params::Setup;
 use crate::utils::{
     sample,
     types::{Element, Hash},
