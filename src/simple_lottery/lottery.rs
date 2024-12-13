@@ -1,6 +1,5 @@
 use super::algorithm;
 use super::init::make_setup;
-use super::params::Params;
 use super::proof::Proof;
 use super::setup::Setup;
 use crate::utils::types::Element;
