@@ -7,11 +7,11 @@ use crate::utils::types::Element;
 
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
-pub struct Wrapper {
+pub struct Telescope {
     setup: Setup,
 }
 
-impl Wrapper {
+impl Telescope {
     /// Initialize ALBA with `Params`.
     pub fn create(params: &Params) -> Self {
         let setup = make_setup(params);
