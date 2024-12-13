@@ -1,7 +1,7 @@
 use super::algorithm;
 use super::init::make_setup;
+use super::params::Params;
 use super::proof::Proof;
-use super::params::Setup;
 use crate::utils::types::Element;
 
 /// The main centralized Telescope struct with prove and verify functions.
@@ -16,7 +16,7 @@ pub struct Telescope {
     /// Lower bound to prove on prover set
     lower_bound: u64,
     /// Internal parameters
-    setup: Setup,
+    params: Params,
 }
 
 impl Telescope {
@@ -27,37 +27,37 @@ impl Telescope {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
         Self {
             soundness_param,
             completeness_param,
             set_size,
             lower_bound,
-            setup,
+            params,
         }
     }
 
     /// Initialize ALBA with `set_size` and unchecked `Setup`.
     /// Use with caution, in tests or with trusted parameters.
-    pub fn setup_unsafe(set_size: u64, setup: &Setup) -> Self {
+    pub fn setup_unsafe(set_size: u64, params: &Params) -> Self {
         Self {
             soundness_param: 0f64,
             completeness_param: 0f64,
             set_size,
             lower_bound: 0,
-            setup: *setup,
+            params: *params,
         }
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Returns either a `Proof` or `None` if no proof is found.
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(&self.setup, prover_set)
+        algorithm::prove(self.set_size, &self.params, prover_set)
     }
 
     /// Alba's verification algorithm.
     /// Returns true if and only if the proof is successfully verified.
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(&self.setup, proof)
+        algorithm::verify(self.set_size, &self.params, proof)
     }
 }
