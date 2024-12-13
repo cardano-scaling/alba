@@ -1,6 +1,6 @@
 //! Centralized Telescope Proof structure
 
-#![doc = include_str!("../../docs/centralized_telescope/proof.md")]
+#![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof.md")]
 
 use crate::utils::types::Element;
 
