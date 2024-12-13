@@ -30,7 +30,7 @@ pub mod centralized {
             BenchmarkId::new(
                 bench_name,
                 format!(
-                    "params={{λsec: {}, λrel:{}, Sp:{} ({}%), n_p:{}, n_f:{}}}",
+                    "params={{λsec:{}, λrel:{}, Sp:{} ({}%), n_p:{}, n_f:{}}}",
                     self.lambda_sec,
                     self.lambda_rel,
                     self.set_card,
