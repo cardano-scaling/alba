@@ -1,4 +1,4 @@
-//! Centralized Telescope's helper structures, traits and functions fo
+//! Centralized Telescope's helper structures, traits and functions for
 //! generating parameters
 
 use super::params::Params;
