@@ -5,8 +5,6 @@ pub mod params;
 
 pub mod proof;
 
-mod algorithm;
-
 mod lottery;
 
 // Re-exports
