@@ -135,6 +135,20 @@ mod tests {
         };
         "small_lambda_security"
     )]
+    #[test_case(
+        Params {
+            soundness_param: 128.0,
+            completeness_param: 128.0,
+            set_size: 200,
+            lower_bound: 100,
+        },
+        Expected {
+            u: 101,
+            mu_lb: 199.99,
+            mu_ub: 200.01,
+        };
+        "small_dataset"
+    )]
     fn all(params: Params, expected: Expected) {
         let setup = make_setup(&params);
         assert_eq!(expected.u, setup.proof_size);
