@@ -23,7 +23,7 @@ Additionally, it incorporates a new hash function $H_0$, specifically introduced
 For this construction, the random functions are as follows:
 - $H_0: ~~$ a random function, generating a uniformly random value in $\[n_p\]$.
 - $H_1: ~~$ a random function, generating a uniformly random value in $\[n_p\]$.
-- $H_2: ~~$ A random oracle returning $1$ with probability $q$, applied as a final test to determine if a tuple qualifies as a valid proof.
+- $H_2: ~~$ A random function returning $1$ with probability $q$, applied as a final test to determine if a tuple qualifies as a valid proof.
 
 ## Protocol
 - The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to the "bin" numbered $H_0(s)$.
@@ -49,7 +49,7 @@ $\lambda_{rel}$ ensures that an honest prover, with a sufficiently large set $S_
   - A higher value of $d$ increases the likelihood of constructing a valid proof, ensuring robustness in random oracle evaluations.
 - The probability that a tuple of full size is selected, $q$, is inversely proportional to $d$ and approximates $\lambda_{rel} / d$:
   - Since $d$ is related to $u$, $q$ is also approximately inversely proportional to $u$.
-  - A smaller $q$ improves security by lowering the chance of accepting invalid proofs but decreases the probability of finding valid proofs, requiring a larger $d$ to compensate.
+  - A smaller $q$ improves security by lowering the chance of accepting cheating proofs but decreases the probability of finding valid proofs, requiring a larger $d$ to compensate.
 
 $$
 u \coloneqq \Bigg\lceil \frac{\lambda_{sec} + \log (\lambda_{rel} + \log 3) + 1 - \log \log e}{\log (n_p / n_f)}\Bigg\rceil,
@@ -82,7 +82,7 @@ The prover is working with $d = 2$ distinct sequences (i.e., the prover will try
 > - At Depth $k = 2$:
 >   - Extend the sequence by selecting the next element $s_2 = C$.
 >   - Check if the sequence $(1, A, C)$ is valid by computing $H_1(1, A, C)$.
->   - Also check if the prehash value of $C$ matches the current sequence's bin ($bin_2$, from $H_0(A)$). Since $H_0(C) = 2$, the sequence can be extended.
+>   - Also check if the prehash value of $C$ matches the current sequence's bin: $bin_2$, from $H_0(A)$. Since $H_0(C) = 2$, the sequence can be extended.
 >   - If $H_1(1, A, C) = 2$, the sequence $(1, A, C)$ is valid so far.
 > - At Depth $k = 3$ (Final Element):
 >   - Add the third element $s_3 = B$ to extend the sequence to $(1, A, C, B)$.
