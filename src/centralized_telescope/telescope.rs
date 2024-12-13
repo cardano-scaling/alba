@@ -24,6 +24,25 @@ impl Telescope {
         Self { set_size, params }
     }
 
+    /// Initialize ALBA with user parameters and untrusted `Setup`, returning
+    /// the structure `Telescope` if internal parameters are secure, else None.+
+    pub fn setup(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Params,
+    ) -> Option<Self> {
+        Params::check_from(
+            soundness_param,
+            completeness_param,
+            set_size,
+            lower_bound,
+            params,
+        )
+        .then_some(Self::setup_unsafe(set_size, params))
+    }
+
     /// Initialize ALBA with `set_size` and unchecked `Setup`.
     /// Use with caution, in tests or with trusted parameters.
     pub fn setup_unsafe(set_size: u64, params: &Params) -> Self {
