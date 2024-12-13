@@ -17,6 +17,8 @@ fn truncate_array<const N: usize, const M: usize>(arr: &[u8; N]) -> &[u8; M] {
 /// `hash` must be at least 16 bytes.
 #[allow(clippy::arithmetic_side_effects)]
 pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u64> {
+    debug_assert!(n > 0);
+
     let hash: &Seed = truncate_array(hash);
 
     // Computes the integer representation of hash modulo n when n is not a
@@ -54,6 +56,9 @@ pub(crate) fn sample_uniform<const N: usize>(hash: &[u8; N], n: u64) -> Option<u
 /// to a Bernoulli distribution (c.f. Appendix B, Alba paper).
 /// `hash` must be at least 16 bytes.
 pub(crate) fn sample_bernoulli<const N: usize>(hash: &[u8; N], q: f64) -> bool {
+    debug_assert!(q >= 0.0);
+    debug_assert!(q <= 1.0);
+
     let hash: &Seed = truncate_array(hash);
 
     // We find an approximation x/y of q such that 0 <= q - x/y <= ε, where y = 2^128
