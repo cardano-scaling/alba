@@ -30,9 +30,17 @@ pub fn make_setup(params: &Params) -> Setup {
         if (middle <= left) || (middle >= right) {
             let u = bound_soundness.max(bound_completeness).ceil();
             let mu = u * ratio_completeness;
-            return Setup {
-                proof_size: u as u64,
-                lottery_probability: mu / params.set_size as f64,
+            return if params.lower_bound < u as u64 {
+                Setup {
+                    proof_size: params.lower_bound.saturating_add(1),
+                    lottery_probability: 1.0,
+                }
+            } else {
+                // Since u <= n_f, the lottery probability p = u * r_c / n_p <= n_f / n_p * r_c < 1.
+                Setup {
+                    proof_size: u as u64,
+                    lottery_probability: mu / params.set_size as f64,
+                }
             };
         }
 
