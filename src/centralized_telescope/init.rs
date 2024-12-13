@@ -1,6 +1,6 @@
 //! ALBA's bounded DFS scheme setup functions
 
-use super::setup::Setup;
+use super::params::Setup;
 
 use std::f64::consts::LOG2_E;
 
