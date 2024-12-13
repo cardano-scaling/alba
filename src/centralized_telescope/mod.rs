@@ -13,7 +13,5 @@ mod round;
 
 pub mod params;
 
-mod types;
-
 mod telescope;
 pub use telescope::Telescope;
