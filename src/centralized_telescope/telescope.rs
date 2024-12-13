@@ -1,6 +1,5 @@
 use super::algorithm;
 use super::init::make_setup;
-use super::params::Params;
 use super::proof::Proof;
 use super::setup::Setup;
 use crate::utils::types::Element;
@@ -8,20 +7,46 @@ use crate::utils::types::Element;
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
 pub struct Telescope {
+    /// Soundness security parameter
+    soundness_param: f64,
+    /// Completeness security parameter
+    completeness_param: f64,
+    /// Approximate size of the prover set to lower bound
+    set_size: u64,
+    /// Lower bound to prove on prover set
+    lower_bound: u64,
+    /// Internal parameters
     setup: Setup,
 }
 
 impl Telescope {
     /// Initialize ALBA with `Params`.
-    pub fn create(params: &Params) -> Self {
-        let setup = make_setup(params);
-        Self::create_unsafe(&setup)
+    pub fn create(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+    ) -> Self {
+        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        Self {
+            soundness_param,
+            completeness_param,
+            set_size,
+            lower_bound,
+            setup,
+        }
     }
 
-    /// This function is unsafe to use and should be avoided.
-    /// Initialize ALBA with `Setup`.
-    pub fn create_unsafe(setup: &Setup) -> Self {
-        Self { setup: *setup }
+    /// Initialize ALBA with `set_size` and unchecked `Setup`.
+    /// Use with caution, in tests or with trusted parameters.
+    pub fn setup_unsafe(set_size: u64, setup: &Setup) -> Self {
+        Self {
+            soundness_param: 0f64,
+            completeness_param: 0f64,
+            set_size,
+            lower_bound: 0,
+            setup: *setup,
+        }
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.
