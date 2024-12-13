@@ -5,6 +5,8 @@
 
 mod algorithm;
 
+mod cases;
+
 pub mod proof;
 
 mod round;
