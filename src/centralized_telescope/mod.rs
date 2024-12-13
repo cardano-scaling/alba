@@ -17,7 +17,7 @@ pub mod setup;
 
 mod types;
 
-mod wrapper;
+mod telescope;
 
 // Re-exports
-pub use wrapper::Wrapper as CentralizedTelescope;
+pub use telescope::Wrapper as CentralizedTelescope;
