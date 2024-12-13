@@ -1,6 +1,6 @@
 //! ALBA's helper structures and trait for generating parameters
 
-use super::params::Params;
+use super::setup::Setup;
 use std::f64::consts::LOG2_E;
 
 pub(super) enum Cases {
@@ -51,9 +51,10 @@ pub(super) trait Case {
     fn dfs_bound(&self, proof_size: f64, search_width: u64) -> u64;
 
     /// Returns Params
-    fn create_params(&self, proof_size: f64) -> Params {
+    fn create_params(&self, proof_size: f64, set_size: u64) -> Setup {
         let search_width = self.search_width(proof_size);
-        Params {
+        Setup {
+            set_size,
             proof_size: proof_size as u64,
             max_retries: self.max_retries(),
             search_width,
