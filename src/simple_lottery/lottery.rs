@@ -1,4 +1,3 @@
-use super::algorithm;
 use super::params::Params;
 use super::proof::Proof;
 use crate::utils::types::Element;
@@ -29,11 +28,11 @@ impl Lottery {
 
     /// Returns either a `Proof` or `None` if no proof is found.
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(&self.params, prover_set)
+        Proof::new(&self.params, prover_set)
     }
 
     /// Returns true if and only if the proof is successfully verified.
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(&self.params, proof)
+        proof.verify(&self.params)
     }
 }
