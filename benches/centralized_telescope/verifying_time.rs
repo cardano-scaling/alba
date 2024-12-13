@@ -14,7 +14,7 @@ use utils::{
     setup, NAME,
 };
 
-/// Function benchmarking n times the verification time
+/// Function benchmarking `n` times the verification time
 fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
     let mut rng = ChaCha20Rng::from_entropy();
     let mut total_duration = Duration::ZERO;
