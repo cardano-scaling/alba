@@ -9,8 +9,6 @@ pub mod setup;
 
 pub mod proof;
 
-mod types;
-
 mod algorithm;
 
 mod wrapper;
