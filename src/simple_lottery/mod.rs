@@ -3,8 +3,6 @@
 
 pub mod init;
 
-pub mod params;
-
 pub mod setup;
 
 pub mod proof;
