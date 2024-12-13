@@ -1,5 +1,4 @@
 use super::algorithm;
-use super::init::make_setup;
 use super::params::Params;
 use super::proof::Proof;
 use crate::utils::types::Element;
@@ -18,7 +17,7 @@ impl Lottery {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
         Self::create_unsafe(&params)
     }
 
