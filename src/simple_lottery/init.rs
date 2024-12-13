@@ -1,6 +1,6 @@
 //! Parameter derivation for simple lottery.
 
-use super::setup::Setup;
+use super::params::Setup;
 
 use std::f64::consts::LN_2;
 

@@ -1,7 +1,7 @@
 use super::algorithm;
 use super::init::make_setup;
 use super::proof::Proof;
-use super::setup::Setup;
+use super::params::Setup;
 use crate::utils::types::Element;
 
 /// The main simple lottery struct with prove and verify functions.
