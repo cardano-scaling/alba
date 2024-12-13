@@ -13,8 +13,13 @@ pub struct Lottery {
 
 impl Lottery {
     /// Initialize ALBA with `Params`.
-    pub fn create(params: &Params) -> Self {
-        let setup = make_setup(params);
+    pub fn create(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+    ) -> Self {
+        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
         Self::create_unsafe(&setup)
     }
 
