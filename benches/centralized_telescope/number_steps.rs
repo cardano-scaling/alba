@@ -42,7 +42,7 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
 /// Run step benchmarks on list of parameters, varying the dataset the prover
 /// generates a proof from. More particularly we change
 /// - the dataset elements,
-/// - the dataset cardinality, between set_size and set_card.
+/// - the dataset cardinality, between `set_size` and `set_card`.
 fn step_benches(c: &mut Criterion<Steps>) {
     benchmarks::<u64, u64, Steps>(
         c,
