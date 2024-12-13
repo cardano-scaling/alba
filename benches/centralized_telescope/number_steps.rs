@@ -13,7 +13,7 @@ use utils::{
             centralized::{benchmarks, BenchParam},
             Steps,
         },
-        test_vectors::centralized::ALL_TESTS,
+        test_vectors::centralized::SHORT_TESTS,
     },
     setup, NAME,
 };
@@ -46,7 +46,7 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
 fn step_benches(c: &mut Criterion<Steps>) {
     benchmarks::<u64, u64, Steps>(
         c,
-        ALL_TESTS,
+        SHORT_TESTS,
         format!("{} - {}", NAME, "Steps"),
         "Prove",
         &prove_steps,
