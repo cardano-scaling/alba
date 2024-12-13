@@ -1,13 +1,13 @@
 use super::algorithm;
 use super::init::make_setup;
+use super::params::Params;
 use super::proof::Proof;
-use super::params::Setup;
 use crate::utils::types::Element;
 
 /// The main simple lottery struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
 pub struct Lottery {
-    setup: Setup,
+    params: Params,
 }
 
 impl Lottery {
@@ -18,23 +18,23 @@ impl Lottery {
         set_size: u64,
         lower_bound: u64,
     ) -> Self {
-        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
-        Self::create_unsafe(&setup)
+        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        Self::create_unsafe(&params)
     }
 
     /// This function is unsafe to use and should be avoided.
-    /// Initialize ALBA with `Setup`.
-    pub fn create_unsafe(setup: &Setup) -> Self {
-        Self { setup: *setup }
+    /// Initialize ALBA with `Params`.
+    pub fn create_unsafe(params: &Params) -> Self {
+        Self { params: *params }
     }
 
     /// Returns either a `Proof` or `None` if no proof is found.
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(&self.setup, prover_set)
+        algorithm::prove(&self.params, prover_set)
     }
 
     /// Returns true if and only if the proof is successfully verified.
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(&self.setup, proof)
+        algorithm::verify(&self.params, proof)
     }
 }

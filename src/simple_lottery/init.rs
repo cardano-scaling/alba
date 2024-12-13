@@ -1,16 +1,16 @@
 //! Parameter derivation for simple lottery.
 
-use super::params::Setup;
+use super::params::Params;
 
 use std::f64::consts::LN_2;
 
-/// Calculates Setup parameters.
+/// Calculates Params parameters.
 pub fn make_setup(
     soundness_param: f64,
     completeness_param: f64,
     set_size: u64,
     lower_bound: u64,
-) -> Setup {
+) -> Params {
     // The following follows section 4.1 of the ALBA paper. https://eprint.iacr.org/2023/1655
 
     let ratio = set_size as f64 / lower_bound as f64;
@@ -34,7 +34,7 @@ pub fn make_setup(
         if (middle <= left) || (middle >= right) {
             let u = bound_soundness.max(bound_completeness).ceil();
             let mu = u * ratio_completeness;
-            return Setup {
+            return Params {
                 proof_size: u as u64,
                 lottery_probability: mu / set_size as f64,
             };
@@ -135,9 +135,9 @@ mod tests {
         lower_bound: u64,
         expected: Expected,
     ) {
-        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
-        assert_eq!(expected.u, setup.proof_size);
-        let mu = setup.lottery_probability * set_size as f64;
+        let params = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        assert_eq!(expected.u, params.proof_size);
+        let mu = params.lottery_probability * set_size as f64;
         assert!(mu > expected.mu_lb);
         assert!(mu < expected.mu_ub);
     }
