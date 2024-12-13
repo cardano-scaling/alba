@@ -11,7 +11,7 @@ use utils::common::{
 fn proof_bench(params: &[BenchParam]) {
     println!("Centralized telescope -- proof size");
     println!(
-        "{0: <10} | {1: <10} | {2: <10} | {3: <10} | {4: <10}",
+        "{0: <23} | {1: <26} | {2: <14} | {3: <17} | {4: <14}",
         "soundness_param (λ_sec)",
         "completeness_param (λ_rel)",
         "set_size (n_p)",
@@ -27,7 +27,7 @@ fn proof_bench(params: &[BenchParam]) {
         };
         let setup = init::make_setup(&params);
         println!(
-            "{0: <10} | {1: <10} | {2: <10} | {3: <10} | {4: <10}",
+            "{0: <23} | {1: <26} | {2: <14} | {3: <17} | {4: <14}",
             param.lambda_sec,
             param.lambda_rel,
             param.set_size_per,
