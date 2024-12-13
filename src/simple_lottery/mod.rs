@@ -11,7 +11,7 @@ pub mod proof;
 
 mod algorithm;
 
-mod wrapper;
+mod lottery;
 
 // Re-exports
-pub use wrapper::Wrapper as SimpleLottery;
+pub use lottery::Wrapper as SimpleLottery;
