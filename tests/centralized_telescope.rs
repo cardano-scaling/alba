@@ -2,9 +2,8 @@
 
 mod utils;
 
-use alba::centralized_telescope::init::make_setup;
-use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::CentralizedTelescope;
+use alba::centralized_telescope::{params::Params, proof::Proof};
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 use utils::gen_items;
@@ -25,7 +24,7 @@ fn test(created_with_params: bool) {
         let alba = if created_with_params {
             CentralizedTelescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
-            let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+            let setup = Params::new(soundness_param, completeness_param, set_size, lower_bound);
             CentralizedTelescope::setup_unsafe(set_size, &setup)
         };
         let proof = alba.prove(&s_p).unwrap();
