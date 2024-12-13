@@ -1,5 +1,4 @@
 //! Customer facing Centralized Telescope structure
-use super::algorithm;
 use super::params::Params;
 use super::proof::Proof;
 use crate::utils::types::Element;
@@ -137,7 +136,7 @@ impl Telescope {
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// ```
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(self.set_size, &self.params, prover_set)
+        Proof::new(self.set_size, &self.params, prover_set)
     }
 
     /// Verifies a Centralized Telescope proof.
@@ -165,6 +164,6 @@ impl Telescope {
     /// assert!(telescope.verify(&proof));
     /// ```
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(self.set_size, &self.params, proof)
+        proof.verify(self.set_size, &self.params)
     }
 }
