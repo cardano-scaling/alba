@@ -14,8 +14,7 @@ use blake2::{Blake2s256, Digest};
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
     debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
-    // Run prove_index up to max_retries times
-    (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
+    prove_routine(setup, prover_set).2
 }
 
 /// Alba's verification algorithm, returns true if the proof is
@@ -54,9 +53,19 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     proof_hash(setup, &round)
 }
 
-/// Alba's proving algorithm used for benchmarking, returning a proof if found
-/// as well as the number of steps and retries done when generating it.
-pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+/// Internal module for tests and benchmarks
+pub mod internal {
+    use super::{prove_routine, Element, Proof, Setup};
+
+    /// Alba's proving algorithm used for benchmarking, returning a proof if found
+    /// as well as the number of steps and retries done when generating it.
+    pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+        prove_routine(setup, prover_set)
+    }
+}
+
+/// Prove routing
+fn prove_routine(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
     let mut steps: u64 = 0;
     let mut retries: u64 = 0;
 

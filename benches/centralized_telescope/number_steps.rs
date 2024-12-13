@@ -18,7 +18,7 @@ use utils::{
     setup, NAME,
 };
 
-use alba::centralized_telescope::algorithm::bench;
+use alba::centralized_telescope::algorithm::internal::bench;
 
 /// Function benchmarking n times the number of DFS calls, aka steps
 #[allow(clippy::unit_arg)]
