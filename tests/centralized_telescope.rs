@@ -26,7 +26,7 @@ fn test(created_with_params: bool) {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
             let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
-            Telescope::setup_unsafe(&setup)
+            Telescope::setup_unsafe(set_size, &setup)
         };
         let proof = alba.prove(&s_p).unwrap();
         assert!(alba.verify(&proof));
