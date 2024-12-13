@@ -1,4 +1,4 @@
-//! Centralized Telescope's Params structure comprising the internal parameters
+//! Centralized Telescope's `Params` structure comprising the internal parameters
 use super::cases::{Case, Cases, High, Mid, Small};
 use std::f64::consts::LOG2_E;
 
@@ -19,7 +19,7 @@ pub struct Params {
 
 impl Params {
     /// Setup algorithm taking as input the security parameters, the set size
-    /// and the lower bound and returning the internal parameters Params
+    /// and the lower bound and returning the internal parameters `Params`
     pub fn new(
         soundness_param: f64,
         completeness_param: f64,
