@@ -65,42 +65,66 @@ $$
 - If $n_p$ is too small, bins may not be sufficiently populated, reducing the chances of constructing valid tuples.
 
 ### Example walkthrough
-Let's assume the prover's set $S_p$ contains the elements $\{A, B, C, D\}$, and the prover needs to build sequences of length $u = 3$. 
-The prover is working with $d = 2$ distinct sequences (i.e., the prover will try to construct a sequence for each $t = 1$ and $t = 2$).
-
+- **Prover’s set** $S_p = \{A, B, C, D\}$
+- **Proof length** $u = 3$
+- **Search width** $d = 2$ (i.e., $t \in \{1, 2\}$)
+- **Hash functions**:
+  - $H_0(s)$: Prehash for binning elements of $S_p$.
+  - $H_1(v, t, s_1, \ldots, s_k)$: Determines the next bin to explore based on the sequence so far.
+  - $H_2(v, t, s_1, \ldots, s_u)$: Final validity check for the sequence.
 > ---
-> - The prover first precomputes the hash values for each element in their set using the random oracle $H_0$. This assigns each element to a "bin" based on the result of $H_0$.
+> - The prover precomputes $H_0(s)$ for all elements in $S_p$, assigning each element to a bin:
 >   - $H_0(A) = 2$
 >   - $H_0(B) = 1$
 >   - $H_0(C) = 2$
 >   - $H_0(D) = 3$
-> - The prover begins the construction process by selecting $t = 1$ as the starting point and aims to construct a sequence of length $u = 3$.
-> - At Depth $k = 1$:
->   - Select $s_1 = A$ from the set $S_p$.
->   - Compute $H_1(1, A)$ to check if this initial sequence is valid.
->   - If $H_1(1, A) = H_0(A)$, the sequence $(1, A)$ is valid so far. Since $H_0(A) = 2$, let's assume $H_1(1, A) = 2$, and the sequence passes this check.
-> - At Depth $k = 2$:
->   - Extend the sequence by selecting the next element $s_2 = C$.
->   - Check if the sequence $(1, A, C)$ is valid by computing $H_1(1, A, C)$.
->   - Also check if the prehash value of $C$ matches the current sequence's bin: $bin_2$, from $H_0(A)$. Since $H_0(C) = 2$, the sequence can be extended.
->   - If $H_1(1, A, C) = 2$, the sequence $(1, A, C)$ is valid so far.
-> - At Depth $k = 3$ (Final Element):
->   - Add the third element $s_3 = B$ to extend the sequence to $(1, A, C, B)$.
->   - Compute $H_1(1, A, C, B)$ and check if the prehash value of $B$ matches the current bin ($bin_2$). Since $H_0(B) = 1$, which does not match $bin_2$, this sequence extension fails.
-> - Backtracking:
->   - Backtrack and try a different element for $s_3$. Now, try $s_3 = D$.
->   - Compute $H_1(1, A, C, D)$. Since $H_0(D) = 3$ and does not match $bin_2$, this also fails.
->   - Backtrack further but continue trying until a valid sequence is found.
-> - Since the prover couldn't find a valid sequence for $t = 1$, they now try $t = 2$ and start the DFS process again.
-> - At Depth $k = 1$:
->   - Select $s_1 = B$, compute $H_1(2, B)$, and check if it matches $H_0(B)$. If $H_1(2, B) = 1$, this sequence is valid so far.
-> - At Depth $k = 2$:
->   - Select $s_2 = A$. Since $H_0(A) = 2$, check if $H_1(2, B, A) = 2$. If this holds, the sequence $(2, B, A)$ is valid at this step.
-> - At Depth $k = 3$ (Final Element):
->   - Add $s_3 = C$ to extend the sequence to $(2, B, A, C)$. Since $H_0(C) = 2$, compute $H_1(2, B, A, C)$ and check if it matches $bin_2$. If $H_1(2, B, A, C) = 2$, this sequence is valid so far.
-> - Once the prover has constructed the full sequence $(2, B, A, C)$, they perform the final validation using the random oracle $H_2$.
->   - The prover computes $H_2(2, B, A, C)$. If this returns $1$, the entire sequence is valid, and the prover has successfully found a valid proof.
->     - The sequence $(2, B, A, C)$ serves as proof that the prover knows a sufficiently large set of elements that satisfy the predicate.
+> - Bins are grouped as follows:
+>   - Bin 1: $\{B\}$
+>   - Bin 2: $\{A, C\}$
+>   - Bin 3: $\{D\}$
+> ---
+> - The prover starts with $t = 1$ and attempts to construct a valid sequence of length $u = 3$ using bounded DFS.
+> - Depth $k = 1$:
+>   - Compute $H_1(1)$ to determine the first bin to explore.
+>     - Assume $H_1(1) = 2$, so the prover looks in bin 2.
+>   - Select $s_1 = A$ from bin 2.
+>     - Compute $H_1(1, A)$ to check where to explore next.
+>     - $H_1(1, A)$ takes the current sequence $(1, A)$ and outputs the bin index for the next step.
+>     - Assume $H_1(1, A) = 3$, meaning the prover should explore bin 3.
+> - Depth $k = 2$:
+>   - Look in bin 3, which contains $\{D\}$.
+>   - Select $s_2 = D$.
+>   - Compute $H_1(1, A, D)$ to check where to explore next.
+>     - Assume $H_1(1, A, D) = 1$, meaning the prover should explore bin 1.
+> - Depth $k = 3$ (Final Element):
+>   - Look in bin 1, which contains $\{B\}$.
+>   - Select $s_3 = B$.
+>   - Compute $H_1(1, A, D, B)$ to check if this sequence can proceed further.
+>     - Assume $H_1(1, A, D, B) = 3$, which indicates a mismatch with the required condition. The sequence is invalid.
+> - Backtracking for $t = 1$:
+>   - After exhausting all possible sequences for $t = 1$, no valid proof is found.
+>   - The prover backtracks and tries other combinations of $s_1$, $s_2$, and $s_3$.
+> - Step 3: Retry with $t = 2$
+>   - The prover now starts the process for $t = 2$.
+> - Depth $k = 1$:
+>   - Compute $H_1(2)$ to determine the first bin.
+>     - Assume $H_1(2) = 1$, so the prover looks in bin 1.
+>   - Select $s_1 = B$.
+>   - Compute $H_1(2, B)$ to check where to explore next.
+>     - Assume $H_1(2, B) = 2$, meaning the prover should explore bin 2.
+> - Depth $k = 2$:
+>   - Look in bin 2, which contains $\{A, C\}$.
+>   - Select $s_2 = A$.
+>   - Compute $H_1(2, B, A)$ to check where to explore next.
+>     - Assume $H_1(2, B, A) = 3$, meaning the prover should explore bin 3.
+> - Depth $k = 3$ (Final Element):
+>   - Look in bin 3, which contains $\{D\}$.
+>   - Select $s_3 = D$.
+>   - Compute $H_1(2, B, A, D)$ to check if this sequence is valid so far.
+>     - Assume $H_1(2, B, A, D) = 3$, which satisfies the condition.
+> - Step 4: Final Validation for $t = 2$
+>   - Validate the full sequence $(2, B, A, D)$ using $H_2(2, B, A, D)$.
+>     - If $H_2(2, B, A, D) = 1$, the sequence is valid, and the prover outputs it as proof.
 > ---
 
 ## Functions
