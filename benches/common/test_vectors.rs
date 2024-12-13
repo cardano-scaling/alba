@@ -8,27 +8,27 @@ pub mod centralized {
     const LOW_PARAM: BenchParam = BenchParam {
         lambda_sec: 64.0,
         lambda_rel: 64.0,
-        set_card: 1_000,
-        set_size_per: 90,
-        lower_bound_per: 60,
+        set_cardinality: 1_000,
+        set_size_percentage: 90,
+        lower_bound_percentage: 60,
     };
 
     /// This case corresponds to medium security requirements with more realistic set_size
     const MID_PARAM: BenchParam = BenchParam {
         lambda_sec: 80.0,
         lambda_rel: 80.0,
-        set_card: 1_000,
-        set_size_per: 80,
-        lower_bound_per: 60,
+        set_cardinality: 1_000,
+        set_size_percentage: 80,
+        lower_bound_percentage: 60,
     };
 
     /// This case corresponds to high security requirements with more realistic set_size
     const HIGH_PARAM: BenchParam = BenchParam {
         lambda_sec: 128.0,
         lambda_rel: 128.0,
-        set_card: 1_000,
-        set_size_per: 80,
-        lower_bound_per: 67,
+        set_cardinality: 1_000,
+        set_size_percentage: 80,
+        lower_bound_percentage: 67,
     };
 
     pub const SHORT_TESTS: &[BenchParam; 2] = &[LOW_PARAM, MID_PARAM];

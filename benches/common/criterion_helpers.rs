@@ -8,7 +8,6 @@ use criterion::{
 
 pub mod centralized {
     use super::{BenchmarkId, Criterion, Measurement};
-
     /// Benchmark parameters
     #[derive(Debug, Clone, Copy)]
     pub struct BenchParam {
@@ -17,11 +16,11 @@ pub mod centralized {
         /// Completeness Security parameter
         pub lambda_rel: f64,
         /// Alba's set cardinality (|Sp|)
-        pub set_card: u64,
+        pub set_cardinality: u64,
         /// Alba's set_size (np) parameter in percentage of the set cardinality
-        pub set_size_per: u64,
+        pub set_size_percentage: u64,
         /// Alba's lower bound (nf) parameter in percentage of the set cardinality
-        pub lower_bound_per: u64,
+        pub lower_bound_percentage: u64,
     }
 
     impl BenchParam {
@@ -33,10 +32,10 @@ pub mod centralized {
                     "params={{λsec:{}, λrel:{}, Sp:{} ({}%), n_p:{}, n_f:{}}}",
                     self.lambda_sec,
                     self.lambda_rel,
-                    self.set_card,
+                    self.set_cardinality,
                     pc,
-                    self.set_size_per,
-                    self.lower_bound_per
+                    self.set_size_percentage,
+                    self.lower_bound_percentage
                 ),
             )
         }
@@ -57,23 +56,26 @@ pub mod centralized {
             // Benchmark where the prover only has access to np percent elements of Sp,
             // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
             let low = param
-                .set_card
-                .saturating_mul(param.set_size_per)
+                .set_cardinality
+                .saturating_mul(param.set_size_percentage)
                 .div_ceil(100);
-            group.bench_function(param.bench_id(bench_name, param.set_size_per), move |b| {
-                b.iter_custom(|n| f(param, low, n));
-            });
+            group.bench_function(
+                param.bench_id(bench_name, param.set_size_percentage),
+                move |b| {
+                    b.iter_custom(|n| f(param, low, n));
+                },
+            );
 
             // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
-            let mean = param.set_size_per.saturating_add(100).div_ceil(2);
-            let mid: u64 = param.set_card.saturating_add(low).div_ceil(2);
+            let mean = param.set_size_percentage.saturating_add(100).div_ceil(2);
+            let mid: u64 = param.set_cardinality.saturating_add(low).div_ceil(2);
             group.bench_function(param.bench_id(bench_name, mean), move |b| {
                 b.iter_custom(|n| f(param, mid, n));
             });
 
             // Benchmark where the prover only has access to all elements of Sp
             group.bench_function(param.bench_id(bench_name, 100), move |b| {
-                b.iter_custom(|n| f(param, param.set_card, n));
+                b.iter_custom(|n| f(param, param.set_cardinality, n));
             });
         }
 
