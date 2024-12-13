@@ -38,6 +38,7 @@ ALBA is an ideal choice for applications that require:
 - *Fast proof generation and verification*, such as in blockchain systems or multisignature schemes.
 - *Efficient decentralized collaboration*, enabling multiple participants to jointly prove knowledge.
 - *Flexibility in tradeoffs*, balancing proof size and communication overhead.
+
 Whether it is for multisignatures, proof-of-stake systems, or secure voting protocols, ALBA provides a robust, scalable, and efficient solution for proving knowledge across diverse use cases.
 
 ## Implementation
