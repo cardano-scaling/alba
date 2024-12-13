@@ -4,3 +4,4 @@ dist-newstyle
 .DS_Store
 target
 Cargo.lock
+docs
