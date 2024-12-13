@@ -17,12 +17,25 @@ impl Lottery {
         lower_bound: u64,
     ) -> Self {
         let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-        Self::create_unsafe(&params)
+        Self::setup_unsafe(&params)
     }
 
-    /// This function is unsafe to use and should be avoided.
     /// Initialize ALBA with `Params`.
-    pub fn create_unsafe(params: &Params) -> Self {
+    pub fn setup(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Params,
+    ) -> Option<Self> {
+        params
+            .check_from(soundness_param, completeness_param, set_size, lower_bound)
+            .then_some(Self::setup_unsafe(params))
+    }
+
+    /// Use with caution. Returns a `Lottery` structure from unchecked internal
+    /// parameters.
+    pub fn setup_unsafe(params: &Params) -> Self {
         Self { params: *params }
     }
 
