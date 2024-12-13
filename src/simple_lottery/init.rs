@@ -1,15 +1,19 @@
 //! Parameter derivation for simple lottery.
 
-use super::params::Params;
 use super::setup::Setup;
 
 use std::f64::consts::LN_2;
 
 /// Calculates Setup parameters.
-pub fn make_setup(params: &Params) -> Setup {
+pub fn make_setup(
+    soundness_param: f64,
+    completeness_param: f64,
+    set_size: u64,
+    lower_bound: u64,
+) -> Setup {
     // The following follows section 4.1 of the ALBA paper. https://eprint.iacr.org/2023/1655
 
-    let ratio = params.set_size as f64 / params.lower_bound as f64;
+    let ratio = set_size as f64 / lower_bound as f64;
 
     // Execute binary search for the optimal value of `rs` in the interval
     // ]1.0, ratio[.
@@ -23,23 +27,23 @@ pub fn make_setup(params: &Params) -> Setup {
         let ratio_completeness = ratio / ratio_soundness; // rc
 
         let bound_soundness =
-            params.soundness_param * LN_2 / (ratio_soundness.ln() - 1.0 + 1.0 / ratio_soundness);
+            soundness_param * LN_2 / (ratio_soundness.ln() - 1.0 + 1.0 / ratio_soundness);
         let bound_completeness =
-            params.completeness_param * LN_2 / (ratio_completeness - 1.0 - ratio_completeness.ln());
+            completeness_param * LN_2 / (ratio_completeness - 1.0 - ratio_completeness.ln());
 
         if (middle <= left) || (middle >= right) {
             let u = bound_soundness.max(bound_completeness).ceil();
             let mu = u * ratio_completeness;
-            return if params.lower_bound < u as u64 {
+            return if lower_bound < u as u64 {
                 Setup {
-                    proof_size: params.lower_bound.saturating_add(1),
+                    proof_size: lower_bound.saturating_add(1),
                     lottery_probability: 1.0,
                 }
             } else {
                 // Since u <= n_f, the lottery probability p = u * r_c / n_p <= n_f / n_p * r_c < 1.
                 Setup {
                     proof_size: u as u64,
-                    lottery_probability: mu / params.set_size as f64,
+                    lottery_probability: mu / set_size as f64,
                 }
             };
         }
@@ -54,7 +58,6 @@ pub fn make_setup(params: &Params) -> Setup {
 
 #[cfg(test)]
 mod tests {
-    use super::super::params::Params;
     use super::make_setup;
     use test_case::test_case;
 
@@ -66,12 +69,10 @@ mod tests {
     }
 
     #[test_case(
-        Params {
-            soundness_param: 128.0,
-            completeness_param: 128.0,
-            set_size: 20_000,
-            lower_bound: 10_000,
-        },
+            128.0,
+            128.0,
+            20_000,
+            10_000,
         Expected {
             u: 1488,
             mu_lb: 2062.806,
@@ -80,12 +81,10 @@ mod tests {
         "basic"
     )]
     #[test_case(
-        Params {
-            soundness_param: 128.0,
-            completeness_param: 64.0,
-            set_size: 20_000,
-            lower_bound: 10_000,
-        },
+            128.0,
+            64.0,
+            20_000,
+            10_000,
         Expected {
             u: 1127,
             mu_lb: 1473.574,
@@ -94,12 +93,10 @@ mod tests {
         "different_lambdas"
     )]
     #[test_case(
-        Params {
-            soundness_param: 128.0,
-            completeness_param: 128.0,
-            set_size: 15_000,
-            lower_bound: 10_000,
-        },
+            128.0,
+            128.0,
+            15_000,
+            10_000,
         Expected {
             u: 4328,
             mu_lb: 5264.558,
@@ -108,12 +105,10 @@ mod tests {
         "fractional_ratio"
     )]
     #[test_case(
-        Params {
-            soundness_param: 128.0,
-            completeness_param: 1.0,
-            set_size: 20_000,
-            lower_bound: 10_000,
-        },
+            128.0,
+            1.0,
+            20_000,
+            10_000,
         Expected {
             u: 527,
             mu_lb: 554.495,
@@ -122,12 +117,10 @@ mod tests {
         "small_lambda_reliability"
     )]
     #[test_case(
-        Params {
-            soundness_param: 1.0,
-            completeness_param: 128.0,
-            set_size: 20_000,
-            lower_bound: 10_000,
-        },
+            1.0,
+            128.0,
+            20_000,
+            10_000,
         Expected {
             u: 358,
             mu_lb: 672.362,
@@ -136,12 +129,10 @@ mod tests {
         "small_lambda_security"
     )]
     #[test_case(
-        Params {
-            soundness_param: 128.0,
-            completeness_param: 128.0,
-            set_size: 200,
-            lower_bound: 100,
-        },
+            128.0,
+            128.0,
+            200,
+            100,
         Expected {
             u: 101,
             mu_lb: 199.99,
@@ -149,10 +140,16 @@ mod tests {
         };
         "small_dataset"
     )]
-    fn all(params: Params, expected: Expected) {
-        let setup = make_setup(&params);
+    fn all(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        expected: Expected,
+    ) {
+        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
         assert_eq!(expected.u, setup.proof_size);
-        let mu = setup.lottery_probability * params.set_size as f64;
+        let mu = setup.lottery_probability * set_size as f64;
         assert!(mu > expected.mu_lb);
         assert!(mu < expected.mu_ub);
     }
