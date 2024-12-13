@@ -5,7 +5,7 @@ mod utils;
 use alba::centralized_telescope::init::make_setup;
 use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
-use alba::centralized_telescope::CentralizedTelescope;
+use alba::centralized_telescope::Telescope;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 use utils::gen_items;
@@ -26,10 +26,10 @@ fn test(created_with_params: bool) {
         let seed = rng.next_u32().to_be_bytes().to_vec();
         let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
         let alba = if created_with_params {
-            CentralizedTelescope::create(&params)
+            Telescope::create(&params)
         } else {
             let setup = make_setup(&params);
-            CentralizedTelescope::create_unsafe(&setup)
+            Telescope::create_unsafe(&setup)
         };
         let proof = alba.prove(&s_p).unwrap();
         assert!(alba.verify(&proof));
