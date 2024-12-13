@@ -41,6 +41,11 @@ name = "centralized_proof_size"
 harness = false
 path = "benches/centralized_telescope/proof_size.rs"
 
+[[bench]]
+name = "simple_lottery_proving_time"
+harness = false
+path = "benches/simple_lottery/proving_time.rs"
+
 [lints.rust]
 missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"

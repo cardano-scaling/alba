@@ -30,4 +30,3 @@ pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 48]>, Lott
     );
     (dataset, telescope)
 }
-
