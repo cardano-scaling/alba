@@ -1,4 +1,4 @@
-//! Centralized Telescope Proof structure
+//! Centralized Telescope's `Proof` structure
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof.md")]
 
@@ -25,6 +25,30 @@ impl Proof {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to params.max_retries times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
+    ///
+    /// # Arguments
+    ///
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `params` - the internal parameters to generate a proof from
+    /// * `prover_set` - the dataset to generate a proof from
+    ///
+    /// # Returns
+    ///
+    /// A `Proof` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::params::Params;
+    /// use alba::centralized_telescope::proof::Proof;
+    /// let set_size = 200;
+    /// let params = Params::new(128.0, 128.0, set_size, 100);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = Proof::new(set_size, &params, &prover_set).unwrap();
+    /// ```
     pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
         // Run prove_index up to max_retries times
         (0..params.max_retries).find_map(|retry_counter| {
@@ -32,8 +56,35 @@ impl Proof {
         })
     }
 
-    // Alba's verification algorithm, returns true if the proof is
-    /// successfully verified, following the DFS verification, false otherwise.
+    /// Centralized Telescope's verification algorithm, returns true if the
+    /// proof is successfully verified, following the DFS verification, false
+    /// otherwise.
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the proof to verify
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `params` - the internal parameters to generate a proof from
+    ///
+    /// # Returns
+    ///
+    /// A boolean, true if the proof verifies successfully otherwise false
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::params::Params;
+    /// use alba::centralized_telescope::proof::Proof;
+    /// let set_size = 200;
+    /// let params = Params::new(128.0, 128.0, set_size, 100);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ;32]);
+    /// }
+    /// let proof = Proof::new(set_size, &params, &prover_set).unwrap();
+    /// let b = proof.verify(set_size, &params);
+    /// assert!(b);
+    /// ```
     pub(super) fn verify(&self, set_size: u64, params: &Params) -> bool {
         if self.search_counter >= params.search_width
             || self.retry_counter >= params.max_retries

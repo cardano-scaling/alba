@@ -1,4 +1,4 @@
-//! Centralized Telescope's Params structure comprising the internal parameters
+//! Centralized Telescope's `Params` structure comprising the internal parameters
 
 use std::f64::consts::LOG2_E;
 
@@ -18,7 +18,25 @@ pub struct Params {
 }
 
 impl Params {
-    /// Setup algorithm taking a Params as input and returning Params parameters (u,d,q)
+    /// Returns a `Params` structure from user parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    ///
+    /// # Returns
+    ///
+    /// A `Params` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params::new(128.0, 128.0, 1_000, 750);
+    /// ```
     pub fn new(
         soundness_param: f64,
         completeness_param: f64,
