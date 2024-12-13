@@ -1,8 +1,8 @@
 //! ALBA's bounded DFS scheme prove and verification functions
 
+use super::params::Setup;
 use super::proof::Proof;
 use super::round::Round;
-use super::setup::Setup;
 use super::types::Hash;
 use crate::utils::sample;
 use crate::utils::types::Element;

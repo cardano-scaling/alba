@@ -1,7 +1,7 @@
 use super::algorithm;
 use super::init::make_setup;
+use super::params::Setup;
 use super::proof::Proof;
-use super::setup::Setup;
 use crate::utils::types::Element;
 
 /// The main centralized Telescope struct with prove and verify functions.
