@@ -7,11 +7,11 @@ use crate::utils::types::Element;
 
 /// The main simple lottery struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
-pub struct Wrapper {
+pub struct Lottery {
     setup: Setup,
 }
 
-impl Wrapper {
+impl Lottery {
     /// Initialize ALBA with `Params`.
     pub fn create(params: &Params) -> Self {
         let setup = make_setup(params);

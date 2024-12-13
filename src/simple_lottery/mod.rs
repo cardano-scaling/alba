@@ -14,4 +14,4 @@ mod algorithm;
 mod lottery;
 
 // Re-exports
-pub use lottery::Wrapper as SimpleLottery;
+pub use lottery::Lottery;
