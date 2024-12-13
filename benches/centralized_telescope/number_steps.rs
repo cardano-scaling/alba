@@ -20,7 +20,7 @@ use utils::{
 
 use alba::centralized_telescope::algorithm::internal::bench;
 
-/// Function benchmarking n times the number of DFS calls, aka steps
+/// Function benchmarking `n` times the number of DFS calls, aka steps
 #[allow(clippy::unit_arg)]
 fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     let mut rng = ChaCha20Rng::from_entropy();
