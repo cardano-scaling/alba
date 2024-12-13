@@ -69,8 +69,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 1488,
@@ -83,8 +83,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 64.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 1127,
@@ -97,8 +97,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
-            set_size: 150,
-            lower_bound: 100,
+            set_size: 15_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 4328,
@@ -111,8 +111,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 1.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 527,
@@ -125,8 +125,8 @@ mod tests {
         Params {
             soundness_param: 1.0,
             completeness_param: 128.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 358,
