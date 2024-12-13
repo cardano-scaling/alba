@@ -1,4 +1,3 @@
-use super::algorithm;
 use super::init::make_setup;
 use super::params::Params;
 use super::proof::Proof;
@@ -27,12 +26,12 @@ impl Wrapper {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Returns either a `Proof` or `None` if no proof is found.
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(&self.setup, prover_set)
+        Proof::new(&self.setup, prover_set)
     }
 
     /// Alba's verification algorithm.
     /// Returns true if and only if the proof is successfully verified.
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(&self.setup, proof)
+        proof.verify(&self.setup)
     }
 }
