@@ -38,7 +38,7 @@ fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration 
 /// Run verify benchmarks on list of parameters, varying the dataset the prover
 /// generates a proof from. More particularly we change
 /// - the dataset elements,
-/// - the dataset cardinality, between set_size and set_card.
+/// - the dataset cardinality, between `set_size` and `set_card`.
 fn verify_benches(c: &mut Criterion) {
     benchmarks::<Instant, Duration, WallTime>(
         c,
