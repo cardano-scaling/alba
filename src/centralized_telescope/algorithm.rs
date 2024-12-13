@@ -3,9 +3,10 @@
 use super::proof::Proof;
 use super::round::Round;
 use super::setup::Setup;
-use super::types::Hash;
-use crate::utils::sample;
-use crate::utils::types::Element;
+use crate::utils::{
+    sample,
+    types::{Element, Hash},
+};
 use blake2::{Blake2s256, Digest};
 
 /// Alba's proving algorithm, based on a depth-first search algorithm.
