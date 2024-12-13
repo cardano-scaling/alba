@@ -7,14 +7,8 @@ use crate::utils::types::Element;
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
 pub struct Telescope {
-    /// Soundness security parameter
-    soundness_param: f64,
-    /// Completeness security parameter
-    completeness_param: f64,
     /// Approximate size of the prover set to lower bound
     set_size: u64,
-    /// Lower bound to prove on prover set
-    lower_bound: u64,
     /// Internal parameters
     params: Params,
 }
@@ -46,13 +40,7 @@ impl Telescope {
         lower_bound: u64,
     ) -> Self {
         let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-        Self {
-            soundness_param,
-            completeness_param,
-            set_size,
-            lower_bound,
-            params,
-        }
+        Self { set_size, params }
     }
 
     /// Returns a `Telescope` structure from input and internal parameters if
@@ -120,10 +108,7 @@ impl Telescope {
     /// ```
     pub fn setup_unsafe(set_size: u64, params: &Params) -> Self {
         Self {
-            soundness_param: 0f64,
-            completeness_param: 0f64,
             set_size,
-            lower_bound: 0,
             params: *params,
         }
     }
