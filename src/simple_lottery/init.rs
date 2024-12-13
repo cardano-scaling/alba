@@ -31,16 +31,16 @@ pub fn make_setup(params: &Params) -> Setup {
             let u = bound_soundness.max(bound_completeness).ceil();
             let mu = u * ratio_completeness;
             return if params.lower_bound < u as u64 {
-                 Setup {
+                Setup {
                     proof_size: params.lower_bound,
-                    lottery_probability: params.lower_bound as f64 / params.set_size as f64
+                    lottery_probability: params.lower_bound as f64 / params.set_size as f64,
                 }
             } else {
                 Setup {
                     proof_size: u as u64,
                     lottery_probability: mu / params.set_size as f64,
                 }
-            }
+            };
         }
 
         if bound_soundness > bound_completeness {
@@ -68,8 +68,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 1488,
@@ -82,8 +82,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 64.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 1127,
@@ -96,8 +96,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 128.0,
-            set_size: 150,
-            lower_bound: 100,
+            set_size: 15_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 4328,
@@ -110,8 +110,8 @@ mod tests {
         Params {
             soundness_param: 128.0,
             completeness_param: 1.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 527,
@@ -124,8 +124,8 @@ mod tests {
         Params {
             soundness_param: 1.0,
             completeness_param: 128.0,
-            set_size: 200,
-            lower_bound: 100,
+            set_size: 20_000,
+            lower_bound: 10_000,
         },
         Expected {
             u: 358,
