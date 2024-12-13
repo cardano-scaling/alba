@@ -1,4 +1,5 @@
-//! ALBA's helper structures and trait for generating parameters
+//! Centralized Telescope's helper structures, traits and functions for
+//! generating parameters
 
 use super::params::Params;
 use std::f64::consts::LOG2_E;
@@ -10,6 +11,7 @@ pub(super) enum Cases {
 }
 
 impl Cases {
+    /// Returns which parameters' case the user parameters correspond to
     pub(super) fn which(completeness_param: f64, set_size: u64, proof_size: u64) -> Cases {
         let set_size_f64 = set_size as f64;
         let proof_size_f64 = proof_size as f64;

@@ -1,4 +1,4 @@
-//! ALBA's Round structure and associated functions
+//! Centralized Telescope's `Round` structure and associated functions
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 

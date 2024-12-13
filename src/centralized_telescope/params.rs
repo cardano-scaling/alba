@@ -18,8 +18,25 @@ pub struct Params {
 }
 
 impl Params {
-    /// Setup algorithm taking as input the security parameters, the set size
-    /// and the lower bound and returning the internal parameters `Params`
+    /// Returns a `Params` structure from user parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    ///
+    /// # Returns
+    ///
+    /// A `Params` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params::new(128.0, 128.0, 1_000, 750);
+    /// ```
     pub fn new(
         soundness_param: f64,
         completeness_param: f64,
@@ -44,6 +61,8 @@ impl Params {
         }
     }
 
+    /// Compute the proof size out of the security parameters, the set size and
+    /// the lower bound
     fn proof_size(
         soundness_param: f64,
         completeness_param: f64,
