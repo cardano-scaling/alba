@@ -5,8 +5,6 @@
 
 mod algorithm;
 
-pub mod init;
-
 pub mod proof;
 
 mod round;
