@@ -22,16 +22,16 @@ fn proof_bench(params: &[BenchParam]) {
         let params = Params {
             soundness_param: param.lambda_sec,
             completeness_param: param.lambda_rel,
-            set_size: param.set_size_per,
-            lower_bound: param.lower_bound_per,
+            set_size: param.set_size_percentage,
+            lower_bound: param.lower_bound_percentage,
         };
         let setup = init::make_setup(&params);
         println!(
             "{0: <23} | {1: <26} | {2: <14} | {3: <17} | {4: <14}",
             param.lambda_sec,
             param.lambda_rel,
-            param.set_size_per,
-            param.lower_bound_per,
+            param.set_size_percentage,
+            param.lower_bound_percentage,
             setup.proof_size
         );
     }
