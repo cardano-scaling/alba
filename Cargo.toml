@@ -51,6 +51,11 @@ name = "simple_lottery_verifying_time"
 harness = false
 path = "benches/simple_lottery/verifying_time.rs"
 
+[[bench]]
+name = "simple_lottery_proof_size"
+harness = false
+path = "benches/simple_lottery/proof_size.rs"
+
 [lints.rust]
 missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"
