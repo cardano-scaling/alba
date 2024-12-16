@@ -1,21 +1,18 @@
 # Telescope - Construction with Prehashing
 
-**Construction with Prehashing** optimizes the basic Telescope ALBA protocol by reducing the computational cost of checking sequences.
+**Construction with Prehashing** optimizes the [basic Telescope ALBA][crate::docs::basic] protocol by reducing the computational cost of checking sequences.
 Here, a sequence means an ordered set of elements or tuples that meet certain hash conditions in the protocol.
 In the basic approach, we would attempt to extend a given sequence "blindly", that is trying all elements of $S_p$. 
 Finding the correct extensions required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
-Instead, in the **prehashing technique**, we filter the elements to extend a sequence with. 
-We do so by precomputing hash values using a new oracle $H_0$ before running the DFS algorithm, and associating each element and bin with these.
+Instead, in the **prehashing technique**, we filter the elements to extend a sequence with.
+We do so by sorting the elements in bins, depending on their precomputed hash values, and when extending, instead of checking all elements like in the naive method, we check only the elements in the bin associated to the given sequence.
 
-Precomputed hashes enable quick verification of whether a new element can extend a sequence. 
-The elements are first sorted into bins based on their hash values. 
-During verification, only the content of the relevant bin is checked, rather than examining all possible combinations. 
 On average, each bin contains just one element, making this approach significantly faster and more efficient.
 This adjustment is particularly advantageous when $S_p$ is large, as it compresses the data while maintaining the security and correctness of the proof system.
 
 ## Overview 
 - A hash function is applied to the elements of the prover's set $S_p$, creating a prehashed representation of each element in the set, which is also sorted into bins based on the hash values.
-- Proof tuples are constructed using the prehashed elements rather than the original set.
+- Proof tuples are constructed with the help of prehashed elements rather than the original set.
 
 ### Core components
 The construction with prehashing retains the same parameters as described in basic construction. 
@@ -29,8 +26,8 @@ For this construction, the random functions are as follows:
 - The prover precomputes hash values for each element $s \in S_p$ using $H_0$, assigning each element to the "bin" numbered $H_0(s)$.
 - A sequence is similarly associated to a bin, by hashing the sequence with $H_1$.
 - These precomputed "bins" show how a sequence can be extended, the "balls" in the bins being the potential extension of the sequence.
-- When constructing sequences, the prover selects elements directly from the current bin to extend the sequence, continuing this process until the sequence reaches the required length $u$.
 - The prover starts constructing sequences from $t \in 1, \ldots, d$ and aims to build sequences of length $u$.
+- When constructing sequences, the prover selects elements directly from the current bin to extend the sequence, continuing this process until the sequence reaches the required length $u$.
 - After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is a valid proof if $H_2(t, s_1, \dots, s_u) = 1$.
 
 The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
@@ -88,7 +85,7 @@ $$
 >   - Compute $H_1(1)$ to determine the first bin to explore.
 >     - Assume $H_1(1) = 1$, so the prover looks in bin 1.
 >   - $\mathsf{bin_1}$: $\[A, C\]$
->     - Select $s_1 = A$ from bin 1.
+>     - Extend the sequence with $s_1 = A$.
 >   - Current sequence: $(t, s_1) = (1, A)$.
 > - Depth $k = 2$:
 >   - Compute $H_1(t, s_1)$ to determine the next bin to explore.
@@ -104,23 +101,23 @@ $$
 >   - Compute $H_1(2)$ to determine the first bin to explore.
 >     - Assume $H_1(2) = 4$, so the prover looks in bin 4.
 >   - $\mathsf{bin_4}$: $\[D, E\]$
->     - Select $s_1 = D$.
+>     - Extend the sequence with $s_1 = D$.
 >   - Current sequence: $(t, s_1) = (2, D)$.
 > - Depth $k = 2$:
 >   - Compute $H_1(t, s_1)$ to determine the next bin to explore.
 >     - Assume $H_1(2, D) = 2$, so the prover looks in bin 2.
 >   - $\mathsf{bin_2}$: $\[B\]$
->     - Select $s_2 = B$.
+>     - Extend the sequence with $s_2 = B$.
 >   - Current sequence: $(t, s_1, s_2) = (2, D, B)$.
 > - Depth $k = 3$:
 >   - Compute $H_1(2, s_1, s_2)$ to determine the next bin to explore.
 >     - Assume $H_1(2, D, B) = 1$, so the prover looks in bin 1.
 >   - $\mathsf{bin_1}$: $\[A, C\]$
->     - Select $s_3 = C$ from bin 1.
+>     - Extend the sequence with $s_3 = C$.
 >   - Current sequence: $(t, s_1, s_3, s_3) = (2, D, B, C)$.
 > ---
 > **Step 4:** Final Validation.
-> - A tuple with size $u = 3$ is obtained: $(t, s_1, s_3, s_3) = (2, D, B, C)$.
+> - A tuple with size $u = 3$ is obtained: $(t, s_1, s_2, s_3) = (2, D, B, C)$.
 > - If $H_2(2, D, B, C) = 1$, the sequence is valid, and the prover outputs it as proof.
 ---
 
