@@ -65,67 +65,64 @@ $$
 - If $n_p$ is too small, bins may not be sufficiently populated, reducing the chances of constructing valid tuples.
 
 ### Example walkthrough
-- **Prover’s set** $S_p = \{A, B, C, D\}$
+- **Prover’s set** $S_p = (A, B, C, D, E)$
 - **Proof length** $u = 3$
 - **Search width** $d = 2$ (i.e., $t \in \{1, 2\}$)
-- **Hash functions**:
-  - $H_0(s)$: Prehash for binning elements of $S_p$.
-  - $H_1(v, t, s_1, \ldots, s_k)$: Determines the next bin to explore based on the sequence so far.
-  - $H_2(v, t, s_1, \ldots, s_u)$: Final validity check for the sequence.
-> ---
+---
+> **Step 1:** Prehash the elements with $H_0$.
 > - The prover precomputes $H_0(s)$ for all elements in $S_p$, assigning each element to a bin:
->   - $H_0(A) = 2$
->   - $H_0(B) = 1$
->   - $H_0(C) = 2$
->   - $H_0(D) = 3$
+>   - $H_0(A) = 1$
+>   - $H_0(B) = 2$
+>   - $H_0(C) = 1$
+>   - $H_0(D) = 4$
+>   - $H_0(E) = 4$
 > - Bins are grouped as follows:
->   - Bin 1: $\{B\}$
->   - Bin 2: $\{A, C\}$
->   - Bin 3: $\{D\}$
+>   - $\mathsf{bin_1}$: $\[A, C\]$
+>   - $\mathsf{bin_2}$: $\[B\]$
+>   - $\mathsf{bin_3}$: $\emptyset$
+>   - $\mathsf{bin_4}$: $\[D, E\]$
 > ---
-> - The prover starts with $t = 1$ and attempts to construct a valid sequence of length $u = 3$ using bounded DFS.
+> **Step 2:** Proof construction for $t = 1$.
+> - The prover starts with $t = 1$ and attempts to construct a valid sequence of length $u = 3$.
 > - Depth $k = 1$:
 >   - Compute $H_1(1)$ to determine the first bin to explore.
->     - Assume $H_1(1) = 2$, so the prover looks in bin 2.
->   - Select $s_1 = A$ from bin 2.
->     - Compute $H_1(1, A)$ to check where to explore next.
->     - $H_1(1, A)$ takes the current sequence $(1, A)$ and outputs the bin index for the next step.
->     - Assume $H_1(1, A) = 3$, meaning the prover should explore bin 3.
+>     - Assume $H_1(1) = 1$, so the prover looks in bin 1.
+>   - $\mathsf{bin_1}$: $\[A, C\]$
+>     - Select $s_1 = A$ from bin 1.
+>   - Current sequence: $(t, s_1) = (1, A)$.
 > - Depth $k = 2$:
->   - Look in bin 3, which contains $\{D\}$.
->   - Select $s_2 = D$.
->   - Compute $H_1(1, A, D)$ to check where to explore next.
->     - Assume $H_1(1, A, D) = 1$, meaning the prover should explore bin 1.
-> - Depth $k = 3$ (Final Element):
->   - Look in bin 1, which contains $\{B\}$.
->   - Select $s_3 = B$.
->   - Compute $H_1(1, A, D, B)$ to check if this sequence can proceed further.
->     - Assume $H_1(1, A, D, B) = 3$, which indicates a mismatch with the required condition. The sequence is invalid.
+>   - Compute $H_1(t, s_1)$ to determine the next bin to explore.
+>     - Assume $H_1(1, A) = 3$, so the prover looks in bin 3.
+>   - $\mathsf{bin_3}$: $\emptyset$
+>     - No valid $s_2$ can be selected.
 > - Backtracking for $t = 1$:
 >   - After exhausting all possible sequences for $t = 1$, no valid proof is found.
->   - The prover backtracks and tries other combinations of $s_1$, $s_2$, and $s_3$.
-> - Step 3: Retry with $t = 2$
->   - The prover now starts the process for $t = 2$.
-> - Depth $k = 1$:
->   - Compute $H_1(2)$ to determine the first bin.
->     - Assume $H_1(2) = 1$, so the prover looks in bin 1.
->   - Select $s_1 = B$.
->   - Compute $H_1(2, B)$ to check where to explore next.
->     - Assume $H_1(2, B) = 2$, meaning the prover should explore bin 2.
-> - Depth $k = 2$:
->   - Look in bin 2, which contains $\{A, C\}$.
->   - Select $s_2 = A$.
->   - Compute $H_1(2, B, A)$ to check where to explore next.
->     - Assume $H_1(2, B, A) = 3$, meaning the prover should explore bin 3.
-> - Depth $k = 3$ (Final Element):
->   - Look in bin 3, which contains $\{D\}$.
->   - Select $s_3 = D$.
->   - Compute $H_1(2, B, A, D)$ to check if this sequence is valid so far.
->     - Assume $H_1(2, B, A, D) = 3$, which satisfies the condition.
-> - Step 4: Final Validation for $t = 2$
->   - Validate the full sequence $(2, B, A, D)$ using $H_2(2, B, A, D)$.
->     - If $H_2(2, B, A, D) = 1$, the sequence is valid, and the prover outputs it as proof.
+>   - The prover backtracks and tries $t = 2$.
 > ---
+> **Step 3:** Proof construction for $t = 2$.
+> - Depth $k = 1$:
+>   - Compute $H_1(2)$ to determine the first bin to explore.
+>     - Assume $H_1(2) = 4$, so the prover looks in bin 4.
+>   - $\mathsf{bin_4}$: $\[D, E\]$
+>     - Select $s_1 = D$.
+>   - Current sequence: $(t, s_1) = (2, D)$.
+> - Depth $k = 2$:
+>   - Compute $H_1(t, s_1)$ to determine the next bin to explore.
+>     - Assume $H_1(2, D) = 2$, so the prover looks in bin 2.
+>   - $\mathsf{bin_2}$: $\[B\]$
+>     - Select $s_2 = B$.
+>   - Current sequence: $(t, s_1, s_2) = (2, D, B)$.
+> - Depth $k = 3$:
+>   - Compute $H_1(2, s_1, s_2)$ to determine the next bin to explore.
+>     - Assume $H_1(2, D, B) = 1$, so the prover looks in bin 1.
+>   - $\mathsf{bin_1}$: $\[A, C\]$
+>     - Select $s_3 = C$ from bin 1.
+>   - Current sequence: $(t, s_1, s_3, s_3) = (2, D, B, C)$.
+> ---
+> **Step 4:** Final Validation.
+> - A tuple with size $u = 3$ is obtained: $(t, s_1, s_3, s_3) = (2, D, B, C)$.
+> - If $H_2(2, D, B, C) = 1$, the sequence is valid, and the prover outputs it as proof.
+---
 
 ## Functions
 #### Proving
@@ -148,7 +145,6 @@ $$
 >     - **return** $~~ \pi.$
 > - **return** $~~ \bot.$
 ---
-
 #### Depth fist search
 ---
 > $\mathsf{DFS}(t, slist, S_p) \rightarrow \pi$
@@ -164,13 +160,12 @@ $$
 >     - $\pi \leftarrow (t, slist)$
 >     - **return** $~~ \pi.$
 >   - **return** $~~ \bot.$
-> - $bin_{current} \leftarrow \mathsf{H_1}(t, slist)$
-> - **for** each $~~ s \in bins\[bin_{current}\]:$
+> - $ind \leftarrow \mathsf{H_1}(t, slist)$
+> - **for** each $~~ s \in bins\[ind\]:$
 >   - $slist_{new} \leftarrow slist \cup \[s\]$
->   - **if** $~~ \mathsf{H_1}(t, slist_{new}) == 1:$
->     - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, bins)$
->     - **if** $~~ \pi ~!= \bot:$
->       - **return** $~~ \pi.$
+>   - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, bins)$
+>   - **if** $~~ \pi ~!= \bot:$
+>     - **return** $~~ \pi.$
 > - **return** $~~ \bot.$
 ---
 #### Verification
