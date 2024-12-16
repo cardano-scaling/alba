@@ -14,10 +14,10 @@ To address this, the **construction with bounded DFS** expands on the prehashed 
 ### Core components
 This generalized construction uses the same key parameters as prehashed construction but introduces:
 - Retries with index $v$: 
-  - The prover retries the proof generation process $r$ times.
-  - Each retry uses a different randomization index $v$, where $v \in \[1, r\]$, to diversify the search process.
+  - The prover retries the proof generation process up to $r$ times.
+  - Each retry uses a different retry counter $v$, where $v \in \[1, r\]$, to diversify the search process.
 - Hash-based binning:
-  - Elements in $S_p$ are prehashed into bins using $H_0(v, \cdot)$, grouping elements based on their hash values.
+  - Elements in $S_p$ are prehashed into bins using $H_0(v, \cdot) where v \in \[1,r\]$, grouping elements based on their hash values. We prehashed using the retry counter to get different bins for each repetition, reducing the risk of badly distributed bins.
   - This process limits the search space for DFS, making it more efficient.
 - Bounded DFS:
   - A depth-first search explores valid proof sequences of size $u$, using the bins for efficient lookup.
@@ -37,9 +37,9 @@ This generalized construction uses the same key parameters as prehashed construc
 4. **Bounded DFS**:
    - A bounded DFS search is used to construct the sequence $(t, s_1, ..., s_u)$, with a shared step limit $B$ applied across all starting points $t$.
    - At each step of DFS:
-     - The algorithm verifies if the current sequence $(t, s_1, ..., s_k)$ satisfies the intermediate condition $H_1(v, t, s_1, ..., s_k)$.
+     - The algorithm search a new element for the current sequence $(t, s_1, ..., s_k)$ in bin numbered $H_1(v, t, s_1, ..., s_k)$.
      - If valid, it continues by appending new elements from the appropriate bin.
-     - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $r$, restarting the process with a new partitioning of elements.
+     - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $r$, restarting the process with a new partitioning of elements. Oherwise, the DFS updates the step limit and then recursively calls itself with the extended tuple.
 5. **Validation**:
    - When the DFS has constructed a sequence of $u$ elements $(t, s_1, ..., s_u)$, it verifies whether the full sequence satisfies the final condition using $H_2(v, t, s_1, ..., s_u)$.
    - If the sequence passes this check, it is accepted as a valid proof, and the prover outputs it.
