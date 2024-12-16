@@ -2,8 +2,8 @@
 
 **Construction with Prehashing** optimizes the basic Telescope ALBA protocol by reducing the computational cost of checking sequences.
 Here, a sequence means an ordered set of elements or tuples that meet certain hash conditions in the protocol.
-In the basic approach, we would attempt to extend a given sequence "blindly" with all elements of $S_p$. 
-Finding the correct extension required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
+In the basic approach, we would attempt to extend a given sequence "blindly", that is trying all elements of $S_p$. 
+Finding the correct extensions required multiple invocations of the random oracle $H_1$, which could be computationally expensive.
 Instead, in the **prehashing technique**, we filter the elements to extend a sequence with. 
 We do so by precomputing hash values using a new oracle $H_0$ before running the DFS algorithm, and associating each element and bin with these.
 
