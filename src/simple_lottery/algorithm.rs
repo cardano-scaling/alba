@@ -14,6 +14,7 @@ pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
             element_sequence.push(element);
         }
         if prover_set.len() as u64 >= setup.proof_size {
+            element_sequence.sort();
             return Some(Proof { element_sequence });
         }
     }
@@ -23,6 +24,7 @@ pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
 
 pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     (proof.element_sequence.len() as u64 == setup.proof_size)
+        && proof.element_sequence.is_sorted_by(|a, b| a < b)
         && proof
             .element_sequence
             .iter()
