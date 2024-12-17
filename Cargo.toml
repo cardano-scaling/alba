@@ -10,6 +10,7 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 
 [dependencies]
 blake2 = "0.10.6"
+blst = "0.3.13"
 
 [dev-dependencies]
 rand_core = "0.6.4"
