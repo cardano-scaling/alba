@@ -10,7 +10,7 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 use utils::gen_items;
 
-const DATA_LENGTH: usize = 48;
+const DATA_LENGTH: usize = 32;
 
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
