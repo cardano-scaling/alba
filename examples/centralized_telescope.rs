@@ -1,12 +1,14 @@
 //! Use case for ALBA Telescope centralized setup.
 //! BLS signatures are the elements to create an ALBA proof.
 
+use alba::centralized_telescope::params::Params;
+use alba::centralized_telescope::CentralizedTelescope;
 use blst::min_sig::{PublicKey, SecretKey, Signature};
 use blst::BLST_ERROR;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{CryptoRng, RngCore, SeedableRng};
 
-// const DATA_LENGTH: usize = 48;
+const DATA_LENGTH: usize = 48;
 
 /// Key pair including blst `SecretKey` and blst `PublicKey`
 #[derive(Debug)]
@@ -105,13 +107,19 @@ pub fn collect_set_elements<const N: usize>(
 }
 
 fn main() {
-    let mut rng = ChaCha20Rng::from_seed([0u8; 32]); // create and initialize rng
-    let mut msg = [0u8; 16]; // setting an arbitrary message
+    let mut rng = ChaCha20Rng::from_seed(Default::default());
+    let mut msg = [0u8; 16];
     rng.fill_bytes(&mut msg);
-
-    let key_pair = SIGNER::new(&mut rng);
-    let sig = key_pair.sign(&msg);
-    let result = sig.verify(&msg);
-
-    println!("{:?}", result);
+    let set_size = 1_000;
+    let params = Params {
+        soundness_param: 128.0,
+        completeness_param: 128.0,
+        set_size: 80 * set_size / 100,
+        lower_bound: 20 * set_size / 100,
+    };
+    let signatures = generate_signatures(&mut rng, &msg, set_size);
+    let prover_set = collect_set_elements::<DATA_LENGTH>(&msg, set_size, signatures).unwrap();
+    let alba = CentralizedTelescope::create(&params);
+    let proof = alba.prove(&prover_set).unwrap();
+    assert!(alba.verify(&proof));
 }
