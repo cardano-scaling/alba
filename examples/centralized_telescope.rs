@@ -6,7 +6,8 @@ use blst::BLST_ERROR;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{CryptoRng, RngCore, SeedableRng};
 
-const DATA_LENGTH: usize = 48;
+// const DATA_LENGTH: usize = 48;
+
 /// Key pair including blst `SecretKey` and blst `PublicKey`
 #[derive(Debug)]
 pub struct SIGNER {
@@ -54,6 +55,16 @@ impl BLS {
             .verify(false, msg, &[], &[], &self.verification_key, false);
         result == BLST_ERROR::BLST_SUCCESS
     }
+    /// Converts the `BLS.signature` into a fixed-size byte array `[u8; N]`
+    pub fn to_bytes<const N: usize>(&self) -> [u8; N] {
+        let bytes = self.signature.to_bytes();
+        let mut array = [0u8; N];
+
+        for (i, &byte) in bytes.iter().take(N).enumerate() {
+            array[i] = byte;
+        }
+        array
+    }
 }
 
 /// Generate signatures
@@ -76,16 +87,16 @@ pub fn collect_set_elements<const N: usize>(
     set_size: u64,
     signatures: Vec<BLS>,
 ) -> Option<Vec<[u8; N]>> {
-    let prover_set: Vec<[u8; N]> = signatures
+    let prover_set = signatures
         .iter()
-        .filter_map(|bls| {
-            if bls.verify(msg) {
-                Some(bls.signature.to_bytes())
+        .filter_map(|sig| {
+            if sig.verify(msg) {
+                Some(sig.to_bytes())
             } else {
                 None
             }
         })
-        .collect();
+        .collect::<Vec<[u8; N]>>();
     if prover_set.len() < set_size as usize {
         None
     } else {
