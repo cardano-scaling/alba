@@ -203,7 +203,7 @@ impl ClosedRegistration {
         let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
         let mut commitment: [u8; N] = [0u8; N];
 
-        hasher.update(&check_sum);
+        hasher.update(check_sum);
         hasher.update(msg);
         hasher.finalize_variable(&mut commitment).unwrap();
         commitment
@@ -223,7 +223,7 @@ impl IndividualSignature {
         {
             let result =
                 self.signature
-                    .verify(false, &commitment, &[], &[], &self.verification_key, false);
+                    .verify(false, commitment, &[], &[], &self.verification_key, false);
             return result == BLST_ERROR::BLST_SUCCESS;
         };
         false
@@ -301,23 +301,19 @@ impl AlbaThresholdProof {
     ) -> Option<Self> {
         let try_aggregate =
             AggregateSignature::aggregate::<N>(signatures, closed_registration, msg, set_size);
-        match try_aggregate {
-            Some(aggregate) => {
-                let prover_set: Vec<Element> = aggregate.create_prover_set::<N>();
-                let alba = CentralizedTelescope::create(params);
-                let try_proof = alba.prove(&prover_set);
-                match try_proof {
-                    Some(proof) => Some(Self { aggregate, proof }),
-                    None => {
-                        println!("Proof generation failed.");
-                        None
-                    }
-                }
-            }
-            None => {
-                println!("Aggregation failed.");
+        if let Some(aggregate) = try_aggregate {
+            let prover_set: Vec<Element> = aggregate.create_prover_set::<N>();
+            let alba = CentralizedTelescope::create(params);
+            let try_proof = alba.prove(&prover_set);
+            if let Some(proof) = try_proof {
+                Some(Self { aggregate, proof })
+            } else {
+                println!("Proof generation failed.");
                 None
             }
+        } else {
+            println!("Aggregation failed.");
+            None
         }
     }
 }
