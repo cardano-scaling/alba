@@ -149,7 +149,7 @@ impl Signer {
     fn sign(&self, msg: &[u8]) -> IndividualSignature {
         let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
         hasher.update(&self.commitment.clone());
-        hasher.update(&msg);
+        hasher.update(msg);
 
         let mut msg_to_sign = vec![0u8; DATA_LENGTH];
         hasher.finalize_variable(&mut msg_to_sign).unwrap();
@@ -172,7 +172,7 @@ impl IndividualSignature {
             let mut signed_msg = vec![0u8; DATA_LENGTH];
             let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
             hasher.update(&closed_registration.commitment.clone());
-            hasher.update(&msg);
+            hasher.update(msg);
             hasher.finalize_variable(&mut signed_msg).unwrap();
 
             let result =
@@ -197,7 +197,7 @@ impl IndividualSignature {
 impl AggregateSignature {
     /// Collect valid individual signatures and create the commitment with message
     pub fn collect_valid_signatures<const N: usize>(
-        signatures: Vec<IndividualSignature>,
+        signatures: &[IndividualSignature],
         closed_registration: &ClosedRegistration,
         msg: &[u8],
         set_size: u64,
@@ -212,7 +212,7 @@ impl AggregateSignature {
         } else {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             hasher.update(&closed_registration.commitment.clone());
-            hasher.update(&msg);
+            hasher.update(msg);
 
             let mut commitment_with_msg = vec![0u8; N];
             hasher.finalize_variable(&mut commitment_with_msg).unwrap();
@@ -268,7 +268,7 @@ fn main() {
         .collect::<Vec<IndividualSignature>>();
 
     let aggregate = AggregateSignature::collect_valid_signatures::<DATA_LENGTH>(
-        signatures,
+        &signatures,
         &closed_registration,
         &msg,
         set_size,
