@@ -3,6 +3,9 @@
 // REMOVE!!!!!!!!!!!!!!!!
 #![allow(dead_code)]
 
+use alba::centralized_telescope::params::Params;
+use alba::centralized_telescope::proof::Proof;
+use alba::centralized_telescope::CentralizedTelescope;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use blst::min_sig::{PublicKey, SecretKey, Signature};
@@ -12,19 +15,6 @@ use rand_core::{CryptoRng, RngCore, SeedableRng};
 use std::collections::HashMap;
 
 const DATA_LENGTH: usize = 32;
-
-/// A hash table for storing BLS public keys with their indices
-#[derive(Debug, Clone)]
-pub struct RegisteredKeys {
-    keys: HashMap<Vec<u8>, usize>,
-}
-
-/// Closed registration including registered keys and the commitment
-#[derive(Debug, Clone)]
-pub struct ClosedRegistration {
-    registered_keys: RegisteredKeys,
-    commitment: Vec<u8>,
-}
 
 /// Key pair including blst `SecretKey` and blst `PublicKey`
 #[derive(Debug)]
@@ -40,6 +30,19 @@ pub struct Signer {
     signing_key: SecretKey,
     verification_key: PublicKey,
     signer_index: usize,
+    commitment: Vec<u8>,
+}
+
+/// A hash table for storing BLS public keys with their indices
+#[derive(Debug, Clone)]
+pub struct RegisteredKeys {
+    keys: HashMap<Vec<u8>, usize>,
+}
+
+/// Closed registration including registered keys and the commitment
+#[derive(Debug, Clone)]
+pub struct ClosedRegistration {
+    registered_keys: RegisteredKeys,
     commitment: Vec<u8>,
 }
 
@@ -90,9 +93,20 @@ impl Candidate {
     }
 }
 
-impl Default for RegisteredKeys {
-    fn default() -> Self {
-        Self::new()
+impl Signer {
+    /// Create a bls signature for given message
+    fn sign(&self, msg: &[u8]) -> IndividualSignature {
+        let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
+        hasher.update(&self.commitment.clone());
+        hasher.update(msg);
+
+        let mut msg_to_sign = vec![0u8; DATA_LENGTH];
+        hasher.finalize_variable(&mut msg_to_sign).unwrap();
+
+        IndividualSignature {
+            signature: self.signing_key.sign(&msg_to_sign, &[], &[]),
+            verification_key: self.verification_key,
+        }
     }
 }
 
@@ -128,6 +142,12 @@ impl RegisteredKeys {
     }
 }
 
+impl Default for RegisteredKeys {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ClosedRegistration {
     /// Close the registration and create the hash of all registration data.
     pub fn close(registration: &RegisteredKeys) -> Self {
@@ -140,23 +160,6 @@ impl ClosedRegistration {
         Self {
             registered_keys: registration.clone(),
             commitment: hash_output.clone(),
-        }
-    }
-}
-
-impl Signer {
-    /// Create a bls signature for given message
-    fn sign(&self, msg: &[u8]) -> IndividualSignature {
-        let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
-        hasher.update(&self.commitment.clone());
-        hasher.update(msg);
-
-        let mut msg_to_sign = vec![0u8; DATA_LENGTH];
-        hasher.finalize_variable(&mut msg_to_sign).unwrap();
-
-        IndividualSignature {
-            signature: self.signing_key.sign(&msg_to_sign, &[], &[]),
-            verification_key: self.verification_key,
         }
     }
 }
@@ -232,30 +235,51 @@ impl AggregateSignature {
     }
 }
 
+/// Prover functionality
+pub fn prover(
+    params: &Params,
+    signatures: &[IndividualSignature],
+    set_size: u64,
+    closed_registration: &ClosedRegistration,
+    msg: &[u8],
+) -> Option<Proof> {
+    let alba = CentralizedTelescope::create(&params);
+    let aggregate = AggregateSignature::collect_valid_signatures::<DATA_LENGTH>(
+        &signatures,
+        &closed_registration,
+        &msg,
+        set_size,
+    )
+    .unwrap();
+    let prover_set: Vec<[u8; DATA_LENGTH]> = aggregate.create_prover_set();
+    alba.prove(&prover_set)
+}
+
 fn main() {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let mut msg = [0u8; 16];
     rng.fill_bytes(&mut msg);
     let set_size = 1_000;
+    let params = Params {
+        soundness_param: 10.0,
+        completeness_param: 10.0,
+        set_size: 80 * set_size / 100,
+        lower_bound: 20 * set_size / 100,
+    };
 
     let mut candidates: Vec<Candidate> = Vec::with_capacity(set_size as usize);
-
     for _ in 0..set_size {
         candidates.push(Candidate::new(&mut rng));
     }
-
     let public_keys = candidates
         .iter()
         .map(|candidate| candidate.verification_key)
         .collect::<Vec<PublicKey>>();
-
     let mut registration = RegisteredKeys::new();
     registration.insert_keys(&public_keys);
-
     let closed_registration = ClosedRegistration::close(&registration);
 
     let mut signers: Vec<Signer> = Vec::new();
-
     for candidate in candidates {
         match candidate.new_signer(&closed_registration) {
             Some(signer) => signers.push(signer),
@@ -267,13 +291,11 @@ fn main() {
         .map(|signer| signer.sign(&msg))
         .collect::<Vec<IndividualSignature>>();
 
-    let aggregate = AggregateSignature::collect_valid_signatures::<DATA_LENGTH>(
-        &signatures,
-        &closed_registration,
-        &msg,
-        set_size,
-    )
-    .unwrap();
-    let s_p: Vec<[u8; DATA_LENGTH]> = aggregate.create_prover_set();
-    println!("{}", s_p.len());
+    let result = prover(&params, &signatures, set_size, &closed_registration, &msg);
+    if result.is_some() {
+        let proof = result.unwrap();
+        println!("{:?}", proof.element_sequence.len());
+    } else {
+        println!("Proof is not generated.");
+    }
 }
