@@ -1,34 +1,64 @@
-//! Use case for ALBA Telescope centralized setup.
-//! BLS signatures are the elements to create an ALBA proof.
+//! Example
 
-use alba::centralized_telescope::params::Params;
-use alba::centralized_telescope::CentralizedTelescope;
+// REMOVE!!!!!!!!!!!!!!!!
+#![allow(dead_code)]
+
+use blake2::digest::{Update, VariableOutput};
+use blake2::Blake2bVar;
 use blst::min_sig::{PublicKey, SecretKey, Signature};
 use blst::BLST_ERROR;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{CryptoRng, RngCore, SeedableRng};
+use std::collections::HashMap;
 
-const DATA_LENGTH: usize = 48;
+const DATA_LENGTH: usize = 32;
+
+/// A hash table for storing BLS public keys with their indices
+#[derive(Debug, Clone)]
+pub struct RegisteredKeys {
+    keys: HashMap<Vec<u8>, usize>,
+}
+
+/// Closed registration including registered keys and the commitment
+#[derive(Debug, Clone)]
+pub struct ClosedRegistration {
+    registered_keys: RegisteredKeys,
+    commitment: Vec<u8>,
+}
 
 /// Key pair including blst `SecretKey` and blst `PublicKey`
 #[derive(Debug)]
-pub struct SIGNER {
+pub struct Candidate {
     signing_key: SecretKey,
     /// Verification key
     pub verification_key: PublicKey,
 }
 
-/// A blst signature and its verification key of the type blst `PublicKey`
+/// Registered Alba signer. It includes signer's keypair, registration index and the commitment.
 #[derive(Debug)]
-pub struct BLS {
-    /// Blst signature
-    pub signature: Signature,
-    /// Blst public key to verify the signature
-    pub verification_key: PublicKey,
+pub struct Signer {
+    signing_key: SecretKey,
+    verification_key: PublicKey,
+    signer_index: usize,
+    commitment: Vec<u8>,
 }
 
-impl SIGNER {
-    /// Generate a `KEYPAIR`
+/// Individual Signature including blst `PublicKey` and blst `Signature`
+#[derive(Debug, Clone)]
+pub struct IndividualSignature {
+    signature: Signature,
+    verification_key: PublicKey,
+}
+
+/// Aggregate signature storing the list of valid signatures and the hash of commitment with the message to be signed.
+#[derive(Debug, Clone)]
+pub struct AggregateSignature {
+    valid_signatures: Vec<IndividualSignature>,
+    commitment_with_msg: Vec<u8>,
+}
+
+impl Candidate {
+    /// Generate a new candidate
     pub fn new(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
@@ -40,69 +70,162 @@ impl SIGNER {
             verification_key: vk,
         }
     }
-    /// Sign the given message with the secret key of keypair
-    pub fn sign(&self, msg: &[u8]) -> BLS {
-        BLS {
-            signature: self.signing_key.sign(msg, &[], &[]),
+
+    /// Extract the verification key.
+    pub fn verification_key(&self) -> PublicKey {
+        self.verification_key
+    }
+
+    /// Create a new signer from candidate and closed registration
+    pub fn new_signer(&self, closed_registration: &ClosedRegistration) -> Option<Signer> {
+        match closed_registration
+            .registered_keys
+            .find_key(&&self.verification_key())
+        {
+            Some(index) => Some(Signer {
+                signing_key: self.signing_key.clone(),
+                verification_key: self.verification_key,
+                signer_index: index,
+                commitment: closed_registration.commitment.clone(),
+            }),
+            None => None,
+        }
+    }
+}
+
+impl RegisteredKeys {
+    /// Creates a new hash table with a specified hash size
+    pub fn new() -> Self {
+        Self {
+            keys: HashMap::new(),
+        }
+    }
+
+    /// Inserts a list of public keys into the hash table
+    pub fn insert_keys(&mut self, keys: &[PublicKey]) {
+        for (index, key) in keys.iter().enumerate() {
+            let key_hash = self.hash_key(key);
+            self.keys.insert(key_hash, index);
+        }
+    }
+
+    /// Searches for a public key and returns its index if found
+    pub fn find_key(&self, key: &PublicKey) -> Option<usize> {
+        let key_hash = self.hash_key(key);
+        self.keys.get(&key_hash).cloned()
+    }
+
+    /// Hashes a public key using Blake2b
+    fn hash_key(&self, key: &PublicKey) -> Vec<u8> {
+        let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
+        hasher.update(&key.to_bytes());
+        let mut hash_output = vec![0u8; DATA_LENGTH];
+        hasher.finalize_variable(&mut hash_output).unwrap();
+        hash_output
+    }
+}
+
+impl ClosedRegistration {
+    /// Close the registration and create the hash of all registration data.
+    pub fn close(registration: &RegisteredKeys) -> Self {
+        let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
+        for reg in registration.clone().keys {
+            hasher.update(&reg.0.clone());
+        }
+        let mut hash_output = vec![0u8; DATA_LENGTH];
+        hasher.finalize_variable(&mut hash_output).unwrap();
+        Self {
+            registered_keys: registration.clone(),
+            commitment: hash_output.clone(),
+        }
+    }
+}
+
+impl Signer {
+    /// Create a bls signature for given message
+    fn sign(&self, msg: Vec<u8>) -> IndividualSignature {
+        let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
+        hasher.update(&self.commitment.clone());
+        hasher.update(&msg);
+
+        let mut msg_to_sign = vec![0u8; DATA_LENGTH];
+        hasher.finalize_variable(&mut msg_to_sign).unwrap();
+
+        IndividualSignature {
+            signature: self.signing_key.sign(&msg_to_sign, &[], &[]),
             verification_key: self.verification_key,
         }
     }
 }
 
-impl BLS {
-    /// Verify a signature against its verification key for the given message.
-    pub fn verify(&self, msg: &[u8]) -> bool {
-        let result = self
-            .signature
-            .verify(false, msg, &[], &[], &self.verification_key, false);
-        result == BLST_ERROR::BLST_SUCCESS
-    }
-    /// Converts the `BLS.signature` into a fixed-size byte array `[u8; N]`
-    pub fn to_bytes<const N: usize>(&self) -> [u8; N] {
-        let bytes = self.signature.to_bytes();
-        let mut array = [0u8; N];
+impl IndividualSignature {
+    /// Verify a signature
+    pub fn verify(&self, msg: Vec<u8>, closed_registration: &ClosedRegistration) -> bool {
+        if closed_registration
+            .registered_keys
+            .find_key(&self.verification_key)
+            .is_some()
+        {
+            let mut signed_msg = vec![0u8; DATA_LENGTH];
+            let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
+            hasher.update(&closed_registration.commitment.clone());
+            hasher.update(&msg);
+            hasher.finalize_variable(&mut signed_msg).unwrap();
 
-        for (i, &byte) in bytes.iter().take(N).enumerate() {
-            array[i] = byte;
+            let result =
+                self.signature
+                    .verify(false, &signed_msg, &[], &[], &self.verification_key, false);
+            return result == BLST_ERROR::BLST_SUCCESS;
+        };
+        false
+    }
+
+    /// Return the hash of the signature and its public key
+    pub fn to_element<const N: usize>(&self) -> [u8; N] {
+        let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
+        let mut element = [0u8; N];
+        hasher.update(&self.signature.to_bytes());
+        hasher.update(&self.verification_key.to_bytes());
+        hasher.finalize_variable(&mut element).unwrap();
+        element
+    }
+}
+
+impl AggregateSignature {
+    /// Collect valid individual signatures and create the commitment with message
+    pub fn collect_valid_signatures<const N: usize>(
+        signatures: Vec<IndividualSignature>,
+        closed_registration: &ClosedRegistration,
+        msg: Vec<u8>,
+        set_size: u64,
+    ) -> Option<Self> {
+        let valid_signatures: Vec<IndividualSignature> = signatures
+            .iter()
+            .filter(|sig| sig.verify(msg.clone(), closed_registration))
+            .cloned()
+            .collect();
+        if valid_signatures.len() < set_size as usize {
+            None
+        } else {
+            let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
+            hasher.update(&closed_registration.commitment.clone());
+            hasher.update(&msg);
+
+            let mut commitment_with_msg = vec![0u8; N];
+            hasher.finalize_variable(&mut commitment_with_msg).unwrap();
+            Some(Self {
+                valid_signatures,
+                commitment_with_msg,
+            })
         }
-        array
     }
-}
 
-/// Generate signatures
-pub fn generate_signatures(
-    rng: &mut (impl RngCore + CryptoRng),
-    msg: &[u8],
-    set_size: u64,
-) -> Vec<BLS> {
-    (0..set_size)
-        .map(|_| {
-            let signer = SIGNER::new(rng);
-            signer.sign(msg)
-        })
-        .collect::<Vec<BLS>>()
-}
-
-/// Collect the valid signatures as byte arrays
-pub fn collect_set_elements<const N: usize>(
-    msg: &[u8],
-    set_size: u64,
-    signatures: Vec<BLS>,
-) -> Option<Vec<[u8; N]>> {
-    let prover_set = signatures
-        .iter()
-        .filter_map(|sig| {
-            if sig.verify(msg) {
-                Some(sig.to_bytes())
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<[u8; N]>>();
-    if prover_set.len() < set_size as usize {
-        None
-    } else {
-        Some(prover_set)
+    /// Create the prover set by running `to_element` function for each valid signature
+    pub fn create_prover_set<const N: usize>(&self) -> Vec<[u8; N]> {
+        self.valid_signatures
+            .iter()
+            .map(|signature| signature.to_element())
+            .collect()
     }
 }
 
@@ -111,15 +234,43 @@ fn main() {
     let mut msg = [0u8; 16];
     rng.fill_bytes(&mut msg);
     let set_size = 1_000;
-    let params = Params {
-        soundness_param: 128.0,
-        completeness_param: 128.0,
-        set_size: 80 * set_size / 100,
-        lower_bound: 20 * set_size / 100,
-    };
-    let signatures = generate_signatures(&mut rng, &msg, set_size);
-    let prover_set = collect_set_elements::<DATA_LENGTH>(&msg, set_size, signatures).unwrap();
-    let alba = CentralizedTelescope::create(&params);
-    let proof = alba.prove(&prover_set).unwrap();
-    assert!(alba.verify(&proof));
+
+    let mut candidates: Vec<Candidate> = Vec::with_capacity(set_size as usize);
+
+    for _ in 0..set_size {
+        candidates.push(Candidate::new(&mut rng))
+    }
+
+    let public_keys = candidates
+        .iter()
+        .map(|candidate| candidate.verification_key)
+        .collect::<Vec<PublicKey>>();
+
+    let mut registration = RegisteredKeys::new();
+    registration.insert_keys(&public_keys);
+
+    let closed_registration = ClosedRegistration::close(&registration);
+
+    let mut signers: Vec<Signer> = Vec::new();
+
+    for candidate in candidates {
+        match candidate.new_signer(&closed_registration) {
+            Some(signer) => signers.push(signer),
+            None => continue,
+        }
+    }
+    let signatures = signers
+        .iter()
+        .map(|signer| signer.sign(msg.to_vec()))
+        .collect::<Vec<IndividualSignature>>();
+
+    let aggregate = AggregateSignature::collect_valid_signatures::<DATA_LENGTH>(
+        signatures,
+        &closed_registration,
+        msg.to_vec(),
+        set_size,
+    )
+    .unwrap();
+    let s_p: Vec<[u8; DATA_LENGTH]> = aggregate.create_prover_set();
+    println!("{}", s_p.len());
 }
