@@ -78,18 +78,21 @@ impl Candidate {
 
     /// Create a new signer from candidate and closed registration
     pub fn new_signer(&self, closed_registration: &ClosedRegistration) -> Option<Signer> {
-        match closed_registration
+        closed_registration
             .registered_keys
-            .find_key(&&self.verification_key())
-        {
-            Some(index) => Some(Signer {
+            .find_key(&self.verification_key())
+            .map(|index| Signer {
                 signing_key: self.signing_key.clone(),
                 verification_key: self.verification_key,
                 signer_index: index,
                 commitment: closed_registration.commitment.clone(),
-            }),
-            None => None,
-        }
+            })
+    }
+}
+
+impl Default for RegisteredKeys {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -104,19 +107,19 @@ impl RegisteredKeys {
     /// Inserts a list of public keys into the hash table
     pub fn insert_keys(&mut self, keys: &[PublicKey]) {
         for (index, key) in keys.iter().enumerate() {
-            let key_hash = self.hash_key(key);
+            let key_hash = RegisteredKeys::hash_key(key);
             self.keys.insert(key_hash, index);
         }
     }
 
     /// Searches for a public key and returns its index if found
     pub fn find_key(&self, key: &PublicKey) -> Option<usize> {
-        let key_hash = self.hash_key(key);
-        self.keys.get(&key_hash).cloned()
+        let key_hash = RegisteredKeys::hash_key(key);
+        self.keys.get(&key_hash).copied()
     }
 
     /// Hashes a public key using Blake2b
-    fn hash_key(&self, key: &PublicKey) -> Vec<u8> {
+    fn hash_key(key: &PublicKey) -> Vec<u8> {
         let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
         hasher.update(&key.to_bytes());
         let mut hash_output = vec![0u8; DATA_LENGTH];
@@ -143,7 +146,7 @@ impl ClosedRegistration {
 
 impl Signer {
     /// Create a bls signature for given message
-    fn sign(&self, msg: Vec<u8>) -> IndividualSignature {
+    fn sign(&self, msg: &[u8]) -> IndividualSignature {
         let mut hasher = Blake2bVar::new(DATA_LENGTH).expect("Invalid hash size");
         hasher.update(&self.commitment.clone());
         hasher.update(&msg);
@@ -160,7 +163,7 @@ impl Signer {
 
 impl IndividualSignature {
     /// Verify a signature
-    pub fn verify(&self, msg: Vec<u8>, closed_registration: &ClosedRegistration) -> bool {
+    pub fn verify(&self, msg: &[u8], closed_registration: &ClosedRegistration) -> bool {
         if closed_registration
             .registered_keys
             .find_key(&self.verification_key)
@@ -196,12 +199,12 @@ impl AggregateSignature {
     pub fn collect_valid_signatures<const N: usize>(
         signatures: Vec<IndividualSignature>,
         closed_registration: &ClosedRegistration,
-        msg: Vec<u8>,
+        msg: &[u8],
         set_size: u64,
     ) -> Option<Self> {
         let valid_signatures: Vec<IndividualSignature> = signatures
             .iter()
-            .filter(|sig| sig.verify(msg.clone(), closed_registration))
+            .filter(|sig| sig.verify(msg, closed_registration))
             .cloned()
             .collect();
         if valid_signatures.len() < set_size as usize {
@@ -224,7 +227,7 @@ impl AggregateSignature {
     pub fn create_prover_set<const N: usize>(&self) -> Vec<[u8; N]> {
         self.valid_signatures
             .iter()
-            .map(|signature| signature.to_element())
+            .map(IndividualSignature::to_element)
             .collect()
     }
 }
@@ -238,7 +241,7 @@ fn main() {
     let mut candidates: Vec<Candidate> = Vec::with_capacity(set_size as usize);
 
     for _ in 0..set_size {
-        candidates.push(Candidate::new(&mut rng))
+        candidates.push(Candidate::new(&mut rng));
     }
 
     let public_keys = candidates
@@ -261,13 +264,13 @@ fn main() {
     }
     let signatures = signers
         .iter()
-        .map(|signer| signer.sign(msg.to_vec()))
+        .map(|signer| signer.sign(&msg))
         .collect::<Vec<IndividualSignature>>();
 
     let aggregate = AggregateSignature::collect_valid_signatures::<DATA_LENGTH>(
         signatures,
         &closed_registration,
-        msg.to_vec(),
+        &msg,
         set_size,
     )
     .unwrap();
