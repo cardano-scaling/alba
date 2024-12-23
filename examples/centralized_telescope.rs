@@ -199,7 +199,7 @@ impl ClosedRegistration {
     }
 
     /// Compute the commitment by hashing check sum of closed registration and the message
-    pub fn get_commitment<const N: usize>(check_sum: &Vec<u8>, msg: &[u8]) -> [u8; N] {
+    pub fn get_commitment<const N: usize>(check_sum: &[u8], msg: &[u8]) -> [u8; N] {
         let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
         let mut commitment: [u8; N] = [0u8; N];
 
@@ -316,6 +316,29 @@ impl AlbaThresholdProof {
             None
         }
     }
+
+    /// Verify
+    pub fn verify<const N: usize>(
+        &self,
+        params: &Params,
+        closed_registration: &ClosedRegistration,
+        msg: &[u8],
+    ) -> bool {
+        let commitment: [u8; N] =
+            ClosedRegistration::get_commitment(&closed_registration.check_sum, msg);
+
+        if commitment != self.aggregate.commitment.as_slice() {
+            return false;
+        }
+
+        for sig in self.aggregate.valid_signatures.clone() {
+            if sig.verify::<N>(&commitment, closed_registration) == false {
+                return false;
+            }
+        }
+        let alba = CentralizedTelescope::create(params);
+        return alba.verify(&self.proof);
+    }
 }
 
 fn main() {
@@ -363,7 +386,8 @@ fn main() {
     );
     if result.is_some() {
         let alba = result.unwrap();
-        println!("{:?}", alba.proof.element_sequence.len());
+        let verify_result = alba.verify::<DATA_LENGTH>(&params, &closed_registration, &msg);
+        print!("{}", verify_result);
     } else {
         println!("Proof is not generated.");
     }
