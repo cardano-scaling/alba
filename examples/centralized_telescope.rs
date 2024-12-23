@@ -32,7 +32,7 @@ impl AlbaThresholdProof {
     /// Create an Alba proof
     /// - Try to aggregate given list of aggregate signatures
     /// - If aggregation succeeds, create the Alba proof
-    /// If Alba proof is generated, return the aggregate signature and the Alba proof
+    /// - If Alba proof is generated, return the aggregate signature and the Alba proof
     pub(crate) fn prove<const N: usize>(
         params: &Params,
         signatures: &[IndividualSignature],

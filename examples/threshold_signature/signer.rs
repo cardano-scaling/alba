@@ -18,7 +18,7 @@ pub struct Candidate {
 pub struct Signer {
     signing_key: SecretKey,
     verification_key: PublicKey,
-    signer_index: usize,
+    registration_index: usize,
     registration_check_sum: Vec<u8>,
 }
 
@@ -47,7 +47,7 @@ impl Candidate {
             .map(|index| Signer {
                 signing_key: self.signing_key.clone(),
                 verification_key: self.verification_key,
-                signer_index: index,
+                registration_index: index,
                 registration_check_sum: closed_registration.check_sum.clone(),
             })
     }
@@ -64,7 +64,7 @@ impl Signer {
         IndividualSignature {
             signature: self.signing_key.sign(&commitment, &[], &[]),
             verification_key: self.verification_key,
-            signer_index: self.signer_index,
+            signer_index: self.registration_index,
         }
     }
 }
