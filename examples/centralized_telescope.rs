@@ -332,12 +332,12 @@ impl AlbaThresholdProof {
         }
 
         for sig in self.aggregate.valid_signatures.clone() {
-            if sig.verify::<N>(&commitment, closed_registration) == false {
+            if !sig.verify::<N>(&commitment, closed_registration) {
                 return false;
             }
         }
         let alba = CentralizedTelescope::create(params);
-        return alba.verify(&self.proof);
+        alba.verify(&self.proof)
     }
 }
 
@@ -387,7 +387,7 @@ fn main() {
     if result.is_some() {
         let alba = result.unwrap();
         let verify_result = alba.verify::<DATA_LENGTH>(&params, &closed_registration, &msg);
-        print!("{}", verify_result);
+        print!("{verify_result}");
     } else {
         println!("Proof is not generated.");
     }
