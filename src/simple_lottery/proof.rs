@@ -29,7 +29,7 @@ impl Proof {
             if lottery_hash(params.lottery_probability, element) {
                 element_sequence.push(element);
             }
-            if prover_set.len() as u64 >= params.proof_size {
+            if element_sequence.len() as u64 >= params.proof_size {
                 return Some(Proof { element_sequence });
             }
         }
