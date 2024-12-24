@@ -1,7 +1,7 @@
 //! Centralized Telescope's `Params` structure comprising the internal parameters
 
 use super::cases::{Case, Cases, High, Mid, Small};
-use std::f64::consts::LOG2_E;
+use std::{f64::consts::LOG2_E, ops::Neg};
 
 /// Internal parameters
 #[derive(Debug, Clone, Copy)]
@@ -62,6 +62,141 @@ impl Params {
         }
     }
 
+    /// Check if input `Params` structure is secure with respect to user
+    /// parameters
+    pub(super) fn check_from(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Self,
+    ) -> bool {
+        let proof_size_f64 = params.proof_size as f64;
+
+        match Cases::which(completeness_param, set_size, proof_size_f64 as u64) {
+            Cases::Small => {
+                let small = Small::new(completeness_param, set_size, proof_size_f64);
+                Self::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &small,
+                )
+            }
+            Cases::Mid => {
+                let mid = Mid::new(completeness_param, set_size, proof_size_f64);
+                Self::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &mid,
+                )
+            }
+            Cases::High => {
+                let high = High::new(completeness_param, set_size, proof_size_f64);
+                Self::check_case(
+                    soundness_param,
+                    completeness_param,
+                    set_size,
+                    lower_bound,
+                    params,
+                    &high,
+                )
+            }
+        }
+    }
+
+    /// Check that internal parameters are consistent wit user parameters
+    fn check_case(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Self,
+        case: &impl Case,
+    ) -> bool {
+        fn completeness_error(u: f64, d: u64, q: f64) -> f64 {
+            (-(q - u * q * q / 2.0) * d as f64).exp()
+        }
+        fn soundness_error(np: u64, nf: u64, u: f64, d: u64, q: f64) -> f64 {
+            (nf as f64 / np as f64).powf(u) * d as f64 * q
+        }
+
+        // Checks the proof size given is at least as big as one computed from user parameters
+        let proof_size = params.proof_size as f64;
+        if Self::proof_size(
+            soundness_param,
+            completeness_param,
+            set_size as f64,
+            lower_bound as f64,
+        ) > proof_size
+        {
+            return false;
+        }
+
+        // Check that the number of max retries is at least as big as one
+        // computed from given user parameters
+        if case.max_retries() > params.max_retries {
+            return false;
+        }
+
+        // Check that the search width is at least as big as the one computed
+        // from given user parameters and given proof size
+        let search_width = case.search_width(proof_size);
+        if search_width > params.search_width {
+            return false;
+        };
+
+        // Check that the valid proof probability is close enough from the one
+        // computed from the given user and internal parameters
+        let error = 0.01;
+        let valid_proof_probability = case.valid_proof_probability(params.search_width);
+        if (valid_proof_probability - params.valid_proof_probability).abs()
+            / valid_proof_probability
+            < error
+        {
+            return false;
+        }
+
+        // Checking the completeness error is smaller than asked
+        if completeness_error(proof_size, search_width, valid_proof_probability)
+            .log2()
+            .neg()
+            >= completeness_param
+        {
+            return false;
+        };
+
+        // Checking the soundness error is smaller than asked
+        if soundness_error(
+            set_size,
+            lower_bound,
+            proof_size,
+            params.search_width,
+            params.valid_proof_probability,
+        )
+        .log2()
+        .neg()
+            >= soundness_param
+        {
+            return false;
+        }
+
+        // Check that the DFS bound is at least as big as the one given by the user and internal parametesr.
+        let dfs_bound = case.dfs_bound(proof_size, search_width);
+        if dfs_bound > params.dfs_bound {
+            return false;
+        };
+
+        true
+    }
+
+    /// Compute the proof size out of the security parameters, the set size and
+    /// the lower bound
     fn proof_size(
         soundness_param: f64,
         completeness_param: f64,
