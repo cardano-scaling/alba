@@ -47,7 +47,7 @@ impl Proof {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to params.max_retries times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
-    pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
+    pub fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
         // Run prove_index up to max_retries times
         (0..params.max_retries).find_map(|retry_counter| {
             Self::prove_index(set_size, params, prover_set, retry_counter).1
@@ -56,7 +56,7 @@ impl Proof {
 
     // Alba's verification algorithm, returns true if the proof is
     /// successfully verified, following the DFS verification, false otherwise.
-    pub(super) fn verify(&self, set_size: u64, params: &Params) -> bool {
+    pub fn verify(&self, set_size: u64, params: &Params) -> bool {
         if self.search_counter >= params.search_width
             || self.retry_counter >= params.max_retries
             || self.element_sequence.len() as u64 != params.proof_size
