@@ -1,5 +1,4 @@
-//! ALBA Simple lottery setup parameters.
-
+//! Simple Lottery's `Params` structure comprising the internal parameters
 use std::f64::consts::LN_2;
 
 /// Setup output parameters
@@ -12,7 +11,25 @@ pub struct Params {
 }
 
 impl Params {
-    /// Calculates Params parameters.
+    /// Returns a `Params` structure from user parameters
+    ///
+    /// # Arguments
+    ///
+    /// * `soundness_param` - the protocol soundness parameter, typically set at 128
+    /// * `completeness_param` - the protocol completeness parameter, typically set at 128
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `lower_bound` - the lower bound to prove
+    ///
+    /// # Returns
+    ///
+    /// A `Params` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::simple_lottery::params::Params;
+    /// let params = Params::new(128.0, 128.0, 1_000, 750);
+    /// ```
     pub fn new(
         soundness_param: f64,
         completeness_param: f64,
@@ -39,6 +56,8 @@ impl Params {
         }
     }
 
+    /// Compute the soundness and completeness ratio out of the security
+    /// parameters, the set size and the lower bound
     fn compute_ratios(
         soundness_param: f64,
         completeness_param: f64,
@@ -83,10 +102,13 @@ impl Params {
         }
     }
 
+    /// Computes the soundness bound out of the soundness parameter and ratio
     fn bound_soundness(soundness_param: f64, ratio_soundness: f64) -> f64 {
         soundness_param * LN_2 / (ratio_soundness.ln() - 1.0 + ratio_soundness.recip())
     }
 
+    /// Computes the completeness bound out of the completeness parameter and
+    /// ratio
     fn bound_completeness(completeness_param: f64, ratio_completeness: f64) -> f64 {
         completeness_param * LN_2 / (ratio_completeness - 1.0 - ratio_completeness.ln())
     }
