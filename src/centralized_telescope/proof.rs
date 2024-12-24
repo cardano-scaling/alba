@@ -21,28 +21,6 @@ pub struct Proof {
     pub element_sequence: Vec<Element>,
 }
 
-/// Oracle producing a uniformly random value in [0, set_size[ used for
-/// prehashing S_p
-fn bin_hash(set_size: u64, retry_counter: u64, element: Element) -> Option<u64> {
-    let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-    let mut hasher = Blake2s256::new();
-    hasher.update(b"Telescope-bin_hash");
-    hasher.update(retry_bytes);
-    hasher.update(element);
-    let digest: Hash = hasher.finalize().into();
-    sample::sample_uniform(&digest, set_size)
-}
-
-/// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
-/// otherwise
-fn proof_hash(valid_proof_probability: f64, r: &Round) -> bool {
-    let mut hasher = Blake2s256::new();
-    hasher.update(b"Telescope-proof_hash");
-    hasher.update(r.hash);
-    let digest: Hash = hasher.finalize().into();
-    sample::sample_bernoulli(&digest, valid_proof_probability)
-}
-
 impl Proof {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to params.max_retries times the prove_index function and
@@ -72,7 +50,7 @@ impl Proof {
         // For each element in the proof's sequence
         for &element in &self.element_sequence {
             // Retrieve the bin id associated to this new element
-            let Some(bin_id) = bin_hash(set_size, self.retry_counter, element) else {
+            let Some(bin_id) = Proof::bin_hash(set_size, self.retry_counter, element) else {
                 return false;
             };
             // Check that the new element was chosen correctly
@@ -86,7 +64,7 @@ impl Proof {
                 return false;
             }
         }
-        proof_hash(params.valid_proof_probability, &round)
+        Proof::proof_hash(params.valid_proof_probability, &round)
     }
 
     /// Indexed proving algorithm, returns the total number of DFS calls done
@@ -107,7 +85,7 @@ impl Proof {
         // Take only up to 2*set_size elements for efficiency and fill the bins
         // with them
         for &element in prover_set.iter().take(set_size.saturating_mul(2) as usize) {
-            match bin_hash(set_size, retry_counter, element) {
+            match Proof::bin_hash(set_size, retry_counter, element) {
                 Some(bin_index) => {
                     bins[bin_index as usize].push(element);
                 }
@@ -153,7 +131,7 @@ impl Proof {
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
-            let proof_opt = if proof_hash(params.valid_proof_probability, round) {
+            let proof_opt = if Proof::proof_hash(params.valid_proof_probability, round) {
                 Some(Self {
                     retry_counter: round.retry_counter,
                     search_counter: round.search_counter,
@@ -186,5 +164,27 @@ impl Proof {
         }
         // If no proof was found, return number of steps and None
         (step, None)
+    }
+
+    /// Oracle producing a uniformly random value in [0, set_size[ used for
+    /// prehashing S_p
+    fn bin_hash(set_size: u64, retry_counter: u64, element: Element) -> Option<u64> {
+        let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-bin_hash");
+        hasher.update(retry_bytes);
+        hasher.update(element);
+        let digest: Hash = hasher.finalize().into();
+        sample::sample_uniform(&digest, set_size)
+    }
+
+    /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
+    /// otherwise
+    fn proof_hash(valid_proof_probability: f64, r: &Round) -> bool {
+        let mut hasher = Blake2s256::new();
+        hasher.update(b"Telescope-proof_hash");
+        hasher.update(r.hash);
+        let digest: Hash = hasher.finalize().into();
+        sample::sample_bernoulli(&digest, valid_proof_probability)
     }
 }
