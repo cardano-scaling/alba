@@ -15,12 +15,12 @@ const DATA_LENGTH: usize = 48;
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let nb_tests = 1_000;
-    let set_size = 1_000;
+    let set_size: u64 = 1_000;
     let params = Params {
         soundness_param: 10.0,
         completeness_param: 10.0,
-        set_size: 80 * set_size / 100,
-        lower_bound: 20 * set_size / 100,
+        set_size: set_size.saturating_mul(80).div_ceil(100),
+        lower_bound: set_size.saturating_mul(20).div_ceil(100),
     };
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
