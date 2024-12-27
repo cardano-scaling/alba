@@ -8,6 +8,8 @@ use crate::utils::types::Element;
 use blake2::{Blake2s256, Digest};
 
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
+    debug_assert!(crate::utils::misc::check_distinct(prover_set));
+
     let mut element_sequence = Vec::with_capacity(setup.proof_size as usize);
     for &element in prover_set {
         if lottery_hash(setup, element) {
@@ -15,8 +17,6 @@ pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
         }
         if prover_set.len() as u64 >= setup.proof_size {
             element_sequence.sort();
-            // Check that the elements in the sequence are distinct.
-            debug_assert!(element_sequence.is_sorted_by(|a, b| a < b));
             return Some(Proof { element_sequence });
         }
     }
