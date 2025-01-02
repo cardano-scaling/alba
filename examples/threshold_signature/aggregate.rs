@@ -43,11 +43,11 @@ impl AggregateSignature {
     pub fn collect_valid_signatures<const N: usize>(
         signatures: &[IndividualSignature],
         closed_registration: &ClosedRegistration,
-        msg: &[u8],
+        commitment: &[u8],
     ) -> Vec<IndividualSignature> {
         signatures
             .iter()
-            .filter(|sig| sig.verify::<N>(msg, closed_registration))
+            .filter(|sig| sig.verify::<N>(commitment, closed_registration))
             .cloned()
             .collect()
     }
