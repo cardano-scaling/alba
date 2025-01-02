@@ -40,22 +40,21 @@ impl AlbaThresholdProof {
         closed_registration: &ClosedRegistration,
         msg: &[u8],
     ) -> Option<Self> {
-        let try_aggregate =
-            AggregateSignature::aggregate::<N>(signatures, closed_registration, msg, set_size);
-        if let Some(aggregate) = try_aggregate {
-            let prover_set: Vec<Element> = aggregate.create_prover_set::<N>();
-            let alba = CentralizedTelescope::create(params);
-            let try_proof = alba.prove(&prover_set);
-            if let Some(proof) = try_proof {
-                Some(Self { aggregate, proof })
-            } else {
-                println!("Proof generation failed.");
+        AggregateSignature::aggregate::<N>(signatures, closed_registration, msg, set_size)
+            .and_then(|aggregate| {
+                let prover_set = aggregate.create_prover_set::<N>();
+                let alba = CentralizedTelescope::create(params);
+                alba.prove(&prover_set)
+                    .map(|proof| Self { aggregate, proof })
+                    .or_else(|| {
+                        println!("Proof generation failed.");
+                        None
+                    })
+            })
+            .or_else(|| {
+                println!("Aggregation failed.");
                 None
-            }
-        } else {
-            println!("Aggregation failed.");
-            None
-        }
+            })
     }
 
     /// Verify given Alba proof
@@ -76,10 +75,13 @@ impl AlbaThresholdProof {
             return false;
         }
 
-        for sig in self.aggregate.valid_signatures.clone() {
-            if !sig.verify::<N>(&commitment, closed_registration) {
-                return false;
-            }
+        if !self
+            .aggregate
+            .valid_signatures
+            .iter()
+            .all(|sig| sig.verify::<N>(&commitment, closed_registration))
+        {
+            return false;
         }
         let alba = CentralizedTelescope::create(params);
         alba.verify(&self.proof)
