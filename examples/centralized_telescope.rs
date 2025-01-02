@@ -124,10 +124,10 @@ fn main() {
         .map(|signer| signer.sign::<DATA_LENGTH>(&msg))
         .collect::<Vec<IndividualSignature>>();
 
-    // Create the Alba proof.
+    // Create the threshold signature.
     // - Aggregate the valid signatures
     // - Create the `prover_set` with the list of valid signatures
-    // - Create the proof with the `prover_set`
+    // - Create the threshold signature out of the `prover_set`
     let result = AlbaThresholdProof::prove::<DATA_LENGTH>(
         &params,
         &signatures,
@@ -139,8 +139,8 @@ fn main() {
         let alba = result.unwrap();
         // Verify the proof
         let verify_result = alba.verify::<DATA_LENGTH>(&params, &closed_registration, &msg);
-        print!("{verify_result}");
+        print!("Threshold signature verifies: {verify_result}");
     } else {
-        println!("Proof is not generated.");
+        println!("No threshold signature were successfully generated.");
     }
 }

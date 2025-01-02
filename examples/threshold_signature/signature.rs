@@ -5,7 +5,7 @@ use blst::min_sig::{PublicKey, Signature};
 use blst::BLST_ERROR;
 
 /// Individual Signature.
-/// It includes a blst signature, its verification key, and the registration index of the signer.
+/// It includes a BLS signature, using the blst library, its verification key, and the registration index of the signer.
 #[derive(Debug, Clone)]
 pub(crate) struct IndividualSignature {
     pub(crate) signature: Signature,
