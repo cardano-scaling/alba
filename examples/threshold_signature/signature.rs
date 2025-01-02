@@ -1,7 +1,8 @@
-use crate::threshold_signature::registration::ClosedRegistration;
+use crate::threshold_signature::registration::Registration;
+use crate::threshold_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
-use blst::min_sig::{PublicKey, Signature};
+use blst::min_sig::Signature;
 use blst::BLST_ERROR;
 
 /// Individual Signature.
@@ -9,26 +10,18 @@ use blst::BLST_ERROR;
 #[derive(Debug, Clone)]
 pub(crate) struct IndividualSignature {
     pub(crate) signature: Signature,
-    pub(crate) verification_key: PublicKey,
-    pub(crate) signer_index: usize,
+    pub(crate) verification_key: VerificationKey,
 }
 
 impl IndividualSignature {
     /// Verify a signature
     /// First, validate that the signer's verification key is actually registered.
     /// Then, verify the blst signature.
-    pub fn verify<const N: usize>(
-        &self,
-        commitment: &[u8],
-        closed_registration: &ClosedRegistration,
-    ) -> bool {
-        if closed_registration
-            .registered_keys
-            .is_key_at_index::<N>(&self.verification_key, self.signer_index)
-        {
+    pub fn verify<const N: usize>(&self, commitment: &[u8], registration: &Registration) -> bool {
+        if registration.is_registered(&self.verification_key) {
             let result =
                 self.signature
-                    .verify(false, commitment, &[], &[], &self.verification_key, false);
+                    .verify(false, commitment, &[], &[], &self.verification_key.0, false);
             return result == BLST_ERROR::BLST_SUCCESS;
         };
         false

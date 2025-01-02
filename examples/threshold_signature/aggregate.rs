@@ -1,4 +1,4 @@
-use crate::threshold_signature::registration::ClosedRegistration;
+use crate::threshold_signature::registration::Registration;
 use crate::threshold_signature::signature::IndividualSignature;
 use crate::Element;
 
@@ -17,15 +17,14 @@ impl AggregateSignature {
     /// Return the aggregate signature if all checks pass.
     pub fn aggregate<const N: usize>(
         signatures: &[IndividualSignature],
-        closed_registration: &ClosedRegistration,
+        registration: &Registration,
         msg: &[u8],
         set_size: u64,
     ) -> Option<Self> {
-        let commitment: [u8; N] =
-            ClosedRegistration::get_commitment(&closed_registration.check_sum, msg);
+        let commitment: [u8; N] = Registration::get_commitment(&registration.check_sum, msg);
         let valid_signatures = AggregateSignature::collect_valid_signatures::<N>(
             signatures,
-            closed_registration,
+            registration,
             &commitment,
         );
 
@@ -42,12 +41,12 @@ impl AggregateSignature {
     /// Collect the verified individual signatures
     pub fn collect_valid_signatures<const N: usize>(
         signatures: &[IndividualSignature],
-        closed_registration: &ClosedRegistration,
+        registration: &Registration,
         commitment: &[u8],
     ) -> Vec<IndividualSignature> {
         signatures
             .iter()
-            .filter(|sig| sig.verify::<N>(commitment, closed_registration))
+            .filter(|sig| sig.verify::<N>(commitment, registration))
             .cloned()
             .collect()
     }

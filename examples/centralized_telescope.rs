@@ -11,7 +11,7 @@ use alba::centralized_telescope::CentralizedTelescope;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
-use crate::threshold_signature::registration::{ClosedRegistration, RegisteredKeys};
+use crate::threshold_signature::registration::Registration;
 use crate::threshold_signature::signature::IndividualSignature;
 use crate::threshold_signature::signer::{Candidate, Signer};
 use threshold_signature::aggregate::AggregateSignature;
@@ -37,10 +37,10 @@ impl AlbaThresholdProof {
         params: &Params,
         signatures: &[IndividualSignature],
         set_size: u64,
-        closed_registration: &ClosedRegistration,
+        registration: &Registration,
         msg: &[u8],
     ) -> Option<Self> {
-        AggregateSignature::aggregate::<N>(signatures, closed_registration, msg, set_size)
+        AggregateSignature::aggregate::<N>(signatures, registration, msg, set_size)
             .and_then(|aggregate| {
                 let prover_set = aggregate.create_prover_set::<N>();
                 let alba = CentralizedTelescope::create(params);
@@ -65,11 +65,10 @@ impl AlbaThresholdProof {
     pub(crate) fn verify<const N: usize>(
         &self,
         params: &Params,
-        closed_registration: &ClosedRegistration,
+        registration: &Registration,
         msg: &[u8],
     ) -> bool {
-        let commitment: [u8; N] =
-            ClosedRegistration::get_commitment(&closed_registration.check_sum, msg);
+        let commitment: [u8; N] = Registration::get_commitment(&registration.check_sum, msg);
 
         if commitment != self.aggregate.commitment.as_slice() {
             return false;
@@ -79,7 +78,7 @@ impl AlbaThresholdProof {
             .aggregate
             .valid_signatures
             .iter()
-            .all(|sig| sig.verify::<N>(&commitment, closed_registration))
+            .all(|sig| sig.verify::<N>(&commitment, registration))
         {
             return false;
         }
@@ -104,20 +103,18 @@ fn main() {
     let candidates: Vec<Candidate> = (0..set_size).map(|_| Candidate::new(&mut rng)).collect();
 
     // Create a new key registration
-    let mut registration = RegisteredKeys::new();
+    let mut registration = Registration::new();
 
     // Register the candidates
-    for (index, candidate) in candidates.iter().enumerate() {
-        registration.insert_key::<DATA_LENGTH>(&candidate.verification_key, index);
+    for candidate in candidates.iter() {
+        registration.register(candidate.verification_key);
     }
-
-    // Close the registration
-    let closed_registration = ClosedRegistration::close::<DATA_LENGTH>(&registration);
+    registration.close::<DATA_LENGTH>();
 
     // Create the threshold signature signers from the candidates if they are registered
     let signers: Vec<Signer> = candidates
         .into_iter()
-        .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(&closed_registration))
+        .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(&registration))
         .collect();
 
     // Collect the individual signatures
@@ -134,13 +131,13 @@ fn main() {
         &params,
         &signatures,
         set_size,
-        &closed_registration,
+        &registration,
         &msg,
     );
     if result.is_some() {
         let alba = result.unwrap();
         // Verify the proof
-        let verify_result = alba.verify::<DATA_LENGTH>(&params, &closed_registration, &msg);
+        let verify_result = alba.verify::<DATA_LENGTH>(&params, &registration, &msg);
         print!("Threshold signature verifies: {verify_result}");
     } else {
         println!("No threshold signature were successfully generated.");
