@@ -49,20 +49,20 @@ impl AggregateSignature {
 
         // let (signatures, verification_keys) = self.extract_signatures_and_keys();
 
-        return true;
+        true
     }
 
     fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {
         let signatures = self
             .valid_signatures
             .iter()
-            .map(|ind_sig| ind_sig.signature.clone())
+            .map(|ind_sig| ind_sig.signature)
             .collect();
 
         let verification_keys = self
             .valid_signatures
             .iter()
-            .map(|ind_sig| ind_sig.verification_key.clone())
+            .map(|ind_sig| ind_sig.verification_key)
             .collect();
 
         (signatures, verification_keys)

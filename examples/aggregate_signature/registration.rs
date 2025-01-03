@@ -51,7 +51,7 @@ impl Registration {
     }
 
     fn get_closed_registration(&self) -> Option<Vec<u8>> {
-        self.check_sum.as_ref().cloned()
+        self.check_sum.clone()
     }
 
     /// Compute the commitment by hashing the checksum of the closed registration and the message.
