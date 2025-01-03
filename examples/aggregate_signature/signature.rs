@@ -28,6 +28,9 @@ impl Signature {
     pub fn to_bytes(self) -> [u8; 48] {
         self.0.to_bytes()
     }
+    pub fn verify_aggregate(signatures: &[Signature], verification_keys: &[VerificationKey], msg: &[u8])  -> BLST_ERROR {
+        signatures[0].verify(msg, &verification_keys[0])
+    }
 }
 
 impl IndividualSignature {

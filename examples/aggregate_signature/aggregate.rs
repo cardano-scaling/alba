@@ -1,3 +1,4 @@
+use blst::BLST_ERROR;
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::{IndividualSignature, Signature};
 use crate::aggregate_signature::signer::VerificationKey;
@@ -46,9 +47,9 @@ impl AggregateSignature {
             }
         }
 
-        // let (signatures, verification_keys) = self.extract_signatures_and_keys();
-
-        true
+        let (signatures, verification_keys) = self.extract_signatures_and_keys();
+        let result = Signature::verify_aggregate(signatures.as_slice(), verification_keys.as_slice(), &self.commitment);
+        return result == BLST_ERROR::BLST_SUCCESS;
     }
 
     fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {

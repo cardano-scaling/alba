@@ -79,15 +79,10 @@ impl AlbaThresholdProof {
         if commitment != self.aggregate.commitment.as_slice() {
             return false;
         }
-        if !self
-            .aggregate
-            .valid_signatures
-            .iter()
-            .all(|sig| sig.verify::<N>(registration, msg))
-        {
+
+        if !self.aggregate.verify::<N>(registration){
             return false;
         }
-
         let alba = CentralizedTelescope::create(params);
         alba.verify(&self.proof)
     }
