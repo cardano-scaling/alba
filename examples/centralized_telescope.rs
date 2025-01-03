@@ -106,7 +106,7 @@ fn main() {
     };
 
     // Create a list of candidates (signers) of the size `set_size`
-    let signers: Vec<Signer> = (0..set_size).map(|_| Signer::new(&mut rng)).collect();
+    let signers: Vec<Signer> = (0..set_size).map(|_| Signer::init(&mut rng)).collect();
 
     // Create a new key registration
     let mut registration = Registration::new();

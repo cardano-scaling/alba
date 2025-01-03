@@ -80,7 +80,7 @@ impl Ord for VerificationKey {
 
 impl Signer {
     /// Generate a new candidate, i.e., a bls signer
-    pub fn new(rng: &mut (impl RngCore + CryptoRng)) -> Self {
+    pub fn init(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
         let sk = SecretKey::key_gen(&ikm, &[])
