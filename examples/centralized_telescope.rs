@@ -80,7 +80,7 @@ impl AlbaThresholdProof {
             return false;
         }
 
-        if !self.aggregate.verify::<N>(registration){
+        if !self.aggregate.verify::<N>(registration) {
             return false;
         }
         let alba = CentralizedTelescope::create(params);

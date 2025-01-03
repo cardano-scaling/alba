@@ -1,8 +1,8 @@
-use blst::BLST_ERROR;
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::{IndividualSignature, Signature};
 use crate::aggregate_signature::signer::VerificationKey;
 use crate::Element;
+use blst::BLST_ERROR;
 
 /// Aggregate signature storing the list of valid signatures and the hash of commitment
 /// with the message to be signed.
@@ -48,7 +48,11 @@ impl AggregateSignature {
         }
 
         let (signatures, verification_keys) = self.extract_signatures_and_keys();
-        let result = Signature::verify_aggregate(signatures.as_slice(), verification_keys.as_slice(), &self.commitment);
+        let result = Signature::verify_aggregate(
+            signatures.as_slice(),
+            verification_keys.as_slice(),
+            &self.commitment,
+        );
         return result == BLST_ERROR::BLST_SUCCESS;
     }
 
