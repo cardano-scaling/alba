@@ -1,8 +1,5 @@
 //! Example
 
-// REMOVE!!!!!!!!!!!!!!!!
-#![allow(dead_code)]
-
 mod aggregate_signature;
 
 use alba::centralized_telescope::params::Params;
