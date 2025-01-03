@@ -116,7 +116,7 @@ impl IndividualSignature {
 
 #[allow(unsafe_code)]
 mod unsafe_helpers {
-    use super::{Signature, VerificationKey, blst_p1, blst_p2};
+    use super::{blst_p1, blst_p2, Signature, VerificationKey};
     use blst::{
         blst_p1_affine, blst_p1_from_affine, blst_p1_to_affine, blst_p2_affine,
         blst_p2_from_affine, blst_p2_to_affine,
