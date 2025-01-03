@@ -53,7 +53,7 @@ impl AggregateSignature {
             verification_keys.as_slice(),
             &self.commitment,
         );
-        return result == BLST_ERROR::BLST_SUCCESS;
+        result == BLST_ERROR::BLST_SUCCESS
     }
 
     fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {

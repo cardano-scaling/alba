@@ -5,7 +5,7 @@ use blake2::{digest::consts::U16, Blake2b, Blake2bVar, Digest};
 use blst::min_sig::Signature as BlstSignature;
 use blst::{blst_p1, blst_p2, p1_affines, p2_affines, BLST_ERROR};
 
-use unsafe_helpers::*;
+use unsafe_helpers::{p1_affine_to_sig, p2_affine_to_vk, sig_to_p1, vk_from_p2_affine};
 
 /// Signature, which is a wrapper over the `BlstSignature` type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,7 +46,7 @@ impl Signature {
         }
 
         // First we generate the scalars
-        let mut scalars = Vec::with_capacity(vks.len() * 128);
+        let mut scalars = Vec::with_capacity(vks.len() * 128 as usize);
         let mut signatures = Vec::with_capacity(vks.len());
         for (index, sig) in sigs.iter().enumerate() {
             let mut hasher = hashed_sigs.clone();
@@ -116,7 +116,7 @@ impl IndividualSignature {
 
 #[allow(unsafe_code)]
 mod unsafe_helpers {
-    use super::*;
+    use super::{Signature, VerificationKey, blst_p1, blst_p2};
     use blst::{
         blst_p1_affine, blst_p1_from_affine, blst_p1_to_affine, blst_p2_affine,
         blst_p2_from_affine, blst_p2_to_affine,
