@@ -5,6 +5,8 @@ use std::collections::BTreeSet;
 
 type Keys = BTreeSet<VerificationKey>;
 
+/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the check
+/// sum of all registry data.
 #[derive(Debug, Clone)]
 pub(crate) struct Registration {
     pub(crate) registered_keys: Keys,
@@ -12,6 +14,7 @@ pub(crate) struct Registration {
 }
 
 impl Registration {
+    /// Initialize the key registration.
     pub fn new() -> Self {
         Self {
             registered_keys: BTreeSet::new(),
@@ -19,12 +22,14 @@ impl Registration {
         }
     }
 
-    pub fn register(&mut self, key: VerificationKey) -> Option<&Self> {
+    /// Register the given `VerificationKey` if it is not registered already.
+    /// Returns true if registration succeeds.
+    pub fn register(&mut self, key: VerificationKey) -> bool {
         if self.registered_keys.insert(key) {
-            Some(self)
+            true
         } else {
             println!("Key already registered!");
-            None
+            false
         }
     }
 
@@ -34,11 +39,11 @@ impl Registration {
         let mut hash_output = vec![0u8; N];
 
         for key in &self.registered_keys {
-            hasher.update(key.to_bytes().as_slice())
+            hasher.update(key.to_bytes().as_slice());
         }
 
         hasher.finalize_variable(&mut hash_output).unwrap();
-        self.check_sum = hash_output.clone();
+        self.check_sum.clone_from(&hash_output);
     }
 
     /// Compute the commitment by hashing check sum of closed registration and the message
@@ -52,10 +57,12 @@ impl Registration {
         commitment
     }
 
+    /// Return `true` if given `VerificationKey` is registered.
     pub fn is_registered(&self, verification_key: &VerificationKey) -> bool {
         if self.registered_keys.contains(verification_key) {
-            return true;
+            true
+        } else {
+            false
         }
-        return false;
     }
 }

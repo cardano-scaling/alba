@@ -2,10 +2,13 @@ use crate::threshold_signature::registration::Registration;
 use crate::threshold_signature::signature::IndividualSignature;
 use crate::Element;
 
-/// Aggregate signature storing the list of valid signatures and the hash of commitment with the message to be signed.
+/// Aggregate signature storing the list of valid signatures and the hash of commitment
+/// with the message to be signed.
 #[derive(Debug, Clone)]
 pub(crate) struct AggregateSignature {
+    /// A list of verified signatures
     pub(crate) valid_signatures: Vec<IndividualSignature>,
+    /// The commitment = Hash(checksum||msg) that is used the create valid signatures
     pub(crate) commitment: Vec<u8>,
 }
 

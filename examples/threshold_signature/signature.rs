@@ -9,14 +9,16 @@ use blst::BLST_ERROR;
 /// It includes a BLS signature, using the blst library, its verification key, and the registration index of the signer.
 #[derive(Debug, Clone)]
 pub(crate) struct IndividualSignature {
+    /// Individual signature of type blst `Signature`
     pub(crate) signature: Signature,
+    /// Verification key (wrapper over the blst `PublicKey`) of the individual signature.
     pub(crate) verification_key: VerificationKey,
 }
 
 impl IndividualSignature {
     /// Verify a signature
     /// First, validate that the signer's verification key is actually registered.
-    /// Then, verify the blst signature.
+    /// Then, verify the blst signature against the given `commitment` (Hash(checksum||msg)).
     pub fn verify<const N: usize>(&self, commitment: &[u8], registration: &Registration) -> bool {
         if registration.is_registered(&self.verification_key) {
             let result =

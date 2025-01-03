@@ -4,6 +4,7 @@ use blst::min_sig::{PublicKey, SecretKey};
 use rand_core::{CryptoRng, RngCore};
 use std::cmp::Ordering;
 
+/// Signature verification key, which is a wrapper over the blst `PublicKey`.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct VerificationKey(pub(crate) PublicKey);
 
@@ -17,7 +18,7 @@ pub struct Candidate {
 }
 
 /// Registered Threshold signature signer.
-/// It includes signer's keypair, registration index of the signer, and the registration check-sum.
+/// It includes signer's keypair and the registration check-sum.
 #[derive(Debug)]
 pub struct Signer {
     signing_key: SecretKey,
@@ -26,14 +27,30 @@ pub struct Signer {
 }
 
 impl VerificationKey {
+    /// Convert a `VerificationKey` to its byte representation.
     pub fn to_bytes(self) -> [u8; 96] {
         self.0.to_bytes()
+    }
+
+    /// Compare `self` with the given `VerificationKey`.
+    fn cmp_vk(&self, other: &VerificationKey) -> Ordering {
+        let self_bytes = self.to_bytes();
+        let other_bytes = other.to_bytes();
+        let mut result = Ordering::Equal;
+
+        for (i, j) in self_bytes.iter().zip(other_bytes.iter()) {
+            result = i.cmp(j);
+            if result != Ordering::Equal {
+                return result;
+            }
+        }
+        result
     }
 }
 
 impl PartialEq for VerificationKey {
     fn eq(&self, other: &Self) -> bool {
-        self.0.to_bytes() == other.0.to_bytes()
+        self.0 == other.0
     }
 }
 
@@ -41,13 +58,13 @@ impl Eq for VerificationKey {}
 
 impl PartialOrd for VerificationKey {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.0.to_bytes().partial_cmp(&other.0.to_bytes())
+        Some(Ord::cmp(self, other))
     }
 }
 
 impl Ord for VerificationKey {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.0.to_bytes().cmp(&other.0.to_bytes())
+        self.cmp_vk(other)
     }
 }
 
