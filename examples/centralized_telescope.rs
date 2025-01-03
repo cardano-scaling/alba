@@ -106,7 +106,7 @@ fn main() {
     let mut registration = Registration::new();
 
     // Register the candidates
-    for candidate in candidates.iter() {
+    for candidate in &candidates {
         registration.register(candidate.verification_key);
     }
     registration.close::<DATA_LENGTH>();

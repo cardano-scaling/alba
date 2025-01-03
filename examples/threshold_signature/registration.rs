@@ -59,10 +59,6 @@ impl Registration {
 
     /// Return `true` if given `VerificationKey` is registered.
     pub fn is_registered(&self, verification_key: &VerificationKey) -> bool {
-        if self.registered_keys.contains(verification_key) {
-            true
-        } else {
-            false
-        }
+        self.registered_keys.contains(verification_key)
     }
 }
