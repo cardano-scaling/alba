@@ -83,7 +83,10 @@ impl Signer {
     }
 
     /// Create a new signer from candidate and closed registration
-    pub fn new_signer<const N: usize>(&self, registration: &Registration) -> Option<RegisteredSigner> {
+    pub fn new_signer<const N: usize>(
+        &self,
+        registration: &Registration,
+    ) -> Option<RegisteredSigner> {
         if registration.is_registered(&self.verification_key) {
             Some(RegisteredSigner {
                 signing_key: self.signing_key.clone(),

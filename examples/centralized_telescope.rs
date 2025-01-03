@@ -13,7 +13,7 @@ use rand_core::{RngCore, SeedableRng};
 
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
-use crate::aggregate_signature::signer::{Signer, RegisteredSigner};
+use crate::aggregate_signature::signer::{RegisteredSigner, Signer};
 use aggregate_signature::aggregate::AggregateSignature;
 
 const DATA_LENGTH: usize = 32;
