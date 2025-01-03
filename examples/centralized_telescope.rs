@@ -42,6 +42,10 @@ impl AlbaThresholdProof {
     ) -> Option<Self> {
         AggregateSignature::aggregate::<N>(signatures, registration, msg, set_size)
             .and_then(|aggregate| {
+                if aggregate.valid_signatures.len() < set_size as usize {
+                    println!("Not enough signatures.");
+                    return None;
+                }
                 let prover_set = aggregate.create_prover_set::<N>();
                 let alba = CentralizedTelescope::create(params);
                 alba.prove(&prover_set)
@@ -57,31 +61,33 @@ impl AlbaThresholdProof {
             })
     }
 
-    /// Verify given Alba proof
-    /// Create the commitment by hashing the checksum of the closed registration and the message
-    /// If the computed commitment is different than the commitment of given aggregate signature, abort
-    /// Verify each individual signature of the aggregate signature. Abort if the aggregate includes an invalid signature
-    /// Return true if Alba proof is verified and all checks passed.
+    /// Verify given Alba proof.
+    /// Create the commitment by hashing the checksum of the closed registration and the message.
+    /// If the computed commitment is different from the commitment of the given aggregate signature, abort.
+    /// Verify each individual signature of the aggregate signature. Abort if the aggregate includes an invalid signature.
+    /// Return true if the Alba proof is verified and all checks passed.
     pub(crate) fn verify<const N: usize>(
         &self,
         params: &Params,
         registration: &Registration,
         msg: &[u8],
     ) -> bool {
-        let commitment: [u8; N] = Registration::get_commitment(&registration.check_sum, msg);
-
+        let commitment: [u8; N] = match registration.get_commitment::<N>(msg) {
+            Some(commitment) => commitment,
+            None => return false,
+        };
         if commitment != self.aggregate.commitment.as_slice() {
             return false;
         }
-
         if !self
             .aggregate
             .valid_signatures
             .iter()
-            .all(|sig| sig.verify::<N>(&commitment, registration))
+            .all(|sig| sig.verify::<N>(registration, msg))
         {
             return false;
         }
+
         let alba = CentralizedTelescope::create(params);
         alba.verify(&self.proof)
     }
@@ -100,27 +106,27 @@ fn main() {
     };
 
     // Create a list of candidates (signers) of the size `set_size`
-    let candidates: Vec<Signer> = (0..set_size).map(|_| Signer::new(&mut rng)).collect();
+    let signers: Vec<Signer> = (0..set_size).map(|_| Signer::new(&mut rng)).collect();
 
     // Create a new key registration
     let mut registration = Registration::new();
 
     // Register the candidates
-    for candidate in &candidates {
-        registration.register(candidate.verification_key);
+    for signer in &signers {
+        registration.register(signer.verification_key);
     }
     registration.close::<DATA_LENGTH>();
 
     // Create the threshold signature signers from the candidates if they are registered
-    let signers: Vec<RegisteredSigner> = candidates
+    let registered_signers: Vec<RegisteredSigner> = signers
         .into_iter()
-        .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(&registration))
+        .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(registration.clone()))
         .collect();
 
-    // Collect the individual signatures
-    let signatures = signers
+    // Collect the individual signatures, ignoring any that failed (None)
+    let signatures = registered_signers
         .iter()
-        .map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+        .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
         .collect::<Vec<IndividualSignature>>();
 
     // Create the threshold signature.

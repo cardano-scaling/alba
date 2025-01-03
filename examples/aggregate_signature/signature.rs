@@ -19,11 +19,20 @@ impl IndividualSignature {
     /// Verify a signature
     /// First, validate that the signer's verification key is actually registered.
     /// Then, verify the blst signature against the given `commitment` (Hash(checksum||msg)).
-    pub fn verify<const N: usize>(&self, commitment: &[u8], registration: &Registration) -> bool {
-        if registration.is_registered(&self.verification_key) {
-            let result =
-                self.signature
-                    .verify(false, commitment, &[], &[], &self.verification_key.0, false);
+    pub fn verify<const N: usize>(&self, registration: &Registration, msg: &[u8]) -> bool {
+        let commitment: [u8; N] = match registration.get_commitment::<N>(msg) {
+            Some(commitment) => commitment,
+            None => return false,
+        };
+        if self.verification_key.is_registered(registration) {
+            let result = self.signature.verify(
+                false,
+                commitment.as_slice(),
+                &[],
+                &[],
+                &self.verification_key.0,
+                false,
+            );
             return result == BLST_ERROR::BLST_SUCCESS;
         };
         false

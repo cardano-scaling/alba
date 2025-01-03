@@ -1,6 +1,8 @@
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
+use crate::aggregate_signature::signer::VerificationKey;
 use crate::Element;
+use blst::min_sig::Signature;
 
 /// Aggregate signature storing the list of valid signatures and the hash of commitment
 /// with the message to be signed.
@@ -22,36 +24,48 @@ impl AggregateSignature {
         signatures: &[IndividualSignature],
         registration: &Registration,
         msg: &[u8],
-        set_size: u64,
+        _set_size: u64,
     ) -> Option<Self> {
-        let commitment: [u8; N] = Registration::get_commitment(&registration.check_sum, msg);
-        let valid_signatures = AggregateSignature::collect_valid_signatures::<N>(
-            signatures,
-            registration,
-            &commitment,
-        );
+        let commitment: [u8; N] = registration.get_commitment(msg)?;
 
-        if valid_signatures.len() < set_size as usize {
-            None
-        } else {
-            Some(Self {
-                valid_signatures,
-                commitment: commitment.to_vec(),
-            })
-        }
+        let valid_signatures = signatures
+            .iter()
+            .filter(|sig| sig.verify::<N>(registration, msg))
+            .cloned()
+            .collect();
+
+        Some(Self {
+            valid_signatures,
+            commitment: commitment.to_vec(),
+        })
     }
 
-    /// Collect the verified individual signatures
-    pub fn collect_valid_signatures<const N: usize>(
-        signatures: &[IndividualSignature],
-        registration: &Registration,
-        commitment: &[u8],
-    ) -> Vec<IndividualSignature> {
-        signatures
+    pub fn verify<const N: usize>(&self, registration: &Registration) -> bool {
+        for sig in &self.valid_signatures {
+            if !sig.verification_key.is_registered(registration) {
+                return false;
+            }
+        }
+
+        // let (signatures, verification_keys) = self.extract_signatures_and_keys();
+
+        return true;
+    }
+
+    fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {
+        let signatures = self
+            .valid_signatures
             .iter()
-            .filter(|sig| sig.verify::<N>(commitment, registration))
-            .cloned()
-            .collect()
+            .map(|ind_sig| ind_sig.signature.clone())
+            .collect();
+
+        let verification_keys = self
+            .valid_signatures
+            .iter()
+            .map(|ind_sig| ind_sig.verification_key.clone())
+            .collect();
+
+        (signatures, verification_keys)
     }
 
     /// Create the prover set by running `to_element` function for each valid signature

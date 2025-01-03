@@ -10,7 +10,7 @@ type Keys = BTreeSet<VerificationKey>;
 #[derive(Debug, Clone)]
 pub(crate) struct Registration {
     pub(crate) registered_keys: Keys,
-    pub(crate) check_sum: Vec<u8>,
+    pub(crate) check_sum: Option<Vec<u8>>,
 }
 
 impl Registration {
@@ -18,7 +18,7 @@ impl Registration {
     pub fn new() -> Self {
         Self {
             registered_keys: BTreeSet::new(),
-            check_sum: Vec::new(),
+            check_sum: None,
         }
     }
 
@@ -35,30 +35,36 @@ impl Registration {
 
     /// Close the registration and create the hash of all registered keys.
     pub fn close<const N: usize>(&mut self) {
-        let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
-        let mut hash_output = vec![0u8; N];
+        if self.check_sum.is_none() {
+            let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
+            let mut hash_output = vec![0u8; N];
 
-        for key in &self.registered_keys {
-            hasher.update(key.to_bytes().as_slice());
+            self.registered_keys.iter().for_each(|key| {
+                hasher.update(key.to_bytes().as_slice());
+            });
+
+            hasher.finalize_variable(&mut hash_output).unwrap();
+            self.check_sum = Some(hash_output);
+        } else {
+            println!("Registration is already closed.");
         }
-
-        hasher.finalize_variable(&mut hash_output).unwrap();
-        self.check_sum.clone_from(&hash_output);
     }
 
-    /// Compute the commitment by hashing check sum of closed registration and the message
-    pub fn get_commitment<const N: usize>(check_sum: &[u8], msg: &[u8]) -> [u8; N] {
-        let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
-        let mut commitment: [u8; N] = [0u8; N];
-
-        hasher.update(check_sum);
-        hasher.update(msg);
-        hasher.finalize_variable(&mut commitment).unwrap();
-        commitment
+    fn get_closed_registration(&self) -> Option<Vec<u8>> {
+        self.check_sum.as_ref().cloned()
     }
 
-    /// Return `true` if given `VerificationKey` is registered.
-    pub fn is_registered(&self, verification_key: &VerificationKey) -> bool {
-        self.registered_keys.contains(verification_key)
+    /// Compute the commitment by hashing the checksum of the closed registration and the message.
+    /// Returns `None` if the registration is not closed.
+    pub fn get_commitment<const N: usize>(&self, msg: &[u8]) -> Option<[u8; N]> {
+        self.check_sum.as_ref().map(|check_sum| {
+            let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
+            let mut commitment = [0u8; N];
+
+            hasher.update(check_sum);
+            hasher.update(msg);
+            hasher.finalize_variable(&mut commitment).unwrap();
+            commitment
+        })
     }
 }
