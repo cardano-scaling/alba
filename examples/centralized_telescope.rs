@@ -3,7 +3,7 @@
 // REMOVE!!!!!!!!!!!!!!!!
 #![allow(dead_code)]
 
-mod threshold_signature;
+mod aggregate_signature;
 
 use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
@@ -11,10 +11,10 @@ use alba::centralized_telescope::CentralizedTelescope;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
-use crate::threshold_signature::registration::Registration;
-use crate::threshold_signature::signature::IndividualSignature;
-use crate::threshold_signature::signer::{Candidate, Signer};
-use threshold_signature::aggregate::AggregateSignature;
+use crate::aggregate_signature::registration::Registration;
+use crate::aggregate_signature::signature::IndividualSignature;
+use crate::aggregate_signature::signer::{Signer, RegisteredSigner};
+use aggregate_signature::aggregate::AggregateSignature;
 
 const DATA_LENGTH: usize = 32;
 pub(crate) type Element = [u8; DATA_LENGTH];
@@ -100,7 +100,7 @@ fn main() {
     };
 
     // Create a list of candidates (signers) of the size `set_size`
-    let candidates: Vec<Candidate> = (0..set_size).map(|_| Candidate::new(&mut rng)).collect();
+    let candidates: Vec<Signer> = (0..set_size).map(|_| Signer::new(&mut rng)).collect();
 
     // Create a new key registration
     let mut registration = Registration::new();
@@ -112,7 +112,7 @@ fn main() {
     registration.close::<DATA_LENGTH>();
 
     // Create the threshold signature signers from the candidates if they are registered
-    let signers: Vec<Signer> = candidates
+    let signers: Vec<RegisteredSigner> = candidates
         .into_iter()
         .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(&registration))
         .collect();

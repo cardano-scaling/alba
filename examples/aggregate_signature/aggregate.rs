@@ -1,5 +1,5 @@
-use crate::threshold_signature::registration::Registration;
-use crate::threshold_signature::signature::IndividualSignature;
+use crate::aggregate_signature::registration::Registration;
+use crate::aggregate_signature::signature::IndividualSignature;
 use crate::Element;
 
 /// Aggregate signature storing the list of valid signatures and the hash of commitment

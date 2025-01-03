@@ -1,5 +1,5 @@
-use crate::threshold_signature::registration::Registration;
-use crate::threshold_signature::signer::VerificationKey;
+use crate::aggregate_signature::registration::Registration;
+use crate::aggregate_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use blst::min_sig::Signature;

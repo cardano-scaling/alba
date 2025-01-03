@@ -1,4 +1,4 @@
-use crate::threshold_signature::signer::VerificationKey;
+use crate::aggregate_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use std::collections::BTreeSet;
