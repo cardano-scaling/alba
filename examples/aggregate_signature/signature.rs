@@ -2,8 +2,12 @@ use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
-use blst::min_sig::Signature;
+use blst::min_sig::Signature as BlstSignature;
 use blst::BLST_ERROR;
+
+/// Signature, which is a wrapper over the `BlstSignature` type.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Signature(pub BlstSignature);
 
 /// Individual Signature.
 /// It includes a BLS signature, using the blst library, its verification key, and the registration index of the signer.
@@ -13,6 +17,17 @@ pub(crate) struct IndividualSignature {
     pub(crate) signature: Signature,
     /// Verification key (wrapper over the blst `PublicKey`) of the individual signature.
     pub(crate) verification_key: VerificationKey,
+}
+
+
+impl Signature {
+    pub fn verify(&self, msg: &[u8], verification_key: &VerificationKey) -> BLST_ERROR {
+        self.0.verify(false, msg, &[], &[], &verification_key.0, false)
+    }
+    /// Convert an `Signature` to its byte representation.
+    pub fn to_bytes(self) -> [u8; 48] {
+        self.0.to_bytes()
+    }
 }
 
 impl IndividualSignature {
@@ -26,13 +41,7 @@ impl IndividualSignature {
         };
         if self.verification_key.is_registered(registration) {
             let result = self.signature.verify(
-                false,
-                commitment.as_slice(),
-                &[],
-                &[],
-                &self.verification_key.0,
-                false,
-            );
+                &commitment, &self.verification_key);
             return result == BLST_ERROR::BLST_SUCCESS;
         };
         false

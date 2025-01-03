@@ -1,8 +1,7 @@
 use crate::aggregate_signature::registration::Registration;
-use crate::aggregate_signature::signature::IndividualSignature;
+use crate::aggregate_signature::signature::{IndividualSignature, Signature};
 use crate::aggregate_signature::signer::VerificationKey;
 use crate::Element;
-use blst::min_sig::Signature;
 
 /// Aggregate signature storing the list of valid signatures and the hash of commitment
 /// with the message to be signed.

@@ -1,5 +1,5 @@
 use crate::aggregate_signature::registration::Registration;
-use crate::aggregate_signature::signature::IndividualSignature;
+use crate::aggregate_signature::signature::{IndividualSignature, Signature};
 use blst::min_sig::{PublicKey as BLSVk, SecretKey};
 use rand_core::{CryptoRng, RngCore};
 use std::cmp::Ordering;
@@ -119,7 +119,7 @@ impl RegisteredSigner {
         let commitment = self.closed_registration.get_commitment::<N>(msg)?;
 
         Some(IndividualSignature {
-            signature: self.signing_key.sign(&commitment, &[], &[]),
+            signature: Signature(self.signing_key.sign(&commitment, &[], &[])),
             verification_key: self.verification_key,
         })
     }
