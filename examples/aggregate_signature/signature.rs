@@ -46,7 +46,7 @@ impl Signature {
         }
 
         // First we generate the scalars
-        let mut scalars = Vec::with_capacity(vks.len() * 128_usize);
+        let mut scalars = Vec::with_capacity(vks.len().saturating_add(128));
         let mut signatures = Vec::with_capacity(vks.len());
         for (index, sig) in sigs.iter().enumerate() {
             let mut hasher = hashed_sigs.clone();
