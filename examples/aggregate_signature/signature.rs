@@ -31,16 +31,13 @@ impl Signature {
         self.0.to_bytes()
     }
 
-    fn aggregate(sigs: &[Signature], vks: &[VerificationKey]) -> Option<IndividualSignature> {
+    fn aggregate(sigs: &[Signature], vks: &[VerificationKey]) -> Option<(Self, VerificationKey)> {
         if vks.len() != sigs.len() || vks.is_empty() {
             return None;
         }
 
         if vks.len() < 2 {
-            return Some(IndividualSignature {
-                signature: sigs[0],
-                verification_key: vks[0],
-            });
+            return Some((sigs[0], vks[0]));
         }
 
         let mut hashed_sigs = Blake2b::<U16>::new();
@@ -71,10 +68,7 @@ impl Signature {
         let aggr_vk: VerificationKey = p2_affine_to_vk(&grouped_vks.mult(&scalars, 128));
         let aggr_sig: Signature = p1_affine_to_sig(&grouped_sigs.mult(&scalars, 128));
 
-        Some(IndividualSignature {
-            signature: aggr_sig,
-            verification_key: aggr_vk,
-        })
+        Some((aggr_sig, aggr_vk))
     }
 
     pub fn verify_aggregate(
@@ -82,7 +76,11 @@ impl Signature {
         verification_keys: &[VerificationKey],
         msg: &[u8],
     ) -> BLST_ERROR {
-        signatures[0].verify(msg, &verification_keys[0])
+        if let Some((signature, key)) = Signature::aggregate(signatures, verification_keys) {
+            signature.verify(msg, &key)
+        } else {
+            BLST_ERROR::BLST_VERIFY_FAIL // Return a failure error if aggregation fails
+        }
     }
 }
 
