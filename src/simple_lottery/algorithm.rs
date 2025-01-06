@@ -16,7 +16,7 @@ pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
             element_sequence.push(element);
         }
         if prover_set.len() as u64 >= setup.proof_size {
-            element_sequence.sort();
+            element_sequence.sort_unstable();
             return Some(Proof { element_sequence });
         }
     }
