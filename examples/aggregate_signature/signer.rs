@@ -6,7 +6,7 @@ use std::cmp::Ordering;
 
 /// Signature verification key, which is a wrapper over the blst `PublicKey`.
 #[derive(Debug, Clone, Copy, Default)]
-pub struct VerificationKey(pub(crate) BLSVk);
+pub(crate) struct VerificationKey(pub(crate) BLSVk);
 
 /// Threshold signature candidate signer
 #[derive(Debug)]
@@ -14,21 +14,23 @@ pub struct Signer {
     /// Signing key of the type blst `SecretKey`
     signing_key: SecretKey,
     /// Signature verification key of the type blst `PublicKey`
-    pub verification_key: VerificationKey,
+    pub(crate) verification_key: VerificationKey,
 }
 
 /// Registered Threshold signature signer.
 /// It includes signer's keypair and the closed registration.
 #[derive(Debug)]
-pub struct RegisteredSigner {
+pub(crate) struct RegisteredSigner {
     signing_key: SecretKey,
-    verification_key: VerificationKey,
-    closed_registration: Registration,
+    /// Signature verification key
+    pub(crate) verification_key: VerificationKey,
+    /// Closed key registration
+    pub(crate) closed_registration: Registration,
 }
 
 impl VerificationKey {
     /// Return `true` if given `VerificationKey` is registered.
-    pub fn is_registered(&self, registration: &Registration) -> bool {
+    pub(crate) fn is_registered(&self, registration: &Registration) -> bool {
         if registration.checksum.is_some() {
             registration.registered_keys.contains(self)
         } else {
@@ -38,7 +40,7 @@ impl VerificationKey {
     }
 
     /// Convert a `VerificationKey` to its byte representation.
-    pub fn to_bytes(self) -> [u8; 96] {
+    pub(crate) fn to_bytes(self) -> [u8; 96] {
         self.0.to_bytes()
     }
 
@@ -80,7 +82,7 @@ impl Ord for VerificationKey {
 
 impl Signer {
     /// Generate a new signer
-    pub fn init(rng: &mut (impl RngCore + CryptoRng)) -> Self {
+    pub(crate) fn init(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
         let sk = SecretKey::key_gen(&ikm, &[])
@@ -94,7 +96,7 @@ impl Signer {
 
     /// Create a new `RegisteredSigner` from `Signer` and closed registration
     /// if given signer is registered.
-    pub fn new_signer<const N: usize>(
+    pub(crate) fn new_signer<const N: usize>(
         &self,
         registration: Registration,
     ) -> Option<RegisteredSigner> {

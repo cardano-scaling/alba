@@ -22,15 +22,17 @@ pub struct AlbaThresholdSignature {
     /// Aggregate signature
     pub(crate) aggregate: AggregateSignature,
     /// Centralized telescope proof
-    pub proof: Proof,
+    pub(crate) proof: Proof,
 }
 
 impl AlbaThresholdSignature {
     /// Create an Alba proof for given list of `IndividualSignature`s
-    /// - Try to aggregate given list of aggregate signatures
-    /// - If the number of valid signatures in aggregate is less than set size, abort
-    /// - Create prover set by hashing signatures into elements
-    /// - Generate Alba proof, return the aggregate signature and the Alba proof
+    /// - Create the prover's set: Collect the set elements by converting each valid
+    /// signature to an element
+    /// - If the size of the prover's set is less than given `set_size`, abort
+    /// - Create the alba proof
+    /// - Produce the aggregate signature by using the subset of signatures whose
+    /// element versions are included in the alba proof.
     pub(crate) fn prove<const N: usize>(
         params: &Params,
         signatures: &[IndividualSignature],
@@ -38,25 +40,40 @@ impl AlbaThresholdSignature {
         registration: &Registration,
         msg: &[u8],
     ) -> Option<Self> {
-        AggregateSignature::aggregate::<N>(signatures, registration, msg, set_size)
-            .and_then(|aggregate| {
-                if aggregate.valid_signatures.len() < set_size as usize {
-                    println!("Not enough signatures.");
-                    return None;
-                }
-                let prover_set = aggregate.create_prover_set::<N>();
-                let alba = CentralizedTelescope::create(params);
-                alba.prove(&prover_set)
-                    .map(|proof| Self { aggregate, proof })
-                    .or_else(|| {
-                        println!("Proof generation failed.");
-                        None
-                    })
+        let prover_set =
+            AlbaThresholdSignature::collect_set_elements::<N>(signatures, registration, msg);
+        if prover_set.len() < set_size as usize {
+            println!("Not enough signatures.");
+            return None;
+        }
+        let alba = CentralizedTelescope::create(params);
+        alba.prove(&prover_set)
+            .and_then(|alba_proof| {
+                let commitment: [u8; N] = registration.get_commitment(msg)?;
+                Some(Self {
+                    aggregate: AggregateSignature::aggregate(
+                        signatures,
+                        &prover_set,
+                        &alba_proof.element_sequence,
+                        &commitment,
+                    ),
+                    proof: alba_proof,
+                })
             })
-            .or_else(|| {
-                println!("Aggregation failed.");
-                None
-            })
+            .or_else(|| None)
+    }
+
+    /// Verify each signature and convert the valid ones to elements
+    fn collect_set_elements<const N: usize>(
+        signatures: &[IndividualSignature],
+        registration: &Registration,
+        msg: &[u8],
+    ) -> Vec<Element> {
+        signatures
+            .iter()
+            .filter(|sig| sig.verify::<N>(registration, msg))
+            .map(IndividualSignature::to_element)
+            .collect()
     }
 
     /// Verify Alba threshold signature.

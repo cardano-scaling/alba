@@ -9,7 +9,7 @@ use unsafe_helpers::{p1_affine_to_sig, p2_affine_to_vk, sig_to_p1, vk_from_p2_af
 
 /// Signature, which is a wrapper over the `BlstSignature` type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Signature(pub(crate) BlstSignature);
+pub(crate) struct Signature(pub(crate) BlstSignature);
 
 /// Individual Signature containing `BlstSignature` and its verification key.
 #[derive(Debug, Clone)]
@@ -22,13 +22,13 @@ pub(crate) struct IndividualSignature {
 
 impl Signature {
     /// Verify a signature against a verification key.
-    pub fn verify(&self, msg: &[u8], verification_key: &VerificationKey) -> BLST_ERROR {
+    pub(crate) fn verify(&self, msg: &[u8], verification_key: &VerificationKey) -> BLST_ERROR {
         self.0
             .verify(false, msg, &[], &[], &verification_key.0, false)
     }
 
     /// Convert an `Signature` to its byte representation.
-    pub fn to_bytes(self) -> [u8; 48] {
+    fn to_bytes(self) -> [u8; 48] {
         self.0.to_bytes()
     }
 
@@ -77,7 +77,7 @@ impl Signature {
 
     /// Aggregate given list of signatures and verification keys
     /// Verify the aggregate against given message
-    pub fn verify_aggregate(
+    pub(crate) fn verify_aggregate(
         signatures: &[Signature],
         verification_keys: &[VerificationKey],
         msg: &[u8],
@@ -94,7 +94,7 @@ impl IndividualSignature {
     /// Verify a signature
     /// First, validate that the signer's verification key is actually registered.
     /// Then, verify the blst signature against the given `commitment` (Hash(checksum||msg)).
-    pub fn verify<const N: usize>(&self, registration: &Registration, msg: &[u8]) -> bool {
+    pub(crate) fn verify<const N: usize>(&self, registration: &Registration, msg: &[u8]) -> bool {
         let commitment: [u8; N] = match registration.get_commitment::<N>(msg) {
             Some(commitment) => commitment,
             None => return false,
@@ -108,7 +108,7 @@ impl IndividualSignature {
 
     /// Return the hash of the signature and its public key
     /// This function is used to create the `prover_set` of Alba protocol.
-    pub fn to_element<const N: usize>(&self) -> [u8; N] {
+    pub(crate) fn to_element<const N: usize>(&self) -> [u8; N] {
         let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
         let mut element = [0u8; N];
 

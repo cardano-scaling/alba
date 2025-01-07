@@ -3,6 +3,7 @@ use crate::aggregate_signature::signature::{IndividualSignature, Signature};
 use crate::aggregate_signature::signer::VerificationKey;
 use crate::Element;
 use blst::BLST_ERROR;
+use std::collections::HashSet;
 
 /// Aggregate signature storing the list of valid signatures and the hash of commitment
 /// with the message to be signed.
@@ -15,30 +16,6 @@ pub(crate) struct AggregateSignature {
 }
 
 impl AggregateSignature {
-    /// Create the aggregate signature.
-    /// First, create the commitment by hashing the checksum of the closed registration and the message.
-    /// Verify all individual signatures
-    /// Return the aggregate if all checks pass.
-    pub fn aggregate<const N: usize>(
-        signatures: &[IndividualSignature],
-        registration: &Registration,
-        msg: &[u8],
-        _set_size: u64,
-    ) -> Option<Self> {
-        let commitment: [u8; N] = registration.get_commitment(msg)?;
-
-        let valid_signatures = signatures
-            .iter()
-            .filter(|sig| sig.verify::<N>(registration, msg))
-            .cloned()
-            .collect();
-
-        Some(Self {
-            valid_signatures,
-            commitment: commitment.to_vec(),
-        })
-    }
-
     /// Verify the aggregate
     /// Check whether the verification key for each signature is registered.
     /// Collect signatures and verification keys into vectors
@@ -78,11 +55,23 @@ impl AggregateSignature {
         (signatures, verification_keys)
     }
 
-    /// Create the prover set by running `to_element` function for each valid signature
-    pub fn create_prover_set<const N: usize>(&self) -> Vec<Element> {
-        self.valid_signatures
+    /// Collect the individual signatures whose element versions are contained in the alba proof
+    pub(crate) fn aggregate(
+        signatures: &[IndividualSignature],
+        prover_set: &[Element],
+        element_sequence: &[Element],
+        commitment: &[u8],
+    ) -> Self {
+        let proof_elements: HashSet<&Element> = element_sequence.iter().collect();
+        let proof_signatures = prover_set
             .iter()
-            .map(IndividualSignature::to_element)
-            .collect()
+            .zip(signatures.iter())
+            .filter(|(element, _)| proof_elements.contains(element))
+            .map(|(_, signature)| signature.clone())
+            .collect();
+        Self {
+            valid_signatures: proof_signatures,
+            commitment: commitment.to_vec(),
+        }
     }
 }

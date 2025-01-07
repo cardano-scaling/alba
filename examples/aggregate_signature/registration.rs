@@ -17,7 +17,7 @@ pub(crate) struct Registration {
 
 impl Registration {
     /// Initialize the key registration.
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             registered_keys: BTreeSet::new(),
             checksum: None,
@@ -26,7 +26,7 @@ impl Registration {
 
     /// Register the given `VerificationKey` if it is not registered already.
     /// Returns true if registration succeeds.
-    pub fn register(&mut self, key: VerificationKey) -> bool {
+    pub(crate) fn register(&mut self, key: VerificationKey) -> bool {
         if self.registered_keys.insert(key) {
             true
         } else {
@@ -36,7 +36,7 @@ impl Registration {
     }
 
     /// Close the registration and create the hash of all registered keys.
-    pub fn close<const N: usize>(&mut self) {
+    pub(crate) fn close<const N: usize>(&mut self) {
         if self.checksum.is_none() {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             let mut hash_output = vec![0u8; N];
@@ -54,7 +54,7 @@ impl Registration {
 
     /// Compute the commitment by hashing the checksum of the closed registration and the message.
     /// Returns `None` if the registration is not closed.
-    pub fn get_commitment<const N: usize>(&self, msg: &[u8]) -> Option<[u8; N]> {
+    pub(crate) fn get_commitment<const N: usize>(&self, msg: &[u8]) -> Option<[u8; N]> {
         self.checksum.as_ref().map(|check_sum| {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             let mut commitment = [0u8; N];
