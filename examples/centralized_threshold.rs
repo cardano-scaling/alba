@@ -26,13 +26,12 @@ pub struct AlbaThresholdSignature {
 }
 
 impl AlbaThresholdSignature {
-    /// Create an Alba proof for given list of `IndividualSignature`s
-    /// - Create the prover's set: Collect the set elements by converting each valid
-    /// signature to an element
-    /// - If the size of the prover's set is less than given `set_size`, abort
-    /// - Create the alba proof
-    /// - Produce the aggregate signature by using the subset of signatures whose
-    /// element versions are included in the alba proof.
+    /// Generate an Alba proof for a given list of IndividualSignatures by first creating the prover’s set, which is
+    /// formed by collecting elements corresponding to valid signatures.
+    /// If the size of the prover’s set is smaller than the specified set_size, the process is aborted.
+    /// Once the prover’s set is complete, the Alba proof is constructed.
+    /// Finally, an aggregate signature is produced using the subset of signatures whose corresponding elements are
+    /// included in the Alba proof.
     pub(crate) fn prove<const N: usize>(
         params: &Params,
         signatures: &[IndividualSignature],
@@ -60,7 +59,7 @@ impl AlbaThresholdSignature {
                     proof: alba_proof,
                 })
             })
-            .or_else(|| None)
+            .or(None)
     }
 
     /// Verify each signature and convert the valid ones to elements

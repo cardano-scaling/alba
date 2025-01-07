@@ -5,8 +5,7 @@ use crate::Element;
 use blst::BLST_ERROR;
 use std::collections::HashSet;
 
-/// Aggregate signature storing the list of valid signatures and the hash of commitment
-/// with the message to be signed.
+/// Aggregate signature storing the list of valid signatures and the hash of commitment with the message to be signed.
 #[derive(Debug, Clone)]
 pub(crate) struct AggregateSignature {
     /// A list of verified signatures
@@ -19,8 +18,7 @@ impl AggregateSignature {
     /// Verify the aggregate
     /// Check whether the verification key for each signature is registered.
     /// Collect signatures and verification keys into vectors
-    /// Verify the signatures with verification keys against
-    /// the message with `verify_aggregate`
+    /// Verify the signatures with verification keys against the message with `verify_aggregate`
     pub fn verify<const N: usize>(&self, registration: &Registration) -> bool {
         for sig in &self.valid_signatures {
             if !sig.verification_key.is_registered(registration) {
@@ -37,8 +35,7 @@ impl AggregateSignature {
         result == BLST_ERROR::BLST_SUCCESS
     }
 
-    /// Return a vector of signatures and a vector of verification keys of
-    /// the valid signatures
+    /// Return a vector of signatures and a vector of verification keys of the valid signatures
     fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {
         let signatures = self
             .valid_signatures

@@ -5,8 +5,8 @@ use std::collections::BTreeSet;
 
 type Keys = BTreeSet<VerificationKey>;
 
-/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the
-/// checksum of all registry data.
+/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the checksum of all
+/// registry data.
 #[derive(Debug, Clone)]
 pub(crate) struct Registration {
     /// BTreeSet of the registered keys of type `VerificationKey`
