@@ -18,18 +18,19 @@ pub(crate) type Element = [u8; DATA_LENGTH];
 
 /// Alba proof with aggregate signature
 #[derive(Debug, Clone)]
-pub struct AlbaThresholdProof {
+pub struct AlbaThresholdSignature {
     /// Aggregate signature
     pub(crate) aggregate: AggregateSignature,
     /// Centralized telescope proof
     pub proof: Proof,
 }
 
-impl AlbaThresholdProof {
-    /// Create an Alba proof
+impl AlbaThresholdSignature {
+    /// Create an Alba proof for given list of `IndividualSignature`s
     /// - Try to aggregate given list of aggregate signatures
-    /// - If aggregation succeeds, create the Alba proof
-    /// - If Alba proof is generated, return the aggregate signature and the Alba proof
+    /// - If the number of valid signatures in aggregate is less than set size, abort
+    /// - Create prover set by hashing signatures into elements
+    /// - Generate Alba proof, return the aggregate signature and the Alba proof
     pub(crate) fn prove<const N: usize>(
         params: &Params,
         signatures: &[IndividualSignature],
@@ -58,10 +59,10 @@ impl AlbaThresholdProof {
             })
     }
 
-    /// Verify given Alba proof.
+    /// Verify Alba threshold signature.
     /// Create the commitment by hashing the checksum of the closed registration and the message.
     /// If the computed commitment is different from the commitment of the given aggregate signature, abort.
-    /// Verify each individual signature of the aggregate signature. Abort if the aggregate includes an invalid signature.
+    /// Verify aggregate signature
     /// Return true if the Alba proof is verified and all checks passed.
     pub(crate) fn verify<const N: usize>(
         &self,
@@ -125,7 +126,7 @@ fn main() {
     // - Aggregate the valid signatures
     // - Create the `prover_set` with the list of valid signatures
     // - Create the threshold signature out of the `prover_set`
-    let result = AlbaThresholdProof::prove::<DATA_LENGTH>(
+    let result = AlbaThresholdSignature::prove::<DATA_LENGTH>(
         &params,
         &signatures,
         set_size,

@@ -10,16 +10,15 @@ use blst::BLST_ERROR;
 pub(crate) struct AggregateSignature {
     /// A list of verified signatures
     pub(crate) valid_signatures: Vec<IndividualSignature>,
-    /// The commitment = Hash(checksum||msg) that is used the create valid signatures
+    /// The commitment = Hash(checksum||msg) that is used by signing
     pub(crate) commitment: Vec<u8>,
 }
 
 impl AggregateSignature {
     /// Create the aggregate signature.
-    /// First, create the commitment by hashing the check sum of the closed registration and the message.
+    /// First, create the commitment by hashing the checksum of the closed registration and the message.
     /// Verify all individual signatures
-    /// If the number of valid signatures are less than the given set_size, return `None`
-    /// Return the aggregate signature if all checks pass.
+    /// Return the aggregate if all checks pass.
     pub fn aggregate<const N: usize>(
         signatures: &[IndividualSignature],
         registration: &Registration,
@@ -40,6 +39,11 @@ impl AggregateSignature {
         })
     }
 
+    /// Verify the aggregate
+    /// Check whether the verification key for each signature is registered.
+    /// Collect signatures and verification keys into vectors
+    /// Verify the signatures with verification keys against
+    /// the message with `verify_aggregate`
     pub fn verify<const N: usize>(&self, registration: &Registration) -> bool {
         for sig in &self.valid_signatures {
             if !sig.verification_key.is_registered(registration) {
@@ -56,6 +60,8 @@ impl AggregateSignature {
         result == BLST_ERROR::BLST_SUCCESS
     }
 
+    /// Return a vector of signatures and a vector of verification keys of
+    /// the valid signatures
     fn extract_signatures_and_keys(&self) -> (Vec<Signature>, Vec<VerificationKey>) {
         let signatures = self
             .valid_signatures

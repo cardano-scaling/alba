@@ -5,12 +5,14 @@ use std::collections::BTreeSet;
 
 type Keys = BTreeSet<VerificationKey>;
 
-/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the check
-/// sum of all registry data.
+/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the
+/// checksum of all registry data.
 #[derive(Debug, Clone)]
 pub(crate) struct Registration {
+    /// BTreeSet of the registered keys of type `VerificationKey`
     pub(crate) registered_keys: Keys,
-    pub(crate) check_sum: Option<Vec<u8>>,
+    /// Checksum of registered keys
+    pub(crate) checksum: Option<Vec<u8>>,
 }
 
 impl Registration {
@@ -18,7 +20,7 @@ impl Registration {
     pub fn new() -> Self {
         Self {
             registered_keys: BTreeSet::new(),
-            check_sum: None,
+            checksum: None,
         }
     }
 
@@ -35,7 +37,7 @@ impl Registration {
 
     /// Close the registration and create the hash of all registered keys.
     pub fn close<const N: usize>(&mut self) {
-        if self.check_sum.is_none() {
+        if self.checksum.is_none() {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             let mut hash_output = vec![0u8; N];
 
@@ -44,7 +46,7 @@ impl Registration {
             });
 
             hasher.finalize_variable(&mut hash_output).unwrap();
-            self.check_sum = Some(hash_output);
+            self.checksum = Some(hash_output);
         } else {
             println!("Registration is already closed.");
         }
@@ -53,7 +55,7 @@ impl Registration {
     /// Compute the commitment by hashing the checksum of the closed registration and the message.
     /// Returns `None` if the registration is not closed.
     pub fn get_commitment<const N: usize>(&self, msg: &[u8]) -> Option<[u8; N]> {
-        self.check_sum.as_ref().map(|check_sum| {
+        self.checksum.as_ref().map(|check_sum| {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             let mut commitment = [0u8; N];
 

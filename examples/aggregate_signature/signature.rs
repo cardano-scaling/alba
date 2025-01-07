@@ -11,26 +11,31 @@ use unsafe_helpers::{p1_affine_to_sig, p2_affine_to_vk, sig_to_p1, vk_from_p2_af
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Signature(pub(crate) BlstSignature);
 
-/// Individual Signature.
-/// It includes a BLS signature, using the blst library, its verification key, and the registration index of the signer.
+/// Individual Signature containing `BlstSignature` and its verification key.
 #[derive(Debug, Clone)]
 pub(crate) struct IndividualSignature {
-    /// Individual signature of type blst `Signature`
+    /// Signature of type `BlstSignature`
     pub(crate) signature: Signature,
-    /// Verification key (wrapper over the blst `PublicKey`) of the individual signature.
+    /// Verification key the signature.
     pub(crate) verification_key: VerificationKey,
 }
 
 impl Signature {
+    /// Verify a signature against a verification key.
     pub fn verify(&self, msg: &[u8], verification_key: &VerificationKey) -> BLST_ERROR {
         self.0
             .verify(false, msg, &[], &[], &verification_key.0, false)
     }
+
     /// Convert an `Signature` to its byte representation.
     pub fn to_bytes(self) -> [u8; 48] {
         self.0.to_bytes()
     }
 
+    /// Aggregate given list of signatures and list of verification keys Signatures
+    /// - Hash the signatures into random scalars
+    /// - Multiply signatures with the resulting value, obtain the aggregate signature
+    /// - Multiply verification keys with the resulting value, obtain the aggregate verification key
     fn aggregate(sigs: &[Signature], vks: &[VerificationKey]) -> Option<(Self, VerificationKey)> {
         if vks.len() != sigs.len() || vks.is_empty() {
             return None;
@@ -45,7 +50,6 @@ impl Signature {
             Digest::update(&mut hashed_sigs, sig.to_bytes());
         }
 
-        // First we generate the scalars
         let mut scalars = Vec::with_capacity(vks.len().saturating_add(128));
         let mut signatures = Vec::with_capacity(vks.len());
         for (index, sig) in sigs.iter().enumerate() {
@@ -71,6 +75,8 @@ impl Signature {
         Some((aggr_sig, aggr_vk))
     }
 
+    /// Aggregate given list of signatures and verification keys
+    /// Verify the aggregate against given message
     pub fn verify_aggregate(
         signatures: &[Signature],
         verification_keys: &[VerificationKey],
