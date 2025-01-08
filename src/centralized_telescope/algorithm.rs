@@ -12,6 +12,8 @@ use blake2::{Blake2s256, Digest};
 /// Calls up to setup.max_retries times the prove_index function and returns an empty
 /// proof if no suitable candidate is found.
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
+    debug_assert!(crate::utils::misc::check_distinct(prover_set));
+
     // Run prove_index up to max_retries times
     (0..setup.max_retries).find_map(|retry_counter| prove_index(setup, prover_set, retry_counter).1)
 }
