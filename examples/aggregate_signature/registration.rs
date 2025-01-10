@@ -1,9 +1,9 @@
 use crate::aggregate_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
-use std::collections::BTreeSet;
+use std::collections::BTreeMap;
 
-type Keys = BTreeSet<VerificationKey>;
+type Keys = BTreeMap<usize, VerificationKey>;
 
 /// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the checksum of all
 /// registry data.
@@ -19,20 +19,22 @@ impl Registration {
     /// Initialize the key registration.
     pub(crate) fn new() -> Self {
         Self {
-            registered_keys: BTreeSet::new(),
+            registered_keys: BTreeMap::new(),
             checksum: None,
         }
     }
 
     /// Register the given `VerificationKey` if it is not registered already.
     /// Returns true if registration succeeds.
-    pub(crate) fn register(&mut self, key: VerificationKey) -> bool {
-        if self.registered_keys.insert(key) {
-            true
-        } else {
+    pub(crate) fn register(&mut self, key: VerificationKey, index: usize) -> bool {
+        if self.registered_keys.values().any(|v| *v == key) {
             println!("Key already registered!");
-            false
+            false // Value already exists, don't insert
+        } else {
+            self.registered_keys.insert(index, key);
+            true
         }
+
     }
 
     /// Close the registration and create the hash of all registered keys.
@@ -42,7 +44,7 @@ impl Registration {
             let mut hash_output = vec![0u8; N];
 
             self.registered_keys.iter().for_each(|key| {
-                hasher.update(key.to_bytes().as_slice());
+                hasher.update(key.1.to_bytes().as_slice());
             });
 
             hasher.finalize_variable(&mut hash_output).unwrap();

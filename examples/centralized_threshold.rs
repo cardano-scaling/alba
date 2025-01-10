@@ -121,8 +121,8 @@ fn main() {
     let mut registration = Registration::new();
 
     // Register the candidates
-    for signer in &signers {
-        registration.register(signer.verification_key);
+    for (index, signer) in signers.iter().enumerate() {
+        registration.register(signer.verification_key, index);
     }
     registration.close::<DATA_LENGTH>();
 

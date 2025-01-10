@@ -30,9 +30,9 @@ pub(crate) struct RegisteredSigner {
 
 impl VerificationKey {
     /// Return `true` if given `VerificationKey` is registered.
-    pub(crate) fn is_registered(&self, registration: &Registration) -> bool {
+    pub(crate) fn is_registered(self, registration: &Registration) -> bool {
         if registration.checksum.is_some() {
-            registration.registered_keys.contains(self)
+            registration.registered_keys.values().any(|v| *v == self)
         } else {
             println!("Registration is not closed, so no key can be considered registered.");
             false
