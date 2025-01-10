@@ -37,18 +37,18 @@ impl AlbaSigner {
 
     fn sign<const N: usize>(&self, msg: &[u8]) -> [u8; N] {
         let mut signature_to_byte = [0u8; N];
-        signature_to_byte.copy_from_slice(&self.signing_key.sign(&msg, &[], &[]).to_bytes());
+        signature_to_byte.copy_from_slice(&self.signing_key.sign(msg, &[], &[]).to_bytes());
         signature_to_byte
     }
 }
 
 impl ThresholdSignature {
     fn aggregate<const N: usize>(
-        alba_signatures: HashMap<Element, usize>,
+        alba_signatures: &HashMap<Element, usize>,
         params: &Params,
-        key_list: HashMap<usize, PublicKey>,
+        key_list: &HashMap<usize, PublicKey>,
     ) -> Self {
-        let prover_set: Vec<Element> = alba_signatures.keys().cloned().collect();
+        let prover_set: Vec<Element> = alba_signatures.keys().copied().collect();
         let alba = CentralizedTelescope::create(params);
         let proof = alba.prove(&prover_set).unwrap();
         let signatures = proof.element_sequence.clone();
@@ -121,7 +121,7 @@ fn main() {
         signature_list.insert(signer.sign::<DATA_LENGTH>(&msg), i);
     }
     let threshold_signature =
-        ThresholdSignature::aggregate::<DATA_LENGTH>(signature_list, &params, key_list);
+        ThresholdSignature::aggregate::<DATA_LENGTH>(&signature_list, &params, &key_list);
 
     print!("{:?}", threshold_signature.verify(&msg, &params));
 }
