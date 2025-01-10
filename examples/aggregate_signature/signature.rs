@@ -1,7 +1,6 @@
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signer::VerificationKey;
-use blake2::digest::{Update, VariableOutput};
-use blake2::{digest::consts::U16, Blake2b, Blake2bVar, Digest};
+use blake2::{digest::consts::U16, Blake2b, Digest};
 use blst::min_sig::Signature as BlstSignature;
 use blst::{blst_p1, blst_p2, p1_affines, p2_affines, BLST_ERROR};
 
@@ -109,14 +108,9 @@ impl IndividualSignature {
     /// Return the hash of the signature and its public key
     /// This function is used to create the `prover_set` of Alba protocol.
     pub(crate) fn to_element<const N: usize>(&self) -> [u8; N] {
-        let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
-        let mut element = [0u8; N];
-
-        hasher.update(&self.signature.to_bytes());
-        hasher.update(&self.verification_key.to_bytes());
-        hasher.finalize_variable(&mut element).unwrap();
-
-        element
+        let mut signature_to_byte = [0u8; N];
+        signature_to_byte.copy_from_slice(&self.signature.to_bytes());
+        signature_to_byte
     }
 }
 

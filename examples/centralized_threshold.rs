@@ -13,7 +13,7 @@ use crate::aggregate_signature::signature::IndividualSignature;
 use crate::aggregate_signature::signer::{RegisteredSigner, Signer};
 use aggregate_signature::aggregate::AggregateSignature;
 
-const DATA_LENGTH: usize = 32;
+const DATA_LENGTH: usize = 48;
 pub(crate) type Element = [u8; DATA_LENGTH];
 
 /// Alba proof with aggregate signature
