@@ -9,7 +9,7 @@ use crate::utils::types::Element;
 #[derive(Debug, Clone, Copy)]
 pub struct Wrapper {
     /// Centralized telescope internal parameters
-    pub setup: Setup,
+    setup: Setup,
 }
 
 impl Wrapper {
@@ -23,6 +23,11 @@ impl Wrapper {
     /// Initialize ALBA with `Setup`.
     pub fn create_unsafe(setup: &Setup) -> Self {
         Self { setup: *setup }
+    }
+
+    /// Returns the structure's Setup parameters
+    pub fn get_setup(&self) -> Setup {
+        self.setup
     }
 
     /// Alba's proving algorithm, based on a depth-first search algorithm.

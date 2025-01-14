@@ -28,11 +28,12 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     for _ in 0..n {
         // Setup
         let (mut dataset, telescope) = setup(&mut rng, param);
+        let setup = telescope.get_setup();
         // Truncate the dataset to give truncate_size elements to the prover
         dataset.truncate(truncate_size as usize);
         // Bench the number of steps/DFS calls while generating a proof
         black_box({
-            let steps = bench(&telescope.setup, &dataset).0;
+            let steps = bench(&setup, &dataset).0;
             total_steps = total_steps.saturating_add(steps);
         });
     }
