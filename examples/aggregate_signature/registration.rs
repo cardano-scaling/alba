@@ -48,7 +48,13 @@ impl Registration {
 
         self.registered_keys
             .iter()
-            .find_map(|(index, key)| if key == verification_key { Some(*index) } else { None })
+            .find_map(|(index, key)| {
+                if key == verification_key {
+                    Some(*index)
+                } else {
+                    None
+                }
+            })
             .or_else(|| {
                 println!("Signer is not registered.");
                 None
@@ -69,7 +75,9 @@ impl Registration {
             hasher.update(key.to_bytes().as_slice());
         }
 
-        hasher.finalize_variable(&mut hash_output).expect("Hash finalization failed");
+        hasher
+            .finalize_variable(&mut hash_output)
+            .expect("Hash finalization failed");
         self.checksum = Some(hash_output);
     }
 }
