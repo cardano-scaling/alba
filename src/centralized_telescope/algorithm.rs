@@ -53,7 +53,7 @@ pub(super) fn verify(setup: &Setup, proof: &Proof) -> bool {
     proof_hash(setup, &round)
 }
 
-/// Internal module for tests and benchmarks
+/// Internal module for tests and benchmarks. Do not use.
 pub mod internal {
     use super::{prove_routine, Element, Proof, Setup};
 
