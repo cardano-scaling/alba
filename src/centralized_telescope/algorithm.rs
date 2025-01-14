@@ -64,7 +64,7 @@ pub mod internal {
     }
 }
 
-/// Prove routing
+/// Prove routine
 fn prove_routine(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
     let mut steps: u64 = 0;
     let mut retries: u64 = 0;
