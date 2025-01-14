@@ -29,7 +29,7 @@ pub mod centralized {
 
     impl BenchParam {
         /// Helper function creating a Benchmark ID
-        pub fn bench_id(&self, bench_name: &str, pc: u64) -> BenchmarkId {
+        pub fn bench_id(&self, bench_name: &str, percentage: u64) -> BenchmarkId {
             BenchmarkId::new(
                 bench_name,
                 format!(
@@ -37,7 +37,7 @@ pub mod centralized {
                     self.lambda_sec,
                     self.lambda_rel,
                     self.total_num_elements,
-                    pc,
+                    percentage,
                     self.set_size_percentage,
                     self.lower_bound_percentage
                 ),
@@ -70,7 +70,7 @@ pub mod centralized {
                 },
             );
 
-            // Extra benchmarks to show the proving time and number of steps 
+            // Extra benchmarks to show the proving time and number of steps
             // when giving more than set_size_percentage elements to the prover.
             // This can be helpful when deciding whether having smaller proofs
             // or smaller proving time.
