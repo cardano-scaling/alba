@@ -1,104 +1,127 @@
-//! Example
-
-mod aggregate_signature;
-
+//! Centralized Telescope example with BLS multi-signature
+use crate::aggregate_signature::helpers::{
+    collect_valid_signatures, get_commitment, validate_signatures,
+};
+use crate::aggregate_signature::registration::Registration;
+use crate::aggregate_signature::signature::IndividualSignature;
+use crate::aggregate_signature::signer::{RegisteredSigner, Signer};
 use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::CentralizedTelescope;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
-use crate::aggregate_signature::registration::Registration;
-use crate::aggregate_signature::signature::IndividualSignature;
-use crate::aggregate_signature::signer::{RegisteredSigner, Signer};
-use aggregate_signature::aggregate::AggregateSignature;
-
+mod aggregate_signature;
 const DATA_LENGTH: usize = 48;
 pub(crate) type Element = [u8; DATA_LENGTH];
 
-/// Alba proof with aggregate signature
 #[derive(Debug, Clone)]
-pub struct AlbaThresholdSignature {
-    /// Aggregate signature
-    pub(crate) aggregate: AggregateSignature,
+pub(crate) struct AlbaThresholdSignature {
     /// Centralized telescope proof
     pub(crate) proof: Proof,
+    /// Registration indices of the element sequence signers
+    pub(crate) indices: Vec<usize>,
+    /// Commitment `Hash(checksum || msg)`
+    pub(crate) commitment: Vec<u8>,
 }
 
 impl AlbaThresholdSignature {
-    /// Generate an Alba proof for a given list of IndividualSignatures by first creating the prover’s set, which is
-    /// formed by collecting elements corresponding to valid signatures.
-    /// If the size of the prover’s set is smaller than the specified set_size, the process is aborted.
-    /// Once the prover’s set is complete, the Alba proof is constructed.
-    /// Finally, an aggregate signature is produced using the subset of signatures whose corresponding elements are
-    /// included in the Alba proof.
-    pub(crate) fn prove<const N: usize>(
+    /// Create AlbaThresholdSignature. Validate and collect signatures in byte representation.
+    /// Create Alba proof and extract indices of proof elements.
+    /// Return proof, commitment, and indices.
+    fn prove<const N: usize>(
         params: &Params,
-        signatures: &[IndividualSignature],
-        set_size: u64,
+        signature_list: &[IndividualSignature],
         registration: &Registration,
         msg: &[u8],
+        set_size: usize,
     ) -> Option<Self> {
-        let prover_set =
-            AlbaThresholdSignature::collect_set_elements::<N>(signatures, registration, msg);
-        if prover_set.len() < set_size as usize {
-            println!("Not enough signatures.");
+        // Ensure that the commitment can be created
+        let checksum = match &registration.checksum {
+            Some(checksum) => checksum,
+            None => {
+                println!("Error: Registration is not closed.");
+                return None;
+            }
+        };
+
+        let commitment = get_commitment::<N>(checksum, msg).to_vec();
+
+        // Collect valid individual signatures' byte representation into a hashmap
+        let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
+
+        // Check if there are enough valid signatures
+        if valid_signatures.len() < set_size {
+            println!(
+                "Error: Not enough signatures! Expected at least {}, but got {}.",
+                set_size,
+                valid_signatures.len()
+            );
             return None;
         }
+
+        // Collect the byte representation of valid signatures into a Vec
+        let prover_set: Vec<Element> = valid_signatures.keys().cloned().collect();
+
+        // Create the Alba proof using the prover set
         let alba = CentralizedTelescope::create(params);
-        alba.prove(&prover_set)
-            .and_then(|alba_proof| {
-                let commitment: [u8; N] = registration.get_commitment(msg)?;
-                Some(Self {
-                    aggregate: AggregateSignature::aggregate(
-                        signatures,
-                        &prover_set,
-                        &alba_proof.element_sequence,
-                        &commitment,
-                    ),
-                    proof: alba_proof,
-                })
-            })
-            .or(None)
-    }
+        let proof = alba.prove(&prover_set)?;
 
-    /// Verify each signature and convert the valid ones to elements
-    fn collect_set_elements<const N: usize>(
-        signatures: &[IndividualSignature],
-        registration: &Registration,
-        msg: &[u8],
-    ) -> Vec<Element> {
-        signatures
+        // Extract the registration indices of the elements that form the proof element sequence
+        let indices: Vec<usize> = proof
+            .element_sequence
             .iter()
-            .filter(|sig| sig.verify::<N>(registration, msg))
-            .map(IndividualSignature::to_element)
-            .collect()
+            .filter_map(|element| valid_signatures.get(element.as_slice()).copied())
+            .collect();
+
+        // Return the constructed AlbaThresholdSignature
+        Some(Self {
+            indices,
+            proof,
+            commitment,
+        })
     }
 
-    /// Verify Alba threshold signature.
-    /// Create the commitment by hashing the checksum of the closed registration and the message.
-    /// If the computed commitment is different from the commitment of the given aggregate signature, abort.
-    /// Verify aggregate signature
-    /// Return true if the Alba proof is verified and all checks passed.
-    pub(crate) fn verify<const N: usize>(
+    /// Verify AlbaThresholdSignature. Validate individual signatures and verify Alba proof.
+    fn verify<const N: usize>(
         &self,
         params: &Params,
         registration: &Registration,
         msg: &[u8],
     ) -> bool {
-        let commitment: [u8; N] = match registration.get_commitment::<N>(msg) {
-            Some(commitment) => commitment,
-            None => return false,
+        // Check if the checksum exists in the registration
+        let checksum = match &registration.checksum {
+            Some(checksum) => checksum,
+            None => {
+                println!("Error: Registration is not closed.");
+                return false;
+            }
         };
-        if commitment != self.aggregate.commitment.as_slice() {
+
+        // Compute the commitment and compare with the stored commitment
+        let commitment = get_commitment::<N>(checksum, msg).to_vec();
+        if commitment != self.commitment {
+            println!("Error: Commitment mismatch.");
             return false;
         }
 
-        if !self.aggregate.verify::<N>(registration) {
+        // Validate the individual signatures
+        if !validate_signatures(self, registration, &commitment) {
+            println!("Error: Signature validation failed.");
             return false;
         }
+
+        // Create the Alba proof and verify it
         let alba = CentralizedTelescope::create(params);
-        alba.verify(&self.proof)
+        let result = alba.verify(&self.proof);
+
+        if result {
+            println!("Success: Alba proof verification passed.");
+        } else {
+            println!("Error: Alba proof verification failed.");
+        }
+
+        result
     }
 }
 
@@ -114,47 +137,38 @@ fn main() {
         lower_bound: 20 * set_size / 100,
     };
 
-    // Create a list of candidates (signers) of the size `set_size`
-    let signers: Vec<Signer> = (0..set_size).map(|_| Signer::init(&mut rng)).collect();
+    let signers: Vec<Signer> = (0..set_size as usize)
+        .map(|_| Signer::init(&mut rng))
+        .collect();
 
-    // Create a new key registration
     let mut registration = Registration::new();
 
-    // Register the candidates
     for (index, signer) in signers.iter().enumerate() {
         registration.register(signer.verification_key, index);
     }
-    registration.close::<DATA_LENGTH>();
 
-    // Create the threshold signature signers from the candidates if they are registered
+    registration.close::<DATA_LENGTH>();
     let registered_signers: Vec<RegisteredSigner> = signers
-        .into_iter()
-        .filter_map(|candidate| candidate.new_signer::<DATA_LENGTH>(registration.clone()))
+        .iter()
+        .filter_map(|signer| signer.new_signer::<DATA_LENGTH>(&registration))
         .collect();
 
-    // Collect the individual signatures, ignoring any that failed (None)
-    let signatures = registered_signers
+    let signature_list: Vec<IndividualSignature> = registered_signers
         .iter()
-        .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
-        .collect::<Vec<IndividualSignature>>();
+        .map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+        .collect();
 
-    // Create the threshold signature.
-    // - Aggregate the valid signatures
-    // - Create the `prover_set` with the list of valid signatures
-    // - Create the threshold signature out of the `prover_set`
-    let result = AlbaThresholdSignature::prove::<DATA_LENGTH>(
+    let alba_threshold_signature = AlbaThresholdSignature::prove::<DATA_LENGTH>(
         &params,
-        &signatures,
-        set_size,
+        &signature_list,
         &registration,
         &msg,
+        set_size as usize,
+    )
+    .unwrap();
+
+    print!(
+        "{}",
+        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, &msg)
     );
-    if result.is_some() {
-        let alba = result.unwrap();
-        // Verify the proof
-        let verify_result = alba.verify::<DATA_LENGTH>(&params, &registration, &msg);
-        print!("Threshold signature verifies: {verify_result}");
-    } else {
-        println!("No threshold signature were successfully generated.");
-    }
 }

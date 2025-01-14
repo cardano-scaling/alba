@@ -1,22 +1,21 @@
-use crate::aggregate_signature::signer::VerificationKey;
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
+use blst::min_sig::PublicKey;
 use std::collections::BTreeMap;
 
-type Keys = BTreeMap<usize, VerificationKey>;
+type Keys = BTreeMap<usize, PublicKey>;
 
-/// Structure for registration functionality. It hold a `BTreeSet` of registered keys and the checksum of all
-/// registry data.
+/// Structure for registration functionality.
 #[derive(Debug, Clone)]
 pub(crate) struct Registration {
-    /// BTreeSet of the registered keys of type `VerificationKey`
+    /// Registered keys
     pub(crate) registered_keys: Keys,
-    /// Checksum of registered keys
+    /// Checksum of registry data
     pub(crate) checksum: Option<Vec<u8>>,
 }
 
 impl Registration {
-    /// Initialize the key registration.
+    /// Initialize key registration
     pub(crate) fn new() -> Self {
         Self {
             registered_keys: BTreeMap::new(),
@@ -24,27 +23,44 @@ impl Registration {
         }
     }
 
-    /// Register the given `VerificationKey` if it is not registered already.
-    /// Returns true if registration succeeds.
-    pub(crate) fn register(&mut self, key: VerificationKey, index: usize) -> bool {
-        if self.registered_keys.values().any(|v| *v == key) {
-            println!("Key already registered!");
-            false // Value already exists, don't insert
-        } else {
-            self.registered_keys.insert(index, key);
-            true
+    /// Register new key if the registration is not closed and the key is not already registered
+    pub(crate) fn register(&mut self, key: PublicKey, index: usize) -> bool {
+        if self.checksum.is_none() {
+            return if self.registered_keys.values().any(|v| *v == key) {
+                println!("Key already registered!");
+                false
+            } else {
+                self.registered_keys.insert(index, key);
+                true
+            };
         }
-
+        println!("Registration is closed!");
+        return false;
     }
 
-    /// Close the registration and create the hash of all registered keys.
+    /// Get the index of given key if the registration is closed
+    pub(crate) fn get_index_of_key(&self, verification_key: &PublicKey) -> Option<usize> {
+        if self.checksum.is_some() {
+            for (index, key) in &self.registered_keys {
+                if key == verification_key {
+                    return Some(*index);
+                }
+            }
+            println!("Signer is not registered.");
+            return None;
+        }
+        println!("Registration is not closed.");
+        return None;
+    }
+
+    /// Close key registration if it is not already closed
     pub(crate) fn close<const N: usize>(&mut self) {
         if self.checksum.is_none() {
             let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
             let mut hash_output = vec![0u8; N];
 
-            self.registered_keys.iter().for_each(|key| {
-                hasher.update(key.1.to_bytes().as_slice());
+            self.registered_keys.iter().for_each(|participant| {
+                hasher.update(participant.1.to_bytes().as_slice());
             });
 
             hasher.finalize_variable(&mut hash_output).unwrap();
@@ -52,19 +68,5 @@ impl Registration {
         } else {
             println!("Registration is already closed.");
         }
-    }
-
-    /// Compute the commitment by hashing the checksum of the closed registration and the message.
-    /// Returns `None` if the registration is not closed.
-    pub(crate) fn get_commitment<const N: usize>(&self, msg: &[u8]) -> Option<[u8; N]> {
-        self.checksum.as_ref().map(|check_sum| {
-            let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
-            let mut commitment = [0u8; N];
-
-            hasher.update(check_sum);
-            hasher.update(msg);
-            hasher.finalize_variable(&mut commitment).unwrap();
-            commitment
-        })
     }
 }

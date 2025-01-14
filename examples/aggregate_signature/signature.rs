@@ -1,160 +1,28 @@
-use crate::aggregate_signature::registration::Registration;
-use crate::aggregate_signature::signer::VerificationKey;
-use blake2::{digest::consts::U16, Blake2b, Digest};
-use blst::min_sig::Signature as BlstSignature;
-use blst::{blst_p1, blst_p2, p1_affines, p2_affines, BLST_ERROR};
+use crate::aggregate_signature::helpers::get_commitment;
+use blst::min_sig::{PublicKey, Signature};
+use blst::BLST_ERROR;
 
-use unsafe_helpers::{p1_affine_to_sig, p2_affine_to_vk, sig_to_p1, vk_from_p2_affine};
-
-/// Signature, which is a wrapper over the `BlstSignature` type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) struct Signature(pub(crate) BlstSignature);
-
-/// Individual Signature containing `BlstSignature` and its verification key.
+/// Single signature
 #[derive(Debug, Clone)]
 pub(crate) struct IndividualSignature {
-    /// Signature of type `BlstSignature`
+    /// Signature of type bls signature
     pub(crate) signature: Signature,
-    /// Verification key the signature.
-    pub(crate) verification_key: VerificationKey,
-}
-
-impl Signature {
-    /// Verify a signature against a verification key.
-    pub(crate) fn verify(&self, msg: &[u8], verification_key: &VerificationKey) -> BLST_ERROR {
-        self.0
-            .verify(false, msg, &[], &[], &verification_key.0, false)
-    }
-
-    /// Convert an `Signature` to its byte representation.
-    fn to_bytes(self) -> [u8; 48] {
-        self.0.to_bytes()
-    }
-
-    /// Aggregate given list of signatures and list of verification keys Signatures
-    /// - Hash the signatures into random scalars
-    /// - Multiply signatures with the resulting value, obtain the aggregate signature
-    /// - Multiply verification keys with the resulting value, obtain the aggregate verification key
-    fn aggregate(sigs: &[Signature], vks: &[VerificationKey]) -> Option<(Self, VerificationKey)> {
-        if vks.len() != sigs.len() || vks.is_empty() {
-            return None;
-        }
-
-        if vks.len() < 2 {
-            return Some((sigs[0], vks[0]));
-        }
-
-        let mut hashed_sigs = Blake2b::<U16>::new();
-        for sig in sigs {
-            Digest::update(&mut hashed_sigs, sig.to_bytes());
-        }
-
-        let mut scalars = Vec::with_capacity(vks.len().saturating_add(128));
-        let mut signatures = Vec::with_capacity(vks.len());
-        for (index, sig) in sigs.iter().enumerate() {
-            let mut hasher = hashed_sigs.clone();
-            Digest::update(&mut hasher, index.to_be_bytes());
-            signatures.push(sig.0);
-            scalars.extend_from_slice(hasher.finalize().as_slice());
-        }
-
-        let transmuted_vks: Vec<blst_p2> = vks.iter().map(|vk| vk_from_p2_affine(*vk)).collect();
-
-        let transmuted_sigs: Vec<blst_p1> = signatures
-            .iter()
-            .map(|sig| sig_to_p1(Signature(*sig)))
-            .collect();
-
-        let grouped_vks = p2_affines::from(transmuted_vks.as_slice());
-        let grouped_sigs = p1_affines::from(transmuted_sigs.as_slice());
-
-        let aggr_vk: VerificationKey = p2_affine_to_vk(&grouped_vks.mult(&scalars, 128));
-        let aggr_sig: Signature = p1_affine_to_sig(&grouped_sigs.mult(&scalars, 128));
-
-        Some((aggr_sig, aggr_vk))
-    }
-
-    /// Aggregate given list of signatures and verification keys
-    /// Verify the aggregate against given message
-    pub(crate) fn verify_aggregate(
-        signatures: &[Signature],
-        verification_keys: &[VerificationKey],
-        msg: &[u8],
-    ) -> BLST_ERROR {
-        if let Some((signature, key)) = Signature::aggregate(signatures, verification_keys) {
-            signature.verify(msg, &key)
-        } else {
-            BLST_ERROR::BLST_VERIFY_FAIL // Return a failure error if aggregation fails
-        }
-    }
+    /// Registration index of the signer
+    pub(crate) index: usize,
 }
 
 impl IndividualSignature {
-    /// Verify a signature
-    /// First, validate that the signer's verification key is actually registered.
-    /// Then, verify the blst signature against the given `commitment` (Hash(checksum||msg)).
-    pub(crate) fn verify<const N: usize>(&self, registration: &Registration, msg: &[u8]) -> bool {
-        let commitment: [u8; N] = match registration.get_commitment::<N>(msg) {
-            Some(commitment) => commitment,
-            None => return false,
-        };
-        if self.verification_key.is_registered(registration) {
-            let result = self.signature.verify(&commitment, &self.verification_key);
-            return result == BLST_ERROR::BLST_SUCCESS;
-        };
-        false
-    }
-
-    /// Return the hash of the signature and its public key
-    /// This function is used to create the `prover_set` of Alba protocol.
-    pub(crate) fn to_element<const N: usize>(&self) -> [u8; N] {
-        let mut signature_to_byte = [0u8; N];
-        signature_to_byte.copy_from_slice(&self.signature.to_bytes());
-        signature_to_byte
-    }
-}
-
-#[allow(unsafe_code)]
-mod unsafe_helpers {
-    use super::{blst_p1, blst_p2, Signature, VerificationKey};
-    use blst::{
-        blst_p1_affine, blst_p1_from_affine, blst_p1_to_affine, blst_p2_affine,
-        blst_p2_from_affine, blst_p2_to_affine,
-    };
-
-    pub(crate) fn vk_from_p2_affine(vk: VerificationKey) -> blst_p2 {
-        unsafe {
-            let mut projective_p2 = blst_p2::default();
-            blst_p2_from_affine(
-                &mut projective_p2,
-                &std::mem::transmute::<VerificationKey, blst_p2_affine>(vk),
-            );
-            projective_p2
-        }
-    }
-    pub(crate) fn sig_to_p1(sig: Signature) -> blst_p1 {
-        unsafe {
-            let mut projective_p1 = blst_p1::default();
-            blst_p1_from_affine(
-                &mut projective_p1,
-                &std::mem::transmute::<Signature, blst_p1_affine>(sig),
-            );
-            projective_p1
-        }
-    }
-
-    pub(crate) fn p2_affine_to_vk(grouped_vks: &blst_p2) -> VerificationKey {
-        unsafe {
-            let mut affine_p2 = blst_p2_affine::default();
-            blst_p2_to_affine(&mut affine_p2, grouped_vks);
-            std::mem::transmute::<blst_p2_affine, VerificationKey>(affine_p2)
-        }
-    }
-    pub(crate) fn p1_affine_to_sig(grouped_sigs: &blst_p1) -> Signature {
-        unsafe {
-            let mut affine_p1 = blst_p1_affine::default();
-            blst_p1_to_affine(&mut affine_p1, grouped_sigs);
-            std::mem::transmute::<blst_p1_affine, Signature>(affine_p1)
-        }
+    /// Verify signature against `commitment = Hash(checksum || msg)`
+    pub(crate) fn verify<const N: usize>(
+        &self,
+        checksum: &[u8],
+        msg: &[u8],
+        verification_key: &PublicKey,
+    ) -> bool {
+        let commitment = get_commitment::<N>(checksum, msg);
+        let result = self
+            .signature
+            .verify(false, &commitment, &[], &[], &verification_key, false);
+        return result == BLST_ERROR::BLST_SUCCESS;
     }
 }
