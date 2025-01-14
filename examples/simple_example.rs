@@ -71,32 +71,29 @@ impl ThresholdSignature {
     fn validate_signatures(&self, msg: &[u8]) -> bool {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         for sig_bytes in &self.proof.element_sequence {
-            match Signature::from_bytes(sig_bytes.as_slice()) {
-                Ok(signature) => signatures.push(signature),
-                Err(_) => {
-                    println!("Error: Failed to parse signature from bytes.");
-                    return false;
-                }
+            if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
+                signatures.push(signature);
+            } else {
+                println!("Error: Failed to parse signature from bytes.");
+                return false;
             }
         }
         let signature_refs: Vec<&Signature> = signatures.iter().collect();
         let aggregate_signature =
-            match AggregateSignature::aggregate(signature_refs.as_slice(), false) {
-                Ok(agg_sig) => agg_sig.to_signature(),
-                Err(_) => {
-                    println!("Error: Failed to aggregate signatures.");
-                    return false;
-                }
+            if let Ok(agg_sig) = AggregateSignature::aggregate(signature_refs.as_slice(), false) {
+                agg_sig.to_signature();
+            } else {
+                println!("Error: Failed to aggregate signatures.");
+                return false;
             };
 
         let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
         let aggregate_public_key =
-            match AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
-                Ok(agg_pk) => agg_pk.to_public_key(),
-                Err(_) => {
-                    println!("Error: Failed to aggregate public keys.");
-                    return false;
-                }
+            if let Ok(agg_pk) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
+                agg_pk.to_public_key();
+            } else {
+                println!("Error: Failed to aggregate public keys.");
+                return false;
             };
 
         let result = aggregate_signature.fast_aggregate_verify_pre_aggregated(
