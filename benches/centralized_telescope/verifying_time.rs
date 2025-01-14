@@ -59,4 +59,4 @@ mod criterion_group {
     );
 }
 
-criterion_main!(criterion_group::centralized_verifying_time,);
+criterion_main!(criterion_group::centralized_verifying_time);

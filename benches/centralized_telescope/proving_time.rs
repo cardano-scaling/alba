@@ -55,4 +55,4 @@ mod criterion_group {
     );
 }
 
-criterion_main!(criterion_group::centralized_proving_time,);
+criterion_main!(criterion_group::centralized_proving_time);
