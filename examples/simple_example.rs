@@ -67,21 +67,38 @@ impl ThresholdSignature {
         }
     }
 
+    /// Validates individual signatures in the threshold signature
     fn validate_signatures(&self, msg: &[u8]) -> bool {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         for sig_bytes in &self.proof.element_sequence {
-            let signature = Signature::from_bytes(sig_bytes.as_slice()).unwrap();
-            signatures.push(signature);
+            match Signature::from_bytes(sig_bytes.as_slice()) {
+                Ok(signature) => signatures.push(signature),
+                Err(_) => {
+                    println!("Error: Failed to parse signature from bytes.");
+                    return false;
+                }
+            }
         }
         let signature_refs: Vec<&Signature> = signatures.iter().collect();
-        let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
+        let aggregate_signature =
+            match AggregateSignature::aggregate(signature_refs.as_slice(), false) {
+                Ok(agg_sig) => agg_sig.to_signature(),
+                Err(_) => {
+                    println!("Error: Failed to aggregate signatures.");
+                    return false;
+                }
+            };
 
-        let aggregate_signature = AggregateSignature::aggregate(signature_refs.as_slice(), false)
-            .unwrap()
-            .to_signature();
-        let aggregate_public_key = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false)
-            .unwrap()
-            .to_public_key();
+        let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
+        let aggregate_public_key =
+            match AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
+                Ok(agg_pk) => agg_pk.to_public_key(),
+                Err(_) => {
+                    println!("Error: Failed to aggregate public keys.");
+                    return false;
+                }
+            };
+
         let result = aggregate_signature.fast_aggregate_verify_pre_aggregated(
             false,
             msg,
