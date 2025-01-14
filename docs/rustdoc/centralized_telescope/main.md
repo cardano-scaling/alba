@@ -6,10 +6,14 @@ In contrast, small $n_p$ limits the search space, making the previous parameters
 To address this, the **construction with bounded DFS** expands on the prehashed version with *retries*, *randomized indexing*, and *bounding* the DFS.
 
 ## Overview
-- When $n_p$ is large, the rapid growth in potential proof tuples increases the chances of finding a valid proof, making construction easier.
-- For small $n_p$, limited elements reduce the probability of finding a valid proof in a single attempt.
-- The generalized scheme compensates by using multiple retries indexed by $v$, where each retry applies fresh randomization via hash functions.
-- A bounded DFS search with a predefined step limit ensures computational efficiency and deterministic worst-case running time.
+- When $n_p$ is large, the rapid increase in potential proof tuples enhances the chances of finding a valid proof, simplifying the construction process.
+- For small $n_p$, the element distribution across bins becomes skewed, some bins may contain multiple elements while others remain empty.
+  - It reduces the probability of finding a valid proof in a single attempt.
+- Although the average number of elements per bin remains one, this imbalance increases the completeness error. 
+  - Prehashing can still be applied, but the error becomes more pronounced.
+- To mitigate this, multiple retries indexed by $v$ are introduced, each using fresh randomization via hash functions. 
+  - It significantly lowers the completeness error and improves success rates.
+- A bounded DFS search with a predefined step limit ensures computational efficiency while maintaining a deterministic worst-case runtime.
 
 ### Core components
 This generalized construction uses the same key parameters as prehashed construction but introduces:
