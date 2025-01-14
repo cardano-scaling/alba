@@ -33,7 +33,7 @@ pub mod centralized {
             BenchmarkId::new(
                 bench_name,
                 format!(
-                    "params={{λsec:{}, λrel:{}, |Sp|:{} ({}% sent to prover), n_p:{}, n_f:{}}}",
+                    "params={{λsec: {}, λrel: {}, |Sp|: {} ({}% sent to prover), n_p: {}, n_f: {}}}",
                     self.lambda_sec,
                     self.lambda_rel,
                     self.total_num_elements,
