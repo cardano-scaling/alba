@@ -81,7 +81,7 @@ impl ThresholdSignature {
         let signature_refs: Vec<&Signature> = signatures.iter().collect();
         let aggregate_signature =
             if let Ok(agg_sig) = AggregateSignature::aggregate(signature_refs.as_slice(), false) {
-                agg_sig.to_signature();
+                agg_sig.to_signature()
             } else {
                 println!("Error: Failed to aggregate signatures.");
                 return false;
@@ -90,18 +90,14 @@ impl ThresholdSignature {
         let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
         let aggregate_public_key =
             if let Ok(agg_pk) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
-                agg_pk.to_public_key();
+                agg_pk.to_public_key()
             } else {
                 println!("Error: Failed to aggregate public keys.");
                 return false;
             };
 
-        let result = aggregate_signature.fast_aggregate_verify_pre_aggregated(
-            false,
-            msg,
-            &[],
-            &aggregate_public_key,
-        );
+        let result =
+            aggregate_signature.verify(false, &msg, &[], &[], &aggregate_public_key, false);
         result == BLST_ERROR::BLST_SUCCESS
     }
 
