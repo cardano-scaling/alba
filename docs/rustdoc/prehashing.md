@@ -30,7 +30,7 @@ For this construction, the random functions are as follows:
 - When constructing sequences, the prover selects elements directly from the current bin to extend the sequence, continuing this process until the sequence reaches the required length $u$.
 - After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is a valid proof if $H_2(t, s_1, \dots, s_u) = 1$.
 
-The precomputed $H_0$ values enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches $H_0(s_{k+1})$.
+The values precomputed with $H_0$ enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches the bin with label $H_0(s_{k+1})$.
 This avoids checking all possible extensions, dramatically reducing the prover’s workload.
 
 ### Parameter generation
@@ -74,17 +74,17 @@ $$
 >   - $H_0(D) = 4$
 >   - $H_0(E) = 4$
 > - Bins are grouped as follows:
->   - $\mathsf{bin_1}$: $\[A, C\]$
->   - $\mathsf{bin_2}$: $\[B\]$
+>   - $\mathsf{bin_1}$: $(A, C)$
+>   - $\mathsf{bin_2}$: $(B)$
 >   - $\mathsf{bin_3}$: $\emptyset$
->   - $\mathsf{bin_4}$: $\[D, E\]$
+>   - $\mathsf{bin_4}$: $(D, E)$
 > ---
 > **Step 2:** Proof construction for $t = 1$.
 > - The prover starts with $t = 1$ and attempts to construct a valid sequence of length $u = 3$.
 > - Depth $k = 1$:
 >   - Compute $H_1(1)$ to determine the first bin to explore.
 >     - Assume $H_1(1) = 1$, so the prover looks in bin 1.
->   - $\mathsf{bin_1}$: $\[A, C\]$
+>   - $\mathsf{bin_1}$: $(A, C)$
 >     - Extend the sequence with $s_1 = A$.
 >   - Current sequence: $(t, s_1) = (1, A)$.
 > - Depth $k = 2$:
@@ -100,25 +100,25 @@ $$
 > - Depth $k = 1$:
 >   - Compute $H_1(2)$ to determine the first bin to explore.
 >     - Assume $H_1(2) = 4$, so the prover looks in bin 4.
->   - $\mathsf{bin_4}$: $\[D, E\]$
+>   - $\mathsf{bin_4}$: $(D, E)$
 >     - Extend the sequence with $s_1 = D$.
 >   - Current sequence: $(t, s_1) = (2, D)$.
 > - Depth $k = 2$:
 >   - Compute $H_1(t, s_1)$ to determine the next bin to explore.
 >     - Assume $H_1(2, D) = 2$, so the prover looks in bin 2.
->   - $\mathsf{bin_2}$: $\[B\]$
+>   - $\mathsf{bin_2}$: $(B)$
 >     - Extend the sequence with $s_2 = B$.
 >   - Current sequence: $(t, s_1, s_2) = (2, D, B)$.
 > - Depth $k = 3$:
 >   - Compute $H_1(2, s_1, s_2)$ to determine the next bin to explore.
 >     - Assume $H_1(2, D, B) = 1$, so the prover looks in bin 1.
->   - $\mathsf{bin_1}$: $\[A, C\]$
->     - Extend the sequence with $s_3 = C$.
->   - Current sequence: $(t, s_1, s_3, s_3) = (2, D, B, C)$.
+>   - $\mathsf{bin_1}$: $(A, C)$
+>     - Extend the sequence with $s_3 = A$.
+>   - Current sequence: $(t, s_1, s_3, s_3) = (2, D, B, A)$.
 > ---
 > **Step 4:** Final Validation.
-> - A tuple with size $u = 3$ is obtained: $(t, s_1, s_2, s_3) = (2, D, B, C)$.
-> - If $H_2(2, D, B, C) = 1$, the sequence is valid, and the prover outputs it as proof.
+> - A tuple with size $u = 3$ is obtained: $(t, s_1, s_2, s_3) = (2, D, B, A)$.
+> - If $H_2(2, D, B, A) = 1$, the sequence is valid, and the prover outputs it as proof.
 ---
 
 ## Functions
@@ -131,12 +131,12 @@ $$
 >   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
 > - $bins \leftarrow$ { }
-> - **for** each $~~ i \in \[1,~ n_p\]:$
+> - **for** each $~~ i \in \[n_p\]:$
 >   - $bins\[i\] \leftarrow \[~\]$
 > - **for** each $~~ s \in S_p:$
 >   - $ind \leftarrow \mathsf{H_0}(s)$
 >   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup \[s\]$
-> - **for** each $~~ t \in \[1,~ d\]:$
+> - **for** each $~~ t \in \[d\]:$
 >   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], bins)$
 >   - **if** $~~ \pi ~!= \bot:$
 >     - **return** $~~ \pi.$
@@ -176,7 +176,7 @@ $$
 > ---
 > - **if** $~~ t ~∉ \[d\]:$
 >   - **return** $~~ 0.$
-> - **for** each $~~ i \in \[1, ~u\]:$
+> - **for** each $~~ i \in \[u\]:$
 >   - **if** $~~ \mathsf{H_1} (t, s_1, \ldots, s_{i-1}) ~!= \mathsf{H_0}(s_i)$:
 >     - **return** $~~0.$
 > - **return** $~~ \mathsf{H_2}(t, s_1, \ldots, s_u).$
