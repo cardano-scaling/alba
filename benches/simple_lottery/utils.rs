@@ -17,7 +17,7 @@ use common::criterion_helpers::centralized::BenchParam;
 /// Global variables
 pub const NAME: &str = "Lottery";
 
-/// Function generating a random set of elements to bench and calling Alba's centralized setup
+/// Function generating a random set of elements to bench and calling Simple Lottery setup
 pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 32]>, SimpleLottery) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
