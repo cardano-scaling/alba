@@ -70,17 +70,23 @@ pub mod centralized {
                 },
             );
 
-            // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
-            let mean = param.set_size_percentage.saturating_add(100).div_ceil(2);
-            let mid: u64 = param.total_num_elements.saturating_add(low).div_ceil(2);
-            group.bench_function(param.bench_id(bench_name, mean), move |b| {
-                b.iter_custom(|n| f(param, mid, n));
-            });
+            // Extra benchmarks to show the proving time and number of steps 
+            // when giving more than set_size_percentage elements to the prover.
+            // This can be helpful when deciding whether having smaller proofs
+            // or smaller proving time.
+            // Uncomment the following lines to run these extra benchmarks.
 
-            // Benchmark where the prover only has access to all elements of Sp
-            group.bench_function(param.bench_id(bench_name, 100), move |b| {
-                b.iter_custom(|n| f(param, param.total_num_elements, n));
-            });
+            // // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
+            // let mean = param.set_size_percentage.saturating_add(100).div_ceil(2);
+            // let mid: u64 = param.total_num_elements.saturating_add(low).div_ceil(2);
+            // group.bench_function(param.bench_id(bench_name, mean), move |b| {
+            //     b.iter_custom(|n| f(param, mid, n));
+            // });
+
+            // // Benchmark where the prover only has access to all elements of Sp
+            // group.bench_function(param.bench_id(bench_name, 100), move |b| {
+            //     b.iter_custom(|n| f(param, param.total_num_elements, n));
+            // });
         }
 
         group.finish();
