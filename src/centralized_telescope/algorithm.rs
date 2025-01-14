@@ -64,7 +64,8 @@ pub mod internal {
     }
 }
 
-/// Prove routine
+/// Prove routine that runs prove_index up to setup.max_retries times and
+/// returns the number of steps, retries and if found the Proof
 fn prove_routine(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
     let mut steps: u64 = 0;
     let mut retries: u64 = 0;
