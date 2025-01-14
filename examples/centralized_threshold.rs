@@ -137,38 +137,42 @@ fn main() {
         lower_bound: 20 * set_size / 100,
     };
 
+    // Initialize signers
     let signers: Vec<Signer> = (0..set_size as usize)
         .map(|_| Signer::init(&mut rng))
         .collect();
 
+    // Start new registration process
     let mut registration = Registration::new();
 
+    // Register signers
     for (index, signer) in signers.iter().enumerate() {
         registration.register(signer.verification_key, index);
     }
-
+    // Close registration to compute the checksum
     registration.close::<DATA_LENGTH>();
+
+    // Filter out registered signers and create RegisteredSigner instances
     let registered_signers: Vec<RegisteredSigner> = signers
         .iter()
         .filter_map(|signer| signer.new_signer::<DATA_LENGTH>(&registration))
         .collect();
 
+    // Create individual signatures
     let signature_list: Vec<IndividualSignature> = registered_signers
         .iter()
         .map(|signer| signer.sign::<DATA_LENGTH>(&msg))
         .collect();
 
-    let alba_threshold_signature = AlbaThresholdSignature::prove::<DATA_LENGTH>(
+    // Generate AlbaThresholdSignature proof
+    if let Some(alba_threshold_signature) = AlbaThresholdSignature::prove::<DATA_LENGTH>(
         &params,
         &signature_list,
         &registration,
         &msg,
         set_size as usize,
-    )
-    .unwrap();
-
-    print!(
-        "{}",
-        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, &msg)
-    );
+    ) {
+        // Verify the proof
+        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, &msg);
+    }
 }
