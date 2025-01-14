@@ -37,9 +37,7 @@ impl AlbaThresholdSignature {
         set_size: usize,
     ) -> Option<Self> {
         // Ensure that the commitment can be created
-        let checksum = if let Some(checksum) = &registration.checksum {
-            checksum
-        } else {
+        let Some(checksum) = &registration.checksum else {
             println!("Error: Registration is not closed.");
             return None;
         };
@@ -89,9 +87,7 @@ impl AlbaThresholdSignature {
         msg: &[u8],
     ) -> bool {
         // Check if the checksum exists in the registration
-        let checksum = if let Some(checksum) = &registration.checksum {
-            checksum
-        } else {
+        let Some(checksum) = &registration.checksum else {
             println!("Error: Registration is not closed.");
             return false;
         };

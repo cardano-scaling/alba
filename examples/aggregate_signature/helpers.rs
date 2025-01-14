@@ -31,9 +31,7 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 
     for sig in signature_list {
         if let Some(verification_key) = registration.registered_keys.get(&sig.index) {
-            let checksum = if let Some(checksum) = &registration.checksum {
-                checksum
-            } else {
+            let Some(checksum) = &registration.checksum else {
                 println!("Error: Registration is not closed. Cannot verify signatures.");
                 continue;
             };
@@ -59,7 +57,7 @@ pub(crate) fn validate_signatures(
     let mut signatures = Vec::with_capacity(alba_threshold_signature.proof.element_sequence.len());
     for sig_bytes in &alba_threshold_signature.proof.element_sequence {
         if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
-            signatures.push(signature)
+            signatures.push(signature);
         } else {
             println!("Error: Failed to parse signature from bytes.");
             return false;
