@@ -52,7 +52,7 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 pub(crate) fn validate_signatures(
     alba_threshold_signature: &AlbaThresholdSignature,
     registration: &Registration,
-    msg: &[u8],
+    commitment: &[u8],
 ) -> bool {
     let mut signatures = Vec::with_capacity(alba_threshold_signature.proof.element_sequence.len());
     for sig_bytes in &alba_threshold_signature.proof.element_sequence {
@@ -91,7 +91,7 @@ pub(crate) fn validate_signatures(
             return false;
         };
 
-    let result = aggregate_signature.verify(false, msg, &[], &[], &aggregate_public_key, false);
+    let result = aggregate_signature.verify(false, commitment, &[], &[], &aggregate_public_key, false);
     if result == BLST_ERROR::BLST_SUCCESS {
         true
     } else {
