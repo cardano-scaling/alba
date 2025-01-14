@@ -14,7 +14,7 @@ use blake2::{Blake2s256, Digest};
 pub(super) fn prove(setup: &Setup, prover_set: &[Element]) -> Option<Proof> {
     debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
-    prove_routine(setup, prover_set).2
+    prove_routine(setup, prover_set).1
 }
 
 /// Alba's verification algorithm, returns true if the proof is
@@ -59,28 +59,26 @@ pub mod internal {
 
     /// Alba's proving algorithm used for benchmarking, returning a proof if found
     /// as well as the number of steps and retries done when generating it.
-    pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+    pub fn bench(setup: &Setup, prover_set: &[Element]) -> (u64, Option<Proof>) {
         prove_routine(setup, prover_set)
     }
 }
 
 /// Prove routine that runs prove_index up to setup.max_retries times and
 /// returns the number of steps, retries and if found the Proof
-fn prove_routine(setup: &Setup, prover_set: &[Element]) -> (u64, u64, Option<Proof>) {
+fn prove_routine(setup: &Setup, prover_set: &[Element]) -> (u64, Option<Proof>) {
     let mut steps: u64 = 0;
-    let mut retries: u64 = 0;
 
     // Run prove_index up to max_retries times
     for retry_counter in 0..setup.max_retries {
         let (dfs_calls, proof_opt) =
             prove_index(setup, prover_set, retry_counter.saturating_add(1));
         steps = steps.saturating_add(dfs_calls);
-        retries = retry_counter;
         if proof_opt.is_some() {
-            return (steps, retry_counter, proof_opt);
+            return (steps, proof_opt);
         }
     }
-    (steps, retries, None)
+    (steps, None)
 }
 
 /// Indexed proving algorithm, returns the total number of DFS calls done
