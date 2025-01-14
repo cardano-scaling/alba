@@ -21,17 +21,17 @@ pub const NAME: &str = "Centralized";
 pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 32]>, CentralizedTelescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, params.set_cardinality);
+    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, params.total_num_elements);
     let params = Params {
         soundness_param: params.lambda_sec,
         completeness_param: params.lambda_rel,
         set_size: params
             .set_size_percentage
-            .saturating_mul(params.set_cardinality)
+            .saturating_mul(params.total_num_elements)
             .div_ceil(100),
         lower_bound: params
             .lower_bound_percentage
-            .saturating_mul(params.set_cardinality)
+            .saturating_mul(params.total_num_elements)
             .div_ceil(100),
     };
     let telescope = CentralizedTelescope::create(&params);

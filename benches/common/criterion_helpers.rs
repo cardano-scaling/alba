@@ -15,11 +15,15 @@ pub mod centralized {
         pub lambda_sec: f64,
         /// Completeness Security parameter
         pub lambda_rel: f64,
-        /// Alba's set cardinality (|Sp|)
-        pub set_cardinality: u64,
-        /// Alba's set_size (np) parameter in percentage of the set cardinality
+        /// Total number of elements in the dataset.
+        /// We will benchmark subsets of the dataset of size variying between
+        /// set_size_per percent and 100% of it
+        pub total_num_elements: u64,
+        /// Alba's set_size (np) parameter in percentage of total number of
+        /// elements of the dataset
         pub set_size_percentage: u64,
-        /// Alba's lower bound (nf) parameter in percentage of the set cardinality
+        /// Alba's lower bound (nf) parameter in percentage of total number of
+        /// elements of the dataset
         pub lower_bound_percentage: u64,
     }
 
@@ -32,7 +36,7 @@ pub mod centralized {
                     "params={{λsec:{}, λrel:{}, Sp:{} ({}%), n_p:{}, n_f:{}}}",
                     self.lambda_sec,
                     self.lambda_rel,
-                    self.set_cardinality,
+                    self.total_num_elements,
                     pc,
                     self.set_size_percentage,
                     self.lower_bound_percentage
@@ -56,7 +60,7 @@ pub mod centralized {
             // Benchmark where the prover only has access to np percent elements of Sp,
             // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
             let low = param
-                .set_cardinality
+                .total_num_elements
                 .saturating_mul(param.set_size_percentage)
                 .div_ceil(100);
             group.bench_function(
@@ -68,14 +72,14 @@ pub mod centralized {
 
             // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
             let mean = param.set_size_percentage.saturating_add(100).div_ceil(2);
-            let mid: u64 = param.set_cardinality.saturating_add(low).div_ceil(2);
+            let mid: u64 = param.total_num_elements.saturating_add(low).div_ceil(2);
             group.bench_function(param.bench_id(bench_name, mean), move |b| {
                 b.iter_custom(|n| f(param, mid, n));
             });
 
             // Benchmark where the prover only has access to all elements of Sp
             group.bench_function(param.bench_id(bench_name, 100), move |b| {
-                b.iter_custom(|n| f(param, param.set_cardinality, n));
+                b.iter_custom(|n| f(param, param.total_num_elements, n));
             });
         }
 

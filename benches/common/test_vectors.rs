@@ -8,7 +8,7 @@ pub mod centralized {
     const LOW_PARAM: BenchParam = BenchParam {
         lambda_sec: 64.0,
         lambda_rel: 64.0,
-        set_cardinality: 1_000,
+        total_num_elements: 1_000,
         set_size_percentage: 90,
         lower_bound_percentage: 60,
     };
@@ -17,7 +17,7 @@ pub mod centralized {
     const MID_PARAM: BenchParam = BenchParam {
         lambda_sec: 80.0,
         lambda_rel: 80.0,
-        set_cardinality: 1_000,
+        total_num_elements: 1_000,
         set_size_percentage: 80,
         lower_bound_percentage: 60,
     };
@@ -26,7 +26,7 @@ pub mod centralized {
     const HIGH_PARAM: BenchParam = BenchParam {
         lambda_sec: 128.0,
         lambda_rel: 128.0,
-        set_cardinality: 1_000,
+        total_num_elements: 1_000,
         set_size_percentage: 80,
         lower_bound_percentage: 67,
     };
