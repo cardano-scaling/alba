@@ -96,8 +96,7 @@ impl ThresholdSignature {
                 return false;
             };
 
-        let result =
-            aggregate_signature.verify(false, msg, &[], &[], &aggregate_public_key, false);
+        let result = aggregate_signature.verify(false, msg, &[], &[], &aggregate_public_key, false);
         result == BLST_ERROR::BLST_SUCCESS
     }
 
