@@ -23,50 +23,53 @@ impl Registration {
         }
     }
 
-    /// Register new key if the registration is not closed and the key is not already registered
+    /// Register a new key if registration is open and the key is not already registered.
     pub(crate) fn register(&mut self, key: PublicKey, index: usize) -> bool {
-        if self.checksum.is_none() {
-            return if self.registered_keys.values().any(|v| *v == key) {
-                println!("Key already registered!");
-                false
-            } else {
-                self.registered_keys.insert(index, key);
-                true
-            };
+        if self.checksum.is_some() {
+            println!("Registration is closed!");
+            return false;
         }
-        println!("Registration is closed!");
-        return false;
+
+        if self.registered_keys.values().any(|v| *v == key) {
+            println!("Key already registered!");
+            return false;
+        }
+
+        self.registered_keys.insert(index, key);
+        true
     }
 
-    /// Get the index of given key if the registration is closed
+    /// Get the index of a given key if registration is closed.
     pub(crate) fn get_index_of_key(&self, verification_key: &PublicKey) -> Option<usize> {
-        if self.checksum.is_some() {
-            for (index, key) in &self.registered_keys {
-                if key == verification_key {
-                    return Some(*index);
-                }
-            }
-            println!("Signer is not registered.");
+        if self.checksum.is_none() {
+            println!("Registration is not closed.");
             return None;
         }
-        println!("Registration is not closed.");
-        return None;
+
+        self.registered_keys
+            .iter()
+            .find_map(|(index, key)| if key == verification_key { Some(*index) } else { None })
+            .or_else(|| {
+                println!("Signer is not registered.");
+                None
+            })
     }
 
-    /// Close key registration if it is not already closed
+    /// Close the registration by computing a checksum if it is not already closed.
     pub(crate) fn close<const N: usize>(&mut self) {
-        if self.checksum.is_none() {
-            let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
-            let mut hash_output = vec![0u8; N];
-
-            self.registered_keys.iter().for_each(|participant| {
-                hasher.update(participant.1.to_bytes().as_slice());
-            });
-
-            hasher.finalize_variable(&mut hash_output).unwrap();
-            self.checksum = Some(hash_output);
-        } else {
+        if self.checksum.is_some() {
             println!("Registration is already closed.");
+            return;
         }
+
+        let mut hasher = Blake2bVar::new(N).expect("Invalid hash size");
+        let mut hash_output = vec![0u8; N];
+
+        for key in self.registered_keys.values() {
+            hasher.update(key.to_bytes().as_slice());
+        }
+
+        hasher.finalize_variable(&mut hash_output).expect("Hash finalization failed");
+        self.checksum = Some(hash_output);
     }
 }
