@@ -91,7 +91,8 @@ pub(crate) fn validate_signatures(
             return false;
         };
 
-    let result = aggregate_signature.verify(false, commitment, &[], &[], &aggregate_public_key, false);
+    let result =
+        aggregate_signature.verify(false, commitment, &[], &[], &aggregate_public_key, false);
     if result == BLST_ERROR::BLST_SUCCESS {
         true
     } else {
