@@ -37,12 +37,11 @@ impl AlbaThresholdSignature {
         set_size: usize,
     ) -> Option<Self> {
         // Ensure that the commitment can be created
-        let checksum = match &registration.checksum {
-            Some(checksum) => checksum,
-            None => {
-                println!("Error: Registration is not closed.");
-                return None;
-            }
+        let checksum = if let Some(checksum) = &registration.checksum {
+            checksum
+        } else {
+            println!("Error: Registration is not closed.");
+            return None;
         };
 
         let commitment = get_commitment::<N>(checksum, msg).to_vec();
@@ -61,7 +60,7 @@ impl AlbaThresholdSignature {
         }
 
         // Collect the byte representation of valid signatures into a Vec
-        let prover_set: Vec<Element> = valid_signatures.keys().cloned().collect();
+        let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
 
         // Create the Alba proof using the prover set
         let alba = CentralizedTelescope::create(params);
@@ -76,8 +75,8 @@ impl AlbaThresholdSignature {
 
         // Return the constructed AlbaThresholdSignature
         Some(Self {
-            indices,
             proof,
+            indices,
             commitment,
         })
     }
@@ -90,12 +89,11 @@ impl AlbaThresholdSignature {
         msg: &[u8],
     ) -> bool {
         // Check if the checksum exists in the registration
-        let checksum = match &registration.checksum {
-            Some(checksum) => checksum,
-            None => {
-                println!("Error: Registration is not closed.");
-                return false;
-            }
+        let checksum = if let Some(checksum) = &registration.checksum {
+            checksum
+        } else {
+            println!("Error: Registration is not closed.");
+            return false;
         };
 
         // Compute the commitment and compare with the stored commitment

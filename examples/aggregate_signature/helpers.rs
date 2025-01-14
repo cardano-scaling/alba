@@ -31,12 +31,11 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 
     for sig in signature_list {
         if let Some(verification_key) = registration.registered_keys.get(&sig.index) {
-            let checksum = match &registration.checksum {
-                Some(checksum) => checksum,
-                None => {
-                    println!("Error: Registration is not closed. Cannot verify signatures.");
-                    continue;
-                }
+            let checksum = if let Some(checksum) = &registration.checksum {
+                checksum
+            } else {
+                println!("Error: Registration is not closed. Cannot verify signatures.");
+                continue;
             };
 
             if sig.verify::<N>(checksum, msg, verification_key) {
@@ -59,23 +58,21 @@ pub(crate) fn validate_signatures(
 ) -> bool {
     let mut signatures = Vec::with_capacity(alba_threshold_signature.proof.element_sequence.len());
     for sig_bytes in &alba_threshold_signature.proof.element_sequence {
-        match Signature::from_bytes(sig_bytes.as_slice()) {
-            Ok(signature) => signatures.push(signature),
-            Err(_) => {
-                println!("Error: Failed to parse signature from bytes.");
-                return false;
-            }
+        if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
+            signatures.push(signature)
+        } else {
+            println!("Error: Failed to parse signature from bytes.");
+            return false;
         }
     }
     let signature_refs: Vec<&Signature> = signatures.iter().collect();
-    let aggregate_signature = match AggregateSignature::aggregate(signature_refs.as_slice(), false)
-    {
-        Ok(agg_sig) => agg_sig.to_signature(),
-        Err(_) => {
+    let aggregate_signature =
+        if let Ok(agg_sig) = AggregateSignature::aggregate(signature_refs.as_slice(), false) {
+            agg_sig.to_signature()
+        } else {
             println!("Error: Failed to aggregate signatures.");
             return false;
-        }
-    };
+        };
 
     let public_key_refs: Vec<&PublicKey> = alba_threshold_signature
         .indices
@@ -89,12 +86,11 @@ pub(crate) fn validate_signatures(
     }
 
     let aggregate_public_key =
-        match AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
-            Ok(agg_pk) => agg_pk.to_public_key(),
-            Err(_) => {
-                println!("Error: Failed to aggregate public keys.");
-                return false;
-            }
+        if let Ok(agg_pk) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
+            agg_pk.to_public_key()
+        } else {
+            println!("Error: Failed to aggregate public keys.");
+            return false;
         };
 
     let result = aggregate_signature.verify(false, msg, &[], &[], &aggregate_public_key, false);

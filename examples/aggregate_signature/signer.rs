@@ -47,12 +47,11 @@ impl Signer {
     ) -> Option<RegisteredSigner> {
         let index = registration.get_index_of_key(&self.verification_key)?;
 
-        let checksum = match &registration.checksum {
-            Some(checksum) => checksum.clone(),
-            None => {
-                println!("Error: Registration is not closed. Cannot create a registered signer.");
-                return None;
-            }
+        let checksum = if let Some(checksum) = &registration.checksum {
+            checksum.clone()
+        } else {
+            println!("Error: Registration is not closed. Cannot create a registered signer.");
+            return None;
         };
 
         Some(RegisteredSigner {

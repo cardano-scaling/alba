@@ -22,7 +22,7 @@ impl IndividualSignature {
         let commitment = get_commitment::<N>(checksum, msg);
         let result = self
             .signature
-            .verify(false, &commitment, &[], &[], &verification_key, false);
-        return result == BLST_ERROR::BLST_SUCCESS;
+            .verify(false, &commitment, &[], &[], verification_key, false);
+        result == BLST_ERROR::BLST_SUCCESS
     }
 }
