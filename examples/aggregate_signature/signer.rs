@@ -25,33 +25,41 @@ pub(crate) struct RegisteredSigner {
 }
 
 impl Signer {
-    /// Create signing key and verification key of a signer
+    /// Create signing key and verification key for a signer
     pub(crate) fn init(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
+
         let sk = SecretKey::key_gen(&ikm, &[])
-            .expect("Error occurs when the length of ikm < 32. This will not happen here.");
+            .expect("Error: Key generation failed due to insufficient IKM length. This should never happen.");
         let vk = sk.sk_to_pk();
+
         Self {
             signing_key: sk,
             verification_key: vk,
         }
     }
 
-    /// Create a new registered signer if signer's key exists in closed registration
+    /// Create a new registered signer if the signer's key exists in the closed registration
     pub(crate) fn new_signer<const N: usize>(
         &self,
         registration: &Registration,
     ) -> Option<RegisteredSigner> {
-        if let Some(index) = registration.get_index_of_key(&self.verification_key) {
-            Some(RegisteredSigner {
-                signing_key: self.signing_key.clone(),
-                index,
-                checksum: registration.checksum.clone().unwrap(),
-            })
-        } else {
-            None
-        }
+        let index = registration.get_index_of_key(&self.verification_key)?;
+
+        let checksum = match &registration.checksum {
+            Some(checksum) => checksum.clone(),
+            None => {
+                println!("Error: Registration is not closed. Cannot create a registered signer.");
+                return None;
+            }
+        };
+
+        Some(RegisteredSigner {
+            signing_key: self.signing_key.clone(),
+            index,
+            checksum,
+        })
     }
 }
 
