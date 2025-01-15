@@ -29,21 +29,22 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 ) -> HashMap<Element, usize> {
     let mut valid_signatures = HashMap::new();
 
-    for sig in signature_list {
-        if let Some(verification_key) = registration.registered_keys.get(&sig.index) {
-            let Some(checksum) = &registration.checksum else {
-                println!("Error: Registration is not closed. Cannot verify signatures.");
-                continue;
-            };
-
-            if sig.verify::<N>(checksum, msg, verification_key) {
-                valid_signatures.insert(sig.signature.to_bytes(), sig.index);
+    match &registration.checksum {
+        Some(checksum) => {
+            for sig in signature_list {
+                if let Some(verification_key) = registration.registered_keys.get(&sig.index) {
+                    if sig.verify::<N>(checksum, msg, verification_key) {
+                        valid_signatures.insert(sig.signature.to_bytes(), sig.index);
+                    }
+                } else {
+                    println!("Warning: No verification key found for index {}", sig.index);
+                }
             }
-        } else {
-            println!("Warning: No verification key found for index {}", sig.index);
+        }
+        None => {
+            println!("Error: Registration is not closed. Cannot verify signatures.");
         }
     }
-
     valid_signatures
 }
 

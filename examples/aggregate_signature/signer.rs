@@ -53,7 +53,7 @@ impl Signer {
                 println!("Key already registered!");
                 return None;
             }
-            let index = registration.registered_keys.len().clone() + 1;
+            let index = registration.registered_keys.len() + 1;
             registration
                 .registered_keys
                 .insert(index, self.verification_key);

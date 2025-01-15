@@ -21,8 +21,6 @@ pub(crate) struct AlbaThresholdSignature {
     pub(crate) proof: Proof,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
-    /// Commitment `Hash(checksum || msg)`
-    pub(crate) commitment: Vec<u8>,
 }
 
 impl AlbaThresholdSignature {
@@ -36,27 +34,17 @@ impl AlbaThresholdSignature {
         msg: &[u8],
         set_size: usize,
     ) -> Option<Self> {
-        // Ensure that the registration is closed
-        let Some(checksum) = &registration.checksum else {
-            println!("Error: Registration is not closed.");
-            return None;
-        };
-
-        let commitment = get_commitment::<N>(checksum, msg).to_vec();
-
         // Collect valid individual signatures' byte representation into a hashmap
         let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
-
         // Check if there are enough valid signatures
         if valid_signatures.len() < set_size {
             println!(
-                "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
-                set_size,
-                valid_signatures.len()
-            );
+                    "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
+                    set_size,
+                    valid_signatures.len()
+                );
             return None;
         }
-
         // Collect the byte representation of valid signatures into a Vec
         let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
 
@@ -72,11 +60,7 @@ impl AlbaThresholdSignature {
             .collect();
 
         // Return the constructed AlbaThresholdSignature
-        Some(Self {
-            proof,
-            indices,
-            commitment,
-        })
+        Some(Self { proof, indices })
     }
 
     /// Verify AlbaThresholdSignature. Validate individual signatures and verify Alba proof.
@@ -92,12 +76,8 @@ impl AlbaThresholdSignature {
             return false;
         };
 
-        // Compute the commitment and compare with the stored commitment
+        // Compute the commitment
         let commitment = get_commitment::<N>(checksum, msg).to_vec();
-        if commitment != self.commitment {
-            println!("Error: Commitment mismatch.");
-            return false;
-        }
 
         // Aggregate the signatures and verify them at once
         if !validate_signatures(self, registration, &commitment) {
@@ -114,7 +94,6 @@ impl AlbaThresholdSignature {
         } else {
             println!("Error: Alba proof verification failed.");
         }
-
         result
     }
 }
