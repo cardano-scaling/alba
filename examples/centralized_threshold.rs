@@ -36,7 +36,7 @@ impl AlbaThresholdSignature {
         msg: &[u8],
         set_size: usize,
     ) -> Option<Self> {
-        // Ensure that the commitment can be created
+        // Ensure that the registration is closed
         let Some(checksum) = &registration.checksum else {
             println!("Error: Registration is not closed.");
             return None;
@@ -50,7 +50,7 @@ impl AlbaThresholdSignature {
         // Check if there are enough valid signatures
         if valid_signatures.len() < set_size {
             println!(
-                "Error: Not enough signatures! Expected at least {}, but got {}.",
+                "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
                 set_size,
                 valid_signatures.len()
             );
@@ -60,7 +60,7 @@ impl AlbaThresholdSignature {
         // Collect the byte representation of valid signatures into a Vec
         let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
 
-        // Create the Alba proof using the prover set
+        // Initialise Alba with the parameters and generates a proof using the prover set
         let alba = CentralizedTelescope::create(params);
         let proof = alba.prove(&prover_set)?;
 
@@ -86,7 +86,7 @@ impl AlbaThresholdSignature {
         registration: &Registration,
         msg: &[u8],
     ) -> bool {
-        // Check if the checksum exists in the registration
+        // Ensure that the registration is closed, and retrieve the correct checksum
         let Some(checksum) = &registration.checksum else {
             println!("Error: Registration is not closed.");
             return false;
@@ -99,13 +99,13 @@ impl AlbaThresholdSignature {
             return false;
         }
 
-        // Validate the individual signatures
+        // Aggregate the signatures and verify them at once
         if !validate_signatures(self, registration, &commitment) {
             println!("Error: Signature validation failed.");
             return false;
         }
 
-        // Create the Alba proof and verify it
+       // Initialise Alba with the parameters and generates a proof using the prover set
         let alba = CentralizedTelescope::create(params);
         let result = alba.verify(&self.proof);
 

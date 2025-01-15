@@ -60,10 +60,10 @@
   - Creates the commitment,
   - Collects the valid signatures with `collect_valid_signatures`,
   - If the length of valid signatures is less than the set size provided, abort the process,
-  - Create the prover set by collecting only the signatures from the hash map of valid signatures,
-  - Create the alba proof,
-  - Collect the registration indices of the elements that are in the alba proof by using valid signatures hashmap.
-  - Return the alba proof, indices, and the commitment.
+  - Creates the prover set by collecting only the signatures from the hash map of valid signatures,
+  - Creates the alba proof,
+  - Collects the registration indices of the elements that are in the alba proof by using valid signatures hashmap.
+  - Returns the alba proof, indices, and the commitment.
 - The `verify` function:
   - Checks whether the registration is closed,
   - Creates the commitment and compares it with the provided commitment,
