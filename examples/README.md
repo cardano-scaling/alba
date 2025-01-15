@@ -17,17 +17,17 @@
     - Candidate signer, 
     - including only the signing key and its verification key.
     - Initialization of a new signer is done by `init` function.
-    - New registered signer can be created based on this signer with closed registration by `new_signer` function.
+    - A signer can register its verification key by `register` function if it is not already registered or the registration is still open. 
+      - This will return a `RegisteredSigner` if registration succeeds.
   - `RegisteredSigner`:
-    - is a signer whose verification key exists in closed registration. 
-    - Contains signer's signing key, checksum of the closed registration, and the registration index corresponding to signer's verification key.
+    - is a signer whose verification key exists in registration. 
+    - Contains signer's signing key, checksum (ff the registration is closed), and the registration index corresponding to signer's verification key.
+    - After the registration is closed, registered signer update itself with `get_closed_registration` to fill its checksum from closed registration.
     - Registered signer can create an `IndividualSignature` by signing `commitment = Hash(checksum||msg)` with `sign` function.
 
 ### Registration
 - Registration includes registered keys as a `BTreeMap` and the checksum of all registered keys.
 - New registration is initialized by `new` function with an empty `BTreeMap`. Checksum is not initialized in this phase.
-- With the function `register`, a verification key is registered if the registration is not closed and the verification key is not already registered.
-- The key value of a verification key is returned with `get_index_of_key` function if the registration is closed and the verification key exists. 
 - Registration process is closed with `close` function if the registration is not already closed. It is done by hashing all verification keys registered into the `checksum`.
 
 ### Signature
