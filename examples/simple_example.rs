@@ -71,32 +71,33 @@ impl ThresholdSignature {
     fn validate_signatures(&self, msg: &[u8]) -> bool {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         for sig_bytes in &self.proof.element_sequence {
-            if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
-                signatures.push(signature);
-            } else {
-                println!("Error: Failed to parse signature from bytes.");
+            let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) else {
                 return false;
-            }
+            };
+            signatures.push(signature);
         }
         let signature_refs: Vec<&Signature> = signatures.iter().collect();
-        let aggregate_signature =
-            if let Ok(agg_sig) = AggregateSignature::aggregate(signature_refs.as_slice(), false) {
-                agg_sig.to_signature()
-            } else {
-                println!("Error: Failed to aggregate signatures.");
-                return false;
-            };
+        let Ok(aggregate_signature) =
+            AggregateSignature::aggregate(signature_refs.as_slice(), false)
+        else {
+            return false;
+        };
+        let final_signature = aggregate_signature.to_signature();
 
         let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
-        let aggregate_public_key =
-            if let Ok(agg_pk) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false) {
-                agg_pk.to_public_key()
-            } else {
-                println!("Error: Failed to aggregate public keys.");
-                return false;
-            };
+        let Ok(aggregate_verification_key) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false)else {
+            return false;
+        };
+        let final_verification_key = aggregate_verification_key.to_public_key();
 
-        let result = aggregate_signature.verify(false, msg, &[], &[], &aggregate_public_key, false);
+        let result = final_signature.verify(
+            false,
+            msg,
+            &[],
+            &[],
+            &final_verification_key,
+            false,
+        );
         result == BLST_ERROR::BLST_SUCCESS
     }
 
