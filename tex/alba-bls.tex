@@ -1,0 +1,555 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[dvipsnames]{xcolor}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage{algpseudocodex}
+\usepackage{xspace}
+
+\mathchardef\mhyphen="2D
+\newcommand{\isequal}{\ensuremath{==}\xspace}
+
+\newcommand{\Zp}{\ensuremath{\mathbb{Z}_p}\xspace}
+\newcommand{\G}[1]{\ensuremath{\mathbb{G}_{#1}}\xspace}
+\newcommand{\Hash}[1]{\ensuremath{\textrm{H}_{#1}}\xspace}
+\newcommand{\vk}[1]{\ensuremath{\textrm{vk}_{#1}}\xspace}
+\newcommand{\sk}[1]{\ensuremath{\textrm{sk}_{#1}}\xspace}
+\newcommand{\e}[2]{\ensuremath{e(#1,\xspace #2)}\xspace}
+\newcommand{\m}{\ensuremath{\textrm{msg}}\xspace}
+\newcommand{\acc}{\ensuremath{\textrm{acc}}\xspace}
+\newcommand{\aux}{\ensuremath{\textrm{aux}}\xspace}
+\newcommand{\set}{\ensuremath{\textrm{set}}\xspace}
+\newcommand{\pp}{\ensuremath{\textrm{params}}\xspace}
+\newcommand{\reg}[1]{\ensuremath{\textrm{reg}_{#1}}\xspace}
+\newcommand{\stake}[1]{\ensuremath{\textrm{stake}_{#1}}\xspace}
+\newcommand{\lotto}[1]{\ensuremath{\textrm{lotto}_{#1}}\xspace}
+\newcommand{\indices}[1]{\ensuremath{\textrm{indices}_{#1}}\xspace}
+\newcommand{\ivk}{\ensuremath{\textrm{ivk}}\xspace}
+
+\newcommand{\Acc}{\ensuremath{\mathsf{Acc}}\xspace}
+\newcommand{\pair}{\ensuremath{\mathsf{pair}}\xspace}
+\newcommand{\BLS}{\ensuremath{\mathsf{BLS}}\xspace}
+\newcommand{\Merkle}{\ensuremath{\mathsf{Merkle}}\xspace}
+\newcommand{\Mithril}{\ensuremath{\mathsf{Mithril}}\xspace}
+\newcommand{\Alba}{\ensuremath{\mathsf{Alba}}\xspace}
+\newcommand{\Lottery}{\ensuremath{\mathsf{Lottery}}\xspace}
+\newcommand{\Vote}{\ensuremath{\mathsf{Vote}}\xspace}
+\newcommand{\AlbaBls}{\ensuremath{\mathsf{Alba}\mhyphen\mathsf{BLS}\xspace}}
+
+\newcommand{\KeyGen}{\ensuremath{\mathsf{KeyGen}}\xspace}
+\newcommand{\Sign}{\ensuremath{\mathsf{Sign}}\xspace}
+\newcommand{\Verify}{\ensuremath{\mathsf{Verify}}\xspace}
+\newcommand{\Aggregate}{\ensuremath{\mathsf{Aggregate}}\xspace}
+\newcommand{\AggVerify}{\ensuremath{\mathsf{AggVerify}}\xspace}
+\newcommand{\Setup}{\ensuremath{\mathsf{Setup}}\xspace}
+\newcommand{\Add}{\ensuremath{\mathsf{Add}}\xspace}
+\newcommand{\Prove}{\ensuremath{\mathsf{Prove}}\xspace}
+\newcommand{\Commit}{\ensuremath{\mathsf{Commit}}\xspace}
+\newcommand{\Register}{\ensuremath{\mathsf{Register}}\xspace}
+% \newcommand{\Check}{\ensuremath{\mathsf{Check}}\xspace}
+
+% \newcommand{\leftarrow}{\ensuremath{\xleftarrow{}}\xspace}
+\newcommand{\sample}{\ensuremath{\xleftarrow{\$}}\xspace}
+
+\newcommand{\raph}[1]{\textcolor{blue}{Raph: #1}\xspace}
+\newcommand{\dimitar}[1]{\textcolor{violet}{Dimitar: #1}\xspace}
+
+\newcommand{\todo}[1]{\textcolor{red}{TODO: #1}\xspace}
+
+
+\title{Snarkifying STMs and ALBA-BLS}
+\author{Raphael Toledo}
+\date{December 2024}
+
+\begin{document}
+
+\maketitle
+
+%
+%
+%
+\section{Introduction}
+This is a short document on snarkifying STMs as well as ALBA-BLS, that is the combination of Alba and Mithril (BLS signatures) to obtain a scheme with better performances for the Peras and Leios projects.
+
+%
+%
+\subsection{Notations}
+We denote by $\leftarrow$ the assignment and by $ \sample$ the uniform sampling from a definition, e.g. $r \sample \Zp$ is an element taken at uniformly random of \Zp. 
+
+Let $\mathcal{G} = (p,\G{1}, \G{2}, \G{T}, g_1, g_2, g_T, \e{\cdot}{\cdot})$ be a secure asymmetric bilinear group where $g_1$, $g_2$, $g_T$ are generators of the groups \G{1}, \G{2}, \G{T} of prime order $p$ and $e \colon \G{1} \times \G{2} \xrightarrow{} \G{T}$ is an efficient map such that $\e{g_1}{g_2} = g_T$. For readability, we may omit $\mathcal{G}$ from the algorithms' interface.
+
+Let $\Hash{\mathcal{X}} : \{0,1\}^* \leftarrow \mathcal{X}$ an efficient hash function which outputs an element of set $\mathcal{X}$, be it \Zp or \G{x} where $x \in \{1,2,T\}$. We may abuse notations and define \Hash{} as outputting elements in $\{0,1\}^k$ with $k$ depending on the context or use as input of \Hash{} the binary representation of an integer or group element.
+
+The function $\textsf{Card}(\mathcal{X})$ returns the cardinality of the set $\mathcal{X}$.
+
+The symbol $\isequal$ is an equality check.
+
+%
+%
+%
+\section{Cryptographic Primitives}
+
+%
+%
+\subsection{Signature schemes}
+A signature scheme is a tuple of algorithm $(\KeyGen, \Sign, \Verify)$
+\begin{itemize}
+    \item $(\sk{}, \vk{}) \sample \KeyGen(\mathcal{G})$: Sample the private key $\sk{}$ and corresponding public key $\vk{}$ and return $(\sk{}, \vk{})$
+    %
+    \item $\sigma \leftarrow \Sign(\sk{}, \m)$: Generate the signature $\sigma$ on message \m using secret key $\sk{}$.
+    %
+    \item $0/1 \leftarrow \Verify(\vk{}, \sigma, \m)$: Return 1 if $\sigma$ is a valid signature on message \m using verification key $\vk{}$, otherwise 0.
+\end{itemize}
+
+%
+\subsubsection{BLS signature}
+
+The BLS signature scheme is a tuple of algorithm $\BLS.(\KeyGen, \Sign, \Verify)$ defined over Let the bilinear group $\mathcal{G} = (p,\G{1}, \G{2}, \G{T}, g_1, g_2, g_T, \e{\cdot}{\cdot})$ defined as follows.
+
+\begin{itemize}
+    \item $(\sk{}, \vk{}) \sample \KeyGen(\mathcal{G})$: Sample $\sk{} \sample \Zp$, and return $(\sk{}, {g_2}^\sk{})$
+    %
+    \item $\sigma \leftarrow \Sign(\sk{}, m)$: Return $\Hash{\G{1}}(m)^\sk{}$
+    %
+    \item $0/1 \leftarrow \Verify(\vk{}, \sigma, m)$: Return 1 if $\e{\Hash{\G{1}}(m)}{\vk{}} = \e{\sigma}{g_2}$, otherwise 0.
+\end{itemize}
+
+\noindent\textbf{Remark.} Note that we can inverse the groups for the verification key, the signature and message.\\
+
+\noindent\textbf{Remark.} We may batch the verification of several signatures for the same message using trusted keys, by checking that $\e{\Hash{\G{1}}(m)}{\Pi_i\ \vk{i}} = \e{\Pi_i\ \sigma_i}{g_2}$. We may call $\mu = \Pi_i\ \sigma_i$ the \textit{aggregated} signature and similarly $\ivk = \Pi_i\ \vk{i}$ the \textit{aggregated} key.\\
+
+Using \BLS signatures with the BLS12-381 elliptic curve, the verification key is 192 byte long (96 when compressed) and the signature 96 byte long (48 when compressed).
+
+
+%
+%
+\subsection{Cryptographic accumulators}
+We are succinctly presenting here static accumulators.  We do not require proofs of non-membership.
+
+A static \dimitar{dynamic?} cryptographic accumulator is composed of the following algorithms $\Acc.(\Setup, \Add, \Commit, \Prove, \Verify)$:
+\begin{itemize}
+    \item $(\acc_0, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Initialize the accumulator $\acc_0$ and outputs the accumulator parameters $\pp_\acc$ that we may omit from now on for readability.
+    %
+    \item $(\acc', \aux) \leftarrow \Add(\acc, x)$: Add the element $x$ to the accumulator, returning the newly updated accumulated value and auxiliary information, e.g. the index of the element for ordered accumulator.
+    %
+    \item $C_\acc \leftarrow \Commit(\acc)$: Returns the accumulator commitment.
+    %
+    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, \aux)$: Returns a proof of membership of the element $x$ in accumulator $\acc$ with auxiliary information $\aux$ if $x$ is in the accumulator, otherwise $\bot$
+    %
+    \item $0/1 \leftarrow \Verify(C_\acc, x, \pi_{\acc, x})$: Returns 1 if the proof of membership of $x$ in the accumulator $\acc$ verifies, otherwise 0.
+\end{itemize}
+
+\noindent\textbf{Remark.} We could also consider static accumulators. In that case, there is no \Add nor \Commit algorithms, and the \Setup algorithm also takes as input all elements to accumulate and returns as well the accumulator commitment.\\
+
+Some accumulators also provide a batch verification algorithm that we define as follow.
+\begin{itemize}
+    \item $0/1 \leftarrow \AggVerify(C_\acc, \{\pi_{\acc, x_i}, x_i\}_i)$
+\end{itemize}
+
+%
+\subsubsection{Merkle tree}
+A Merkle tree is an ordered accumulator that does not present aggregate verification. It is a binary tree that uses recursive hashing of its leaves to obtain a succinct representation of its element, called the tree root. 
+
+We are looking here at the use of a Merkle tree in the context of key registration. As such, we define the following algorithms $\Merkle.(\Setup, \Add, \Commit, \Prove, \Verify)$:
+\begin{itemize}
+    \item $(\acc, \pp_\acc]) \leftarrow \Setup(1^\lambda)$: Return the empty set $\emptyset$ and outputs as parameteres the number of elements 0.
+    %
+    \item $(\acc', \aux) \leftarrow \Add(\acc, x)$: Add the element $x$ to the set at the position $i = \pp_\acc$,  $\acc' = \acc\ \bigcup\ \{x\}$,  increment the parameters $\pp_\acc +=1$ and return $\acc', \textsf{Card}(\acc')$.
+    %
+    \item $C_\acc \leftarrow \Commit(\acc)$: Compute a Merkle tree of depth $\log_2(\pp_\acc)$ with ordered leaves the elements of \acc, recursively hash the leaves and returns the tree root.
+    %
+    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, \aux)$: If $x$ is the $i^{\mathrm{th}}$ element of \acc, return its Merkle path, otherwise $\bot$.
+    %
+    \item $0/1 \leftarrow \Verify(C_\acc, x, \pi_{\acc, x})$: Parse $\pi_{\acc, x}$ as the tuple of Merkle nodes $(y_0, \dots, y_{\log_2(\pp_\acc)})$ and return $\Hash{}(y_n \ ||\ \Hash{}(y_{n-1}\ ||\ \Hash{}(... \Hash{}( y_0 ||x)...)) \isequal C_\acc$.
+\end{itemize}
+
+%
+\subsubsection{Pairing-based accumulator}
+A pairing based accumulator is an accumulator defined on a bilinear group $\mathcal{G} = (p,\G{1}, \G{2}, \G{T}, g_1, g_2, g_T, \e{\cdot}{\cdot})$ supporting batch verification. These accumulators usually rely on Common Reference Strings (CRS) and thus are bounded.
+We present here a shorter version of~\cite{srinivasan2022batching}, itself being a variant of Nguyen~\cite{nguyen2005accumulators} original scheme composed of the algorithms $\Acc_\pair.(\Setup, \Add, \Commit, \Prove, \Verify, \AggVerify)$.
+
+\begin{itemize}
+    \item $(\acc, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Let $T = ((g_1, g_1^\tau, \dots, g_1^{\tau^n}), (g_2, g_2^\tau, \dots, g_2^{\tau^n}))$ be the $n$ powers of $\tau$ of $\mathcal{G}$ where $n$ is the maximum capacity of the accumulator. Return $(\acc =\emptyset, \pp_\acc=T)$
+    %
+    \item $(\acc', \_) \leftarrow \Add(\acc, x)$: Add the scalar element $x$ to the set \acc, $\acc' = \acc\ \bigcup\ \{x\}$ and return it.
+    %
+    \item $C_\acc \leftarrow \Commit(\acc)$: Return $\Pi_{x_i \in \acc}\ g_1^{(\tau + x_i)}$.
+    %
+    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, \_)$: If $x \in \acc$, return $\Pi_{x_i \in \acc, x_i \neq x}\ g_1^{(\tau + x_i)}$ else $\bot$.
+    %
+    \item $0/1 \leftarrow \Verify(C_\acc, x, \pi_{\acc, x})$: Return $\e{\pi_{\acc, x}}{g_2^x \cdot g_2^\tau} \isequal \e{C_\acc}{g_2}$
+    %
+    \item $0/1 \leftarrow \AggVerify(C_\acc, \{\pi_{\acc, x_i}, x_i\}_n)$:
+    Sample $\gamma \sample \Zp$. Let $\Gamma = \sum_i \gamma^i$. Compute the aggregated $\pi_\text{agg} = \Pi_i \gamma^i \pi_{\acc, x_i}$ and batched proofs $\pi_\text{batch} = \Pi_i \gamma^i \pi_{\acc, x_i}^{x_i}$  and return $\e{\pi_\text{batch}}{g_2}\ \cdot\ \e{\pi_\text{agg}}{g_2^\tau} \isequal \e{C_\acc}{g_2^\Gamma}$.
+\end{itemize}
+
+%
+\subsubsection{KZG Polynomial Commitment variation as accumulator}
+A KZG polynomial commitment is defined on a bilinear group $\mathcal{G} = (p,\G{1}, \G{2}, \G{T}, g_1, g_2, g_T, \e{\cdot}{\cdot})$ supporting batch verification. To use this commitment as accumulator, we shall work on the interpolation polynomial however: we will want to prove that a polynomial commitment evaluate to our element in a given point.
+
+We define the KZG accumulator as the tuple of algorithms\\ $\Acc_{\textsf{KZG}}.(\Setup, \Add, \Commit, \Prove, \Verify, \AggVerify)$:
+
+\begin{itemize}
+    \item $(\acc, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Let $T = ((g_1, g_1^\tau, \dots, g_1^{\tau^n}), (g_2, g_2^\tau))$ be the $n$ powers of $\tau$ of $\mathcal{G}$ where $n$ is the maximum capacity of the accumulator. Let $S =\{1, \omega, \cdots \omega^{n-1}\}$ the set of n roots of unity (we could have chosen any distinct elements, but this set has advantages when using SNARKs).  Return $(\acc = \emptyset, \pp_\acc = (T, S))$
+    %
+    \item $(\acc', i) \leftarrow \Add(\acc, x)$: If $\textsf{Card}(\acc) < n$, add the element $x$ to the set \acc, $\acc' = \acc\ \bigcup\ \{x\}$ and returns it.
+    %
+    \item $C_\acc \leftarrow \Commit(\acc)$: Let $f(X) = \sum_i a_i X^i = \text{ifft}(S, \acc)$ where $\text{ifft}(X,Y)$ is the interpolation of coordinates $(x_i,y_i)$. Return $f(g_1^\tau)$.
+    %
+    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, i)$: If $x \in \acc$, let $i$ the position of $x$ in $\acc$, let $h(X) = \frac{f(X) - x}{X-\omega^i}$ with $f(X) = \text{ifft}(S, \acc)$, return $(i, h(g_1^\tau))$ else $\bot$.
+    %
+    \item $0/1 \leftarrow \Verify(C_\acc, x, \pi_{\acc, x})$: Format $\pi_{\acc, x}$ as $(i, \pi_x)$ and return the pairing check $\e{C_\acc - g_1^x}{g_2} \cdot \e{- \pi_x}{g_2^{\tau - \omega^i}} \isequal 1$
+    %
+    \item $0/1 \leftarrow \AggVerify(C_\acc, \{\pi_{\acc, x_i}, x_i\}_n)$:
+    Sample the random coin $\gamma \sample \Zp$ and compute the aggregated coins $\Gamma = \sum_i \gamma^i$. Return the pairing check $\e{C_\acc^\Gamma - g_1^{\sum_i \gamma^i x_i} + \sum_i \pi_{x_i}^{\gamma^i \omega^i}}{g_2} \cdot \e{- \sum_i \pi_{x_i}^{\gamma^i}}{g_2^{\tau}} \isequal 1$
+\end{itemize}
+
+%
+\subsubsection{KES accumulator}
+\todo{Cache based. The cold keys are stored in cache (can be revoked and changed through an independent system), and the hot keys are provided in the signature with a proof.} \raph{Is this an "accumulator"? Does this fit with the interface previously defined?}
+
+%
+%
+\subsection{Lottery schemes}
+A signature scheme is a tuple of algorithm $(\Prove, \Verify)$
+\begin{itemize}
+    \item $(l_i, \indices{i}, \pi_{\Lottery, i}) \leftarrow \Prove(\sk{i}, \m, \stake{i}, \stake{}, \aux_\Lottery)$: Compute out of the party's secret key \sk{i}, message \m, local stake \stake{i}, total stake \stake{} and some auxiliary information $\aux_\Lottery$, the number of winning lottery tickets $l_i$, the winning ticket numbers $\indices{i}$ and the proof of eligibility $\pi_{\Lottery, i}$.
+    \item $0/1 \leftarrow \Verify(\vk{i}, \m, l_i, \indices{i}, \pi_{\Lottery, i})$: Return 1 if the proof of eligibility is $\pi_{\Lottery, i}$ is valid for the $l_i$ lottery numbres $\indices{i}$, and message \m using the verification key $\vk{i}$, otherwise 0. \raph{We may need the stakes here too}
+\end{itemize}
+
+%
+\subsubsection{\Alba's Lottery}
+\todo{}
+
+%
+\subsubsection{\Mithril's Lottery}
+In the paper, use Dense Mapping function, based on Elligator to return a number from a group element.\\
+
+In code, compares a hash $\text{ev} \in \{0,1\}^{512}$ cast as integer and mapped to the interval $[0,1]$, $p = \text{ev} / 2^{512}$, to a real number $\phi_f \in [0, 1]$ $p < 1 - (1 - \phi_f)^{w}$ where $w = \frac{\stake{i}}{\stake{}}$ is the relative stake.
+\todo{}
+
+%
+\subsubsection{Sortition}
+Compares a VRF's hash to the CDT of a binomal distribution, returning a integer in $[0, \stake{i}]$.
+\todo{}
+
+%
+%
+%
+\section{Certification generation}
+
+%
+%
+\subsection{High-level Overview}
+
+We can model a certification as a protocol with six algorithms:
+\begin{itemize}
+    \item $\pp \leftarrow \Setup(1^\lambda, \text{threshold}, \aux_\pp)$.
+    Setup the parameters \pp depending on the security parameter $\lambda$, threshold to reach and auxiliary parameters $\aux_\pp$. We omit \pp from the following algorithms for readability.
+    \item $(\pi_{\acc,i}, \aux_{\acc,i}) \leftarrow \Register(\reg{i}=(\vk{i}, \stake{i}))$, each party register their key $\vk{i}$ and stake $\stake{i}$ in an accumulator which will be committed, with committed value $C_\acc$, once the registration is closed retrieving their proof of membership $\pi_{\acc, \reg{i}}$. Some auxiliary information $\aux_{\acc, i}$ may also be returned such as the total stake $\stake{}$ or other variables to facilitate the handling of membership proofs.
+    
+    \item $\sigma_i / \bot \leftarrow \Vote(\sk{i}, \m, C_\acc, \stake{i}, \pi_{\acc,i}, \aux_{\acc,i})$.
+    The voter first plays locally a lottery using their secret key \sk{i} and stake \stake{i}, and the total stake \stake{} to find out how many $l_i$ votes they are entitled to, the numbers of the winning tickets $\indices{i}$ and getting a proof of eligibility $\pi_{\Lottery, i}$. 
+    If the voter has lost the lottery, i.e. $l_i = 0$, the algorithm aborts and returns $\bot$.
+    Otherwise, the algorithm generates a vote $\sigma_i$ on the message \m using the voter's secret key \sk{i}, the accumulator commitment $C_\acc$, the proof of membership $ \pi_{\acc,i}$, accumulator auxiliary information $\aux_{\acc,i}$, number of winning lottery tickets $l_i$, the corresponding ticket numbers $\indices{i}$, and the proof of eligibility $\pi_{\Lottery, i}$.
+    The algorithm returns then the vote $\sigma_i$ that is meant to be sent together with the verification key \vk{i} derived from \sk{i} to the aggregator.
+
+    \item $0/1 \leftarrow \Verify(\sigma_i, \vk{i}, \m)$.
+    The verifier verifies the vote $\sigma_{i}$ on message \m with the verification key $\vk{i}$ and returns 1 if the verification is succesful, otherwise 0.
+    
+    \item $\tau / \bot \leftarrow \Aggregate(\{\sigma_i, \vk{i}\}, \m)$, the aggregator after checking each vote, aggregates them in a certificate.  The aggregator may optionally compress even more the certificate, for instance by choosing a more succinct format or relying on zero-knowledge proofs. 
+    
+    \item $0/1 \leftarrow \AggVerify(\tau, \m)$.
+    After decompressing the certificate if needs be, the verifier verifies the certificate $\tau$  on message \m and returns 1 if the verification is successful, otherwise 0.
+\end{itemize}
+
+As we can see, the protocol consists of the following three main structures:
+\begin{itemize}
+    \item the Accumulator, this structure comprises all verification keys (and corresponding stakes). It can be committed to a value, and parties can prove and verify memberships of elements in the accumulator.
+    \item the Vote, this structure comprises the signature on a message, as well as the proof of eligibility for voting and a proof of registration, i.e. the proof of membership to an accumulator.
+    \item the Certificate, this structure demonstrates knowledge of a quorum valid votes from registered parties on a specific message.
+\end{itemize}
+
+%
+%
+\subsection{Mithril signature}
+Mithril~\cite{chaidos2024mithril} is a Stake-based Threshold Multi-signature scheme that relies on \BLS signature properties that can directly be used for certificate generation and Merkle trees as accumulator.
+%
+We store the tuple of keys and stakes as leaves of a Merkle tree that we commit on at each epoch. Each voter pass the corresponding Merkle tree root and Merkle paths as proofs of validity when voting during a given epoch.
+The main advantage of Merkle tree-based accumulator is its verifying time performance and the succinctness of the tree commitment, a single hash. This scheme, however, is costly for proof generation, as the prover needs an extended witness, and the proof size is logarithmic in the tree nodes.
+%
+We define Mithril protocol as the tuple of algorithms $\Mithril.(\Setup, \Register, \Sign, \Verify, \Aggregate, \AggVerify)$.\\
+
+In the setup phase, we generate internal parameters $k$ and $m$ out of the adversarial quorum, the active slot coefficient, the target ratio and the security parameters. The parameter $k$ represents the number of lotteries to win to generate a certificate, i.e. the number of signatures the aggregator will receive, and $m$ is the total number of lotteries done.\\
+
+In the registration phase, each party enters in a Merkle tree their verification key and stake. Once the registration is closed, each party can get the Merkle tree root $C_\acc$ and their Merkle proof.
+$$ (\pi_{\acc, i}, \aux_{\acc, i}) \leftarrow \Mithril.\Register(\vk{i}, \stake{i}) $$
+where $(\_, \aux_i) \leftarrow \Merkle.\Add(\acc, \reg{i})$, $C_\acc = \Merkle.\Commit(\acc_\text{final})$ and $\pi_{\acc, i} \leftarrow \Merkle.\Prove(\acc, \reg{i}, i)$ with $\reg{i} =(\vk{i}, \stake{i})$ and $\acc_\text{final}$ being the accumulator after adding the last element.\\
+
+
+In the voting phase, each party plays the lotteries and depending on the result outputs a Mithril signature composed of the lottery ticket numbers they have won and a \BLS signature on the input message appended to the Merkle tree root, the party's registry, i.e. verification key and stake stored in the tree, the registry's index and finally its Merkle proof. These are then sent to the aggregator.
+$$
+\sigma_{\Mithril, i} \leftarrow \Mithril.\Vote(\sk{i}, \m, C_\acc, \stake{i}, \pi_{\acc, i}, \aux_{\acc, i})
+$$
+where the vote is formatted as $(\sigma_i, \acc_i, \lotto{i}) \leftarrow \sigma_{\Mithril, i}$.
+%
+The lottery information $\lotto{i} = (l_i, \indices{i}, \pi_{\Lottery, i})$ is composed of the number of winning tickets $l_i$, the indices $\indices{i}$ and proof of eligibility $\pi_{\Lottery, i}$ which are generated from the lottery on some message $\m_\Lottery$ composed of a random seed and predeterministic value with the local stake \stake{i}, total stake \stake{} and the internal parameter $m$ for auxiliary information: $(l_i, \indices{i}, \pi_{\Lottery,i})\leftarrow \Lottery(\sk{i}, \m_\Lottery, \stake{i}, \stake{}, \aux_\Lottery = m)$.
+%
+The accumulator information $\acc_i = (C_\acc, \reg{i} = (\stake{i}, \vk{i}), \pi_{\acc, i}, \aux_{\acc, i})$ comprises the accumulator committed value $C_\acc$, the register $i$ composed of the voter's stake \stake{i} and verification key \vk{i}, the proof of membership $\pi_{\acc, i}$ and auxiliary information $\aux_{\acc, i}$, here the register index $i$.
+%
+The signature $\sigma_i$ is a \BLS signature on the message $\m$ and Merkle tree's commitment $C_\acc$: $\sigma_i \leftarrow \BLS.\Sign(\sk{i}, C_\acc || m)$ if the eligibility check passes, that is $l_i \neq 0$, otherwise $\bot$.
+
+The vote can be verified by calling $\Mithril.\Verify(\sigma_{\Mithril, i}, \vk{i}, \m)$ which verifies each subcomponent appropriately.\\
+
+
+In the aggregation phase, the aggregator, after verifying successfully enough vote individually via the \Mithril.\Verify algorithm, aggregates the verification keys together as well as the signatures together. They return these together with a proof of eligibility, accumulation and aggregation of these signatures.
+$$
+\tau_\Mithril \leftarrow \Mithril.\Aggregate(\{\sigma_{\Mithril,i}\}_i, \m)
+$$
+where the certificate is formatted as $\tau \leftarrow (\mu, \ivk, \pi_{C_\acc})$.
+%
+The aggregated signature $\mu$ is the sum of all \BLS signatures $\leftarrow \Pi_i \sigma_i$, and the aggregated key $\ivk$ the sum of all verification keys $\ivk \leftarrow \Pi_i \vk{i}$ the aggregated key. The poofof eligibility, accumulation and aggregation $\pi_{C_\acc}$ can either be computed with a SNARK or simply be the concatenation of all necessary information which is the case implemented in Cardano.
+%
+\Mithril finally uses the Octopus algorithm~\cite{aumasson2018improving} to compress the Merkle proofs and reformat the concatenated signatures in a dictionary storing as values the corresponding winning lottery numbers.\\
+
+
+In the verification phase, after verifying the proof of eligibility, accumulation and aggregation, the verifier verifies the aggregated signature on the root and message with the aggregated key.
+$$ 0/1 \leftarrow \Mithril.\AggVerify(\tau, \m)$$
+formats $\tau$ as the aggregated signature $\mu$, the aggregated verifcation key \ivk, and the proof of eligibility, accumulation and aggregation $\pi_{C_\acc}$: $(\mu, \ivk, \pi_{C_\acc}) = \tau$ and returns $\BLS.\Verify(\ivk, \mu, \m\ ||\ C_\acc)$ if $\pi_{C_\acc}$ verifies otherwise 0.\\
+
+
+\noindent\textbf{Remark.} Mithril is implemented with \G{2} elements for verification keys in Cardano and concatenate all the information as proof of eligibility and aggregation.
+
+\paragraph{Compression.} In the context of Leios, we have around 3,000 Stake Pool Operators (SPOs) that may participate in the certificate generation.
+Were we to register all SPOs, we would build a Merkle tree of depth 12 ($2^{12}=4,095 > 3000$). Hence, assuming we hash the leaves to 32 bytes, using SHA2 of Blake2 for instance, a single Merkle proof would take 384B.
+
+Due to the bias of the stake distribution, 500 SPOs control more than 80\% of the total stake, 1,000 SPOs more than 99\% of it.
+Were we to target 500 (resp. 1,000) voters with the lottery, the collection of Merkle proof would thus take 192kB (resp. 384kB).
+
+However, the Merkle proofs can be batched. Mithril uses the Octopus algorithm~\cite{aumasson2018improving} which may result in drastic gains as shown in benchmarks done on random data displayed in Table~\ref{tab:mithril}. These numbers are to take with caution as they heavily depends on the stake distribution. Furthermore, as signatures may be repeated, the ``signature'' here refers to the unique set of BLS signatures, the index of the signer in the Merkle tree and the lottery indices for which the signatures are valid.
+
+\begin{table}[]
+    \centering
+    \begin{tabular}{c|c|c||r|r|r|r}
+         \text{k} & \text{m} & n & \text{STM (B)} & \# $\sigma$ & $\sigma$ \text{(B)} & $\pi_\Merkle$ \text{(B)} \\\hline
+         2271 & 19,663 & 3,000 & 214,792 & 929 & 174,256 & 40,536 \\
+         2271 & 19,663 & 2,000 & 161,464 & 690 & 134,104 & 27,360 \\
+         2271 & 19,663 & 1,000 & 94,504 & 376 & 81,368 & 13,136 \\
+         2271 & 19,663 & 500 & 65,112 & 206 & 52,816 & 6,720 \\
+    \end{tabular}
+    \caption{Mithril STM signature size, as well as the number and size of its underlying signatures $\sigma$ and batched Merkle proof $\pi_\Merkle$, using Blake2b with digest length set to 256 for Mithril parameters set as follows $\lambda=128$, active slot	$f=0.2$, adversarial stake of 40\% and target ratio of 55\%.}
+    \label{tab:mithril}
+\end{table}
+
+%
+%
+\subsection{Alba-BLS}
+We are showing here how to generically use Alba proofs on \BLS signatures to achieve a certification protocol, that is using \Alba proof for aggregating \BLS signatures, mirroring the $k$ out of $m$ lottery of \Mithril, and any Lottery and and accumulation scheme for key registration. The scheme is composed of the tuple of algorithms $\AlbaBls.(\Setup, \Register, \Vote, \Verify, \Aggregate, \AggVerify)$.\\
+
+In the setup phase, we generate the Decentralized Alba internal parameters out of the lower bound, that must be greater than the adversarial quorum size, an estimate of the set size and the security parameters.
+$$
+\pp \leftarrow \AlbaBls.\Setup(1^\lambda, n_f, \aux_\pp)
+$$
+where the parameters are composed of both the accumulator's and Alba's $\pp = (\pp_\acc, \pp_\Alba)$.\\
+
+In the registration phase, each party enters in a cryptographic accumulator as register their verification key and stake, $\reg{i}=(\vk{i}, \stake{i})$ . Once the registration is closed, each party can get the accumulator commitment $C_\acc$ and their proof of membership $\pi_{\acc, \reg{i}}$.\\
+
+In the voting phase, each party plays the decentralized lottery \Lottery.\Prove and depending on the result outputs a \BLS signature on the input message appended to the cryptographic accumulator commitment, the party's registry, i.e. verification key and stake, stored in the accumulator, and the proof of membership. These are then sent to the aggregator.
+$$
+\sigma_{\AlbaBls, i} \leftarrow \AlbaBls.\Vote(\sk{i}, \m, C_\acc, \stake{i}, \pi_{\acc, i}, \aux_{\acc, i})
+$$
+with $ \sigma_{\BLS, i} \leftarrow (\sigma_i, \reg{i}=(\vk{i}, \stake{i}), \pi_{\acc, \reg{i}}, l_i, \indices{i}, \pi_{\Lottery, i})$. The Lottery parameters are computed with with the voter's stake $\stake{i}$, total stake $\stake{}$, any lottery axuiliary information $\aux_\Lottery$ which includes a random seed, the voter's private key $\sk{i}$ and predeterministic message $\m_\Lottery$: $(l_i, \indices{i}, \pi_{\Lottery, i}) \leftarrow \Lottery.\Prove(\sk{i}, \m_\Lottery, \stake{i}, \stake{}, \aux_\Lottery)$. The signature is computed as a \BLS signature on both the accumulator's commitment and the input message: $\sigma_i \leftarrow \BLS.\Sign(\sk{i}, C_\acc || m)$ if the eligibility check passes, otherwise $\bot$.
+The vote can be verified by calling $\AlbaBls.\Verify(\sigma_{\BLS, \reg{i}}, \vk{i}, \m)$ which verifies the \BLS signature and proof of membership appropriately.\\
+
+In the aggregation phase, the aggregator, after verifying each vote individually, aggregates the verification keys and signatures together. They return these together with a proof of eligibility and aggregation of these signatures. This proof can be computed with a SNARK or simply a concatenation of all the information.
+$$
+\tau \leftarrow \AlbaBls.\Aggregate(\{\sigma_{\AlbaBls,i}\}_i, \m)
+$$
+where $\tau \leftarrow (\mu, \ivk, \pi_{C_\acc})$. Let $\{\sigma_i, \vk{i}\}_n$ be the set of unique \BLS signatures and corresponding verification keys output by \Alba.\Aggregate algorithm. We define by $\mu \leftarrow \Pi_i \sigma_i$ the aggregated signature, and $\ivk \leftarrow \Pi_i vk{i}$ the aggregated key and $\pi_\acc$ is a proof of eligibility, accumulation and \Alba aggregation of the \BLS signatures.\\
+
+In the verification phase, after verifying the proof of eligibility, accumulation and \Alba aggregation, the verifier recomputes the aggregated verification key and verifies the aggregated signature on the accumulator commitment and message.
+$$
+0/1 \leftarrow \AlbaBls.\AggVerify(\tau, \m)
+$$
+formats $\tau$ as the aggregated signature $\mu$, the aggregated verification key $\ivk$, and the proof of eligibility, accumulation and \Alba aggregation $\pi_{C_\acc}$: $(\mu, \ivk, \pi_{C_\acc}) = \tau$ and returns $\BLS.\Verify(\ivk, \mu)$ if $\pi_{C_\acc}$ verifies otherwise 0.\\
+
+
+%
+%
+%
+\section{Snarkification}
+We are looking here at the viability of snarkifying parts of the protocol, as well as the number of constraints and the building blocks needed to snarkify them either in a recursive manner or in standalone.
+
+%
+%
+\subsection{Snarkifying each components}
+
+%
+\subsubsection{Accumulator}
+\paragraph{Merkle Trees}
+\paragraph{Pairing based Accumulator}
+\paragraph{KZG Polynomial Commitment variant Accumulator}
+
+%
+\subsubsection{Lottery Scheme}
+\paragraph{Mithril Lottery}
+\paragraph{Alba Lottery}
+\paragraph{Sortition}
+
+%
+\subsubsection{Signatures}
+\paragraph{\BLS signature}
+\paragraph{KES signature}
+
+%
+%
+\subsection{Snarkifying Certificate verification}
+\label{subsec:SnarkCert}
+
+Let $\textsf{SD}_e$ be the stake distribution at epoch $e$. We are trying to certify a commitment on message \m, potentially $m = \textsf{SD}_{e+1}$. To support long messages, we will certify a message commitent and not the message itself.
+We omit for readability the circuit parameters which comprise the commitments on the selections and permutations polynomials.
+
+\paragraph{Public input.}
+\begin{itemize}
+    \item $C_\m$ a commitment of on the message \m (potentially the new stake distribution $\text{SD}_{e+1}$ of epoch $e+1$ )
+    \item The commitment on stake distribution of epoch $e$: $C_{\text{SD}_e}$
+\end{itemize}
+
+\paragraph{Private input.}
+Assuming the certificate is an aggregation of $n$ signatures, we have as private input
+
+\begin{itemize}
+    \item The message \m, for instance the new stake distribution $\text{SD}_{e+1} = \{ (vk_i^{(e+1)}, \stake{i}^{(e+1)} \}_{n'} $ of epoch $e+1$ composed of $n'$ elements
+    \item The message commitment's proof of opening $\pi_\m$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$
+    \item The $n$ verification keys and stakes: $\text{Reg} = \{ (vk_i^{(e)}, \stake{i}^{(e)} ) \}_n$
+    \item The total stake at epoch $e$: $\stake{}^{(e)}$ \raph{Not sure this should be private}
+    \item The aggregated signature $\mu$ on the $C(m) || C_{\text{SD}_e}$
+    \item The aggregated key $\ivk^{(e)}$
+    \item The proof of eligibility and aggregation $\pi_{\acc}$ for the verification keys $\{\vk{i}\}_n$ committed in $C_{\text{SD}_e}$
+\end{itemize}
+
+\paragraph{Statement.}
+
+Three items need to be verified,
+\begin{enumerate}
+    \item The message's commitment proof verifies successfully,\\ $\Commit.\Verify(C_\m, m, \pi_m) = 1$
+    \item The aggregate signature verifies successfully,\\ $\BLS.\AggVerify(\ivk, \mu, m || C_{\text{SD}_e})) = 1$\\
+    ( For Mithril split variant only, the batched signature verifies successfully,\\ $\BLS.\AggVerify(\ivk', \mu', m || C_{\text{SD}_e})) = 1$ )
+    \item The proof of eligibility, accumulation and aggregation verifies successfully,\\ $CS.\Verify(\pi_{\acc}, \text{Reg}, \stake{}^{(e)}) = 1 $
+\end{enumerate}
+
+The verification of the proof of eligibility, accumulation and aggregation, when all the information is simply concatenated, becomes,
+\begin{itemize}
+    \item Accumulation: 
+        \begin{itemize}
+            \item If the accumulation scheme does not support batch verification,\\ 
+            $\forall (\reg{i}, \pi_{\acc, \reg{i}}) \in \text{Reg} \times \pi_{C_\acc},\  \Acc.\Verify(C_\acc, \reg{i}, \pi_{\acc, \reg{i}}) \isequal 1 $
+            \item Otherwise,\\
+            $\Acc.\AggVerify(C_\acc, \{\reg{i}, \pi_{\acc, \reg{i}} \}_{\forall (\reg{i}, \pi_{\acc, \reg{i}}) \in \text{Reg} \times \pi_{C_\acc},}) \isequal 1 $
+        \end{itemize} 
+    \item Aggregation:
+        \begin{itemize}
+            \item Aggregation of the verifcation keys,\\ 
+            $ \ivk = \Pi_{\vk{i \in \text{Reg}}} \vk{i}$
+            \item Aggregation of the \BLS signatures,\\ 
+            $ \mu = \Pi_{\sigma_i \in \pi_\acc} \sigma_{i}$
+            \item For \Alba only, that the correct votes were chosen, $\Alba.\Verify(\cdot)$
+            \item For \Mithril split variant only, the batching of the verification keys and \BLS signatures were done correctly, $\ivk' = \Pi_{\reg{i} \in \text{Reg} } \vk{i}^{\stake{i}}, \mu '= \Pi_{\stake{i} \in \text{Reg} \text{ and } \sigma_i \in \pi_\acc} \sigma_{i}^{\stake{i}} $
+        \end{itemize}
+    \item Eligibility, \\
+        $\forall \{\reg{i}, l_i, \indices{i}, \pi_{\Lottery, i}\} \in \pi_{C_\acc},$\\$ \Lottery.\Verify(\vk{i}, \m=\cdot, l_i, \indices{i}, \pi_{\Lottery, i}) \isequal 1$
+\end{itemize}
+
+%
+%
+\subsection{Recursive Certificate}
+We are looking here at the chain of certificate on stake distributions defined in Mithril but easily extendable to other certificate generation such as $\Alba\mhyphen\BLS$.
+Let $\textsf{SD}_e$ be the stake distribution at epoch $e$. We are trying to certify $\textsf{SD}_{e+1}$. As such, the message \m that parties vote on with the $\text{Certificate}.\Vote(\cdot)$ algorithm is the commitment of the new stake distribution $\m = C_{\acc, e+1} = \Acc.\Commit(\textsf{SD}_{e+1})$. The accumulator used in the same algorithm however $C_{\acc,e}$ is a commitment on the previous stake distribution $C_\acc = \Acc.\Commit(\textsf{SD}_{e})$.
+
+We could say that a certificate consumes a previous (commitment on) $\textsf{SD}_{e}$ to certify a new (commitment on) $\textsf{SD}_{e+1}$.
+
+%
+\subsubsection{Recursive SNARK of a certificate}\label{subsub:RecSnarkCert}
+In this case, the main difference with subsection~\ref{subsec:SnarkCert} is that we need to verify additionally a proof of the previous certificate.
+
+
+\paragraph{Public input.}
+\begin{itemize}
+    \item The commitment on the new stake distribution: $C_{\textsf{SD}_{e+1}}$
+    \item The commitment on the current stake distribution: $C_{\text{SD}_e}$
+    \item The commitment on the previous stake distribution: $C_{\text{SD}_{e-1}}$
+    \item The SNARK proof on this certificate $\pi_\text{SNARK, rec}^{(e)}$
+\end{itemize}
+
+\paragraph{Private input.}
+Assuming the certificate is an aggregation of $n$ signatures, we have as private input
+
+\begin{itemize}
+    \item The new stake distribution $\text{SD}_{e+1} = \{ (vk_i^{(e+1)}, \stake{i}^{(e+1)} \}_{n'} $ of epoch $e+1$ composed of $n'$ elements
+    \item The message commitment's proof of opening $\pi_\m$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$
+    \item The $n$ verification keys and stakes: $\text{Reg} = \{ (vk_i^{(e)}, \stake{i}^{(e)} ) \}_n$
+    \item The total stake at epoch $e$: $\stake{}^{(e)}$ \raph{Not sure this should be private}
+    \item The aggregated signature $\mu$ on the $C(m) || C_{\text{SD}_e}$
+    \item The aggregated key $\ivk^{(e)}$
+    \item The proof of eligibility and aggregation $\pi_{\acc}$ for the verification keys $\{\vk{i}\}_n$ committed in $C_{\text{SD}_e}$
+\end{itemize}
+
+\paragraph{Statement.}
+
+Four items need to be verified,
+\begin{enumerate}
+    \item Either the origin was the epoch before, or the previous certificate is valid $e = 0 \lor \text{CS}.\Verify(\pi_\text{SNARK, rec}, C_{\text{SD}_e}, C_{\text{SD}_{e-1}}) == 1$
+    \item The message's commitment proof verifies successfully,\\ $\Commit.\Verify(C_\m, m, \pi_m) = 1$
+    \item The aggregate signature verifies successfully,\\ $\BLS.\AggVerify(\ivk, \mu, m || C_{\text{SD}_e}) = 1$\\
+    ( For Mithril split variant only, the batched signature verifies successfully,\\ $\BLS.\AggVerify(\ivk', \mu', m || C_{\text{SD}_e}) = 1$ )
+    \item The proof of eligibility, accumulation and aggregation verifies successfully,\\ $CS.\Verify(\pi_{\acc}, \text{SD}_e, \stake{}^{(e)}) = 1 $
+\end{enumerate}
+
+%
+\subsubsection{Recursive SNARK of a proof of a certificate}\label{subsub:RecSnarkProof}
+We split here the proof computation in two steps: we first generate a proof for the current epoch's certificate and then generate a recursive proof out of it. We study this case in case the verification of a certificate and of a proof is not possible, e.g. the proof generation is too long or takes too many constraints.
+
+
+\paragraph{Public input.}
+\begin{itemize}
+    \item The commitment on the new stake distribution: $C_{\textsf{SD}_{e+1}}$
+    \item The commitment on the current stake distribution: $C_{\text{SD}_e}$
+    \item The commitment on the previous stake distribution: $C_{\text{SD}_{e-1}}$
+    \item The recursive SNARK proof on the previsou stake distribution certificate $\pi_\text{SNARK, rec}^{(e)}$
+    \item The SNARK proof of the current stake distribution $\pi_\text{SNARK}^{(e+1)}$ computed according to Section~\ref{subsec:SnarkCert}
+\end{itemize}
+
+\paragraph{Private input.}
+There is no private input.
+
+\paragraph{Statement.}
+
+Two items need to be verified,
+\begin{enumerate}
+    \item Either the origin was the epoch before, or the previous certificate is valid $e = 0 \lor \text{CS}.\Verify(\pi_\text{SNARK, rec}^{(e)}, C_{\text{SD}_e}, C_{\text{SD}_{e-1}}) == 1$
+    \item The current certificate proof is valid,\\ $\text{CS}.\Verify(\pi_\text{SNARK, rec}^{(e+1)}, C_{\text{SD}_{e+1}}, C_{\text{SD}_{e}}) == 1$
+\end{enumerate}
+
+Because we are doing several pairing checks with the same ``form'', we may batch them in circuit. As the first one may be $\bot$ however, in case the previous epoch was the origin, we would need to replace the underlying values in this case by dummy ones. 
+Let $A_1$ and $A_2$ be the $\G{1}$ elements in Plonk's pairing check, i.e. $$ e(A, g_2^\tau) \cdot e(B, g_2) \isequal 1_T$$ and $f$ and $g$ the functions to respectively compute them out of a proof.
+Hence, the statement becomes:
+
+\begin{enumerate}
+    \item If the origin was the epoch before, we return dummy values or the ones computed from previous certificate is valid 
+    \begin{align}
+        A_1^{(e)} &= g_1 \text{ if } e = 0, \text{ else }f(\pi_\text{SNARK, rec}^{(e)})\\
+        A_2^{(e)} &= g_1^\tau \text{ if } e = 0, \text{ else }g(\pi_\text{SNARK, rec}^{(e)})
+    \end{align}
+    \item Let $A_1^{(e+1)} = f(\pi_\text{SNARK}^{(e+1)})$, $A_2^{(e+1)} = g(\pi_\text{SNARK}^{(e+1)})$, and $\gamma = \Hash{\Zp}(A_1^{(e)}, A_2^{(e)}, A_1^{(e+1)}, A_2^{(e+1)})$,
+    $$ e(A_1^{(e)} + \gamma \cdot A_1^{(e+1)}, g_2^\tau) \cdot e(A_2^{(e)} + \gamma \cdot A_2^{(e+1)}, g_2) \isequal 1 $$
+\end{enumerate}
+
+Were we to perform the pairing check outside the circuit, we would return as public values $A_1^{(e)} + \gamma \cdot A_1^{(e+1)}$ and $A_2^{(e)} + \gamma \cdot A_2^{(e+1)}$.
+
+\bibliographystyle{plain} 
+\bibliography{biblio} 
+
+\end{document}

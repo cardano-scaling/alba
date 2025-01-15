@@ -1,0 +1,30 @@
+\begin{thebibliography}{1}
+
+\bibitem{aumasson2018improving}
+Jean-Philippe Aumasson and Guillaume Endignoux.
+\newblock Improving stateless hash-based signatures.
+\newblock In {\em Cryptographers’ Track at the RSA Conference}, pages
+  219--242. Springer, 2018.
+
+\bibitem{chaidos2024mithril}
+Pyrros Chaidos and Aggelos Kiayias.
+\newblock Mithril: Stake-based threshold multisignatures.
+\newblock In {\em International Conference on Cryptology and Network Security},
+  pages 239--263. Springer, 2024.
+
+\bibitem{nguyen2005accumulators}
+Lan Nguyen.
+\newblock Accumulators from bilinear pairings and applications.
+\newblock In {\em Topics in Cryptology--CT-RSA 2005: The Cryptographers’
+  Track at the RSA Conference 2005, San Francisco, CA, USA, February 14-18,
+  2005. Proceedings}, pages 275--292. Springer, 2005.
+
+\bibitem{srinivasan2022batching}
+Shravan Srinivasan, Ioanna Karantaidou, Foteini Baldimtsi, and Charalampos
+  Papamanthou.
+\newblock Batching, aggregation, and zero-knowledge proofs in bilinear
+  accumulators.
+\newblock In {\em Proceedings of the 2022 ACM SIGSAC Conference on Computer and
+  Communications Security}, pages 2719--2733, 2022.
+
+\end{thebibliography}
