@@ -85,19 +85,14 @@ impl ThresholdSignature {
         let final_signature = aggregate_signature.to_signature();
 
         let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
-        let Ok(aggregate_verification_key) = AggregatePublicKey::aggregate(public_key_refs.as_slice(), false)else {
+        let Ok(aggregate_verification_key) =
+            AggregatePublicKey::aggregate(public_key_refs.as_slice(), false)
+        else {
             return false;
         };
         let final_verification_key = aggregate_verification_key.to_public_key();
 
-        let result = final_signature.verify(
-            false,
-            msg,
-            &[],
-            &[],
-            &final_verification_key,
-            false,
-        );
+        let result = final_signature.verify(false, msg, &[], &[], &final_verification_key, false);
         result == BLST_ERROR::BLST_SUCCESS
     }
 
