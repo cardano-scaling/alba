@@ -129,9 +129,9 @@ Using \BLS signatures with the BLS12-381 elliptic curve, the verification key is
 \subsection{Cryptographic accumulators}
 We are succinctly presenting here static accumulators.  We do not require proofs of non-membership.
 
-A static \dimitar{dynamic?} cryptographic accumulator is composed of the following algorithms $\Acc.(\Setup, \Add, \Commit, \Prove, \Verify)$:
+A static cryptographic accumulator is composed of the following algorithms $\Acc.(\Setup, \Add, \Commit, \Prove, \Verify)$:
 \begin{itemize}
-    \item $(\acc_0, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Initialize the accumulator $\acc_0$ and outputs the accumulator parameters $\pp_\acc$ that we may omit from now on for readability.
+    \item $(\acc_0, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Initialize the accumulator $\acc_0$ and outputs the accumulator parameters $\pp_\acc$ that we may omit from now on for readability.  \dimitar{Should we be more specific here on the return value of this function?}
     %
     \item $(\acc', \aux) \leftarrow \Add(\acc, x)$: Add the element $x$ to the accumulator, returning the newly updated accumulated value and auxiliary information, e.g. the index of the element for ordered accumulator.
     %
@@ -172,13 +172,13 @@ A pairing based accumulator is an accumulator defined on a bilinear group $\math
 We present here a shorter version of~\cite{srinivasan2022batching}, itself being a variant of Nguyen~\cite{nguyen2005accumulators} original scheme composed of the algorithms $\Acc_\pair.(\Setup, \Add, \Commit, \Prove, \Verify, \AggVerify)$.
 
 \begin{itemize}
-    \item $(\acc, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Let $T = ((g_1, g_1^\tau, \dots, g_1^{\tau^n}), (g_2, g_2^\tau, \dots, g_2^{\tau^n}))$ be the $n$ powers of $\tau$ of $\mathcal{G}$ where $n$ is the maximum capacity of the accumulator. Return $(\acc =\emptyset, \pp_\acc=T)$
+    \item $(\acc, \pp_\acc) \leftarrow \Setup(1^\lambda)$: Let $T = ((g_1, g_1^\tau, \dots, g_1^{\tau^n}), (g_2, g_2^\tau, \dots, g_2^{\tau^n}))$ be the $n$ powers of $\tau$ of $\mathcal{G}$ where $n$ is the maximum capacity of the accumulator. Return $(\acc =\emptyset, \pp_\acc=T)$ \dimitar{We should quantify $\tau$.}
     %
-    \item $(\acc', \_) \leftarrow \Add(\acc, x)$: Add the scalar element $x$ to the set \acc, $\acc' = \acc\ \bigcup\ \{x\}$ and return it.
+    \item $(\acc', \_) \leftarrow \Add(\acc, x)$:  \dimitar{I don't understand what this sentence says.} Add the scalar element $x$ to the set \acc, $\acc' = \acc\ \bigcup\ \{x\}$ and return it.
     %
-    \item $C_\acc \leftarrow \Commit(\acc)$: Return $\Pi_{x_i \in \acc}\ g_1^{(\tau + x_i)}$.
+    \item $C_\acc \leftarrow \Commit(\acc)$: Return $\Pi_{x_i \in \acc}\ g_1^{(\tau + x_i)}$. \dimitar{I think you want $g_1^{\prod (\tau + x_i)}$ since the pairing satisfies $e(g_1^{?}, g_2^{(x + \tau)}) = e(g_1^{? (x + \tau)}, g_2)$.}
     %
-    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, \_)$: If $x \in \acc$, return $\Pi_{x_i \in \acc, x_i \neq x}\ g_1^{(\tau + x_i)}$ else $\bot$.
+    \item $\pi_{\acc, x} \leftarrow \Prove(\acc, x, \_)$: If $x \in \acc$, return $\Pi_{x_i \in \acc, x_i \neq x}\ g_1^{(\tau + x_i)}$  \dimitar{idem: fix per my comments} else $\bot$.
     %
     \item $0/1 \leftarrow \Verify(C_\acc, x, \pi_{\acc, x})$: Return $\e{\pi_{\acc, x}}{g_2^x \cdot g_2^\tau} \isequal \e{C_\acc}{g_2}$
     %
@@ -249,7 +249,7 @@ We can model a certification as a protocol with six algorithms:
 \begin{itemize}
     \item $\pp \leftarrow \Setup(1^\lambda, \text{threshold}, \aux_\pp)$.
     Setup the parameters \pp depending on the security parameter $\lambda$, threshold to reach and auxiliary parameters $\aux_\pp$. We omit \pp from the following algorithms for readability.
-    \item $(\pi_{\acc,i}, \aux_{\acc,i}) \leftarrow \Register(\reg{i}=(\vk{i}, \stake{i}))$, each party register their key $\vk{i}$ and stake $\stake{i}$ in an accumulator which will be committed, with committed value $C_\acc$, once the registration is closed retrieving their proof of membership $\pi_{\acc, \reg{i}}$. Some auxiliary information $\aux_{\acc, i}$ may also be returned such as the total stake $\stake{}$ or other variables to facilitate the handling of membership proofs.
+    \item $(\pi_{\acc,i}, \aux_{\acc,i}) \leftarrow \Register(\reg{i}=(\vk{i}, \stake{i}))$, each party register their key $\vk{i}$ and stake $\stake{i}$ in an accumulator \dimitar{Should we spell out what exactly this means mathematically?} which will be committed, with committed value $C_\acc$, once the registration is closed retrieving their proof of membership $\pi_{\acc, \reg{i}}$. Some auxiliary information $\aux_{\acc, i}$ may also be returned such as the total stake $\stake{}$ or other variables to facilitate the handling of membership proofs.
     
     \item $\sigma_i / \bot \leftarrow \Vote(\sk{i}, \m, C_\acc, \stake{i}, \pi_{\acc,i}, \aux_{\acc,i})$.
     The voter first plays locally a lottery using their secret key \sk{i} and stake \stake{i}, and the total stake \stake{} to find out how many $l_i$ votes they are entitled to, the numbers of the winning tickets $\indices{i}$ and getting a proof of eligibility $\pi_{\Lottery, i}$. 
@@ -260,7 +260,7 @@ We can model a certification as a protocol with six algorithms:
     \item $0/1 \leftarrow \Verify(\sigma_i, \vk{i}, \m)$.
     The verifier verifies the vote $\sigma_{i}$ on message \m with the verification key $\vk{i}$ and returns 1 if the verification is succesful, otherwise 0.
     
-    \item $\tau / \bot \leftarrow \Aggregate(\{\sigma_i, \vk{i}\}, \m)$, the aggregator after checking each vote, aggregates them in a certificate.  The aggregator may optionally compress even more the certificate, for instance by choosing a more succinct format or relying on zero-knowledge proofs. 
+    \item $\tau / \bot \leftarrow \Aggregate(\{\sigma_i, \vk{i}\}, \m)$, the aggregator after checking each vote, aggregates them in a certificate.  The aggregator may optionally compress even more the certificate, for instance by choosing a more succinct format or relying on zero-knowledge proofs. \dimitar{I assume that zero-knowledge is less relevant than succinctness so we may want to say "relying on SNARKs".}. 
     
     \item $0/1 \leftarrow \AggVerify(\tau, \m)$.
     After decompressing the certificate if needs be, the verifier verifies the certificate $\tau$  on message \m and returns 1 if the verification is successful, otherwise 0.
@@ -283,7 +283,7 @@ The main advantage of Merkle tree-based accumulator is its verifying time perfor
 %
 We define Mithril protocol as the tuple of algorithms $\Mithril.(\Setup, \Register, \Sign, \Verify, \Aggregate, \AggVerify)$.\\
 
-In the setup phase, we generate internal parameters $k$ and $m$ out of the adversarial quorum, the active slot coefficient, the target ratio and the security parameters. The parameter $k$ represents the number of lotteries to win to generate a certificate, i.e. the number of signatures the aggregator will receive, and $m$ is the total number of lotteries done.\\
+In the setup phase, we generate internal parameters $k$ and $m$ out of the adversarial quorum, the active slot coefficient, the target ratio and the security parameters. The parameter $k$ represents the number of lotteries to win to generate a certificate, i.e. the number of signatures the aggregator will receive, and $m$ is the total number of lotteries done. \dimitar{Maybe for a better intuition to the reader, explain what is the motivation to have multiple lotteries?}\\
 
 In the registration phase, each party enters in a Merkle tree their verification key and stake. Once the registration is closed, each party can get the Merkle tree root $C_\acc$ and their Merkle proof.
 $$ (\pi_{\acc, i}, \aux_{\acc, i}) \leftarrow \Mithril.\Register(\vk{i}, \stake{i}) $$
@@ -411,6 +411,7 @@ We are looking here at the viability of snarkifying parts of the protocol, as we
 
 Let $\textsf{SD}_e$ be the stake distribution at epoch $e$. We are trying to certify a commitment on message \m, potentially $m = \textsf{SD}_{e+1}$. To support long messages, we will certify a message commitent and not the message itself.
 We omit for readability the circuit parameters which comprise the commitments on the selections and permutations polynomials.
+\dimitar{Maybe we want to spell out what "epoch" exactly means in the context Mithril. What about Alba?}
 
 \paragraph{Public input.}
 \begin{itemize}
@@ -423,8 +424,8 @@ Assuming the certificate is an aggregation of $n$ signatures, we have as private
 
 \begin{itemize}
     \item The message \m, for instance the new stake distribution $\text{SD}_{e+1} = \{ (vk_i^{(e+1)}, \stake{i}^{(e+1)} \}_{n'} $ of epoch $e+1$ composed of $n'$ elements
-    \item The message commitment's proof of opening $\pi_\m$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$
-    \item The $n$ verification keys and stakes: $\text{Reg} = \{ (vk_i^{(e)}, \stake{i}^{(e)} ) \}_n$
+    \item The message commitment's proof of opening $\pi_\m$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$ \dimitar{So far, I understood that $\text{SD}_{e}$ is a stakeholder distribution - what exactly does it mean to write $\vk{i} \in \text{SD}_{e+1}$? Explain.}
+    \item The $n$ verification keys and stakes: $\text{Reg} = \{ (vk_i^{(e)}, \stake{i}^{(e)} ) \}_n$ \dimitar{What exactly is $n$? How is it related to $k$ in Mithril?}
     \item The total stake at epoch $e$: $\stake{}^{(e)}$ \raph{Not sure this should be private}
     \item The aggregated signature $\mu$ on the $C(m) || C_{\text{SD}_e}$
     \item The aggregated key $\ivk^{(e)}$
