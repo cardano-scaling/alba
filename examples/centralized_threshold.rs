@@ -105,7 +105,7 @@ impl AlbaThresholdSignature {
             return false;
         }
 
-       // Initialise Alba with the parameters and generates a proof using the prover set
+        // Initialise Alba with the parameters and generates a proof using the prover set
         let alba = CentralizedTelescope::create(params);
         let result = alba.verify(&self.proof);
 
