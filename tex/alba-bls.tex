@@ -489,10 +489,10 @@ Assuming the certificate is an aggregation of $n$ signatures, we have as private
 
 \begin{itemize}
     \item The new stake distribution $\text{SD}_{e+1} = \{ (vk_i^{(e+1)}, \stake{i}^{(e+1)} \}_{n'} $ of epoch $e+1$ composed of $n'$ elements
-    \item The message commitment's proof of opening $\pi_\m$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$
+    \item The message commitment's proof of opening $\pi_{\textsf{SD}_{e+1}}$, for instance the set of $n'$ proofs of opening $\Pi_\acc = \{ \pi_{\acc, \reg{i}^{(e+1)}} \}_{n'}$  for all $\vk{i}^{(e+1)} \in \text{SD}_{e+1}$
     \item The $n$ verification keys and stakes: $\text{Reg} = \{ (vk_i^{(e)}, \stake{i}^{(e)} ) \}_n$
     \item The total stake at epoch $e$: $\stake{}^{(e)}$ \raph{Not sure this should be private}
-    \item The aggregated signature $\mu$ on the $C(m) || C_{\text{SD}_e}$
+    \item The aggregated signature $\mu$ on the $C_{\textsf{SD}_{e+1}} || C_{\text{SD}_e}$
     \item The aggregated key $\ivk^{(e)}$
     \item The proof of eligibility and aggregation $\pi_{\acc}$ for the verification keys $\{\vk{i}\}_n$ committed in $C_{\text{SD}_e}$
 \end{itemize}
@@ -502,9 +502,9 @@ Assuming the certificate is an aggregation of $n$ signatures, we have as private
 Four items need to be verified,
 \begin{enumerate}
     \item Either the origin was the epoch before, or the previous certificate is valid $e = 0 \lor \text{CS}.\Verify(\pi_\text{SNARK, rec}, C_{\text{SD}_e}, C_{\text{SD}_{e-1}}) == 1$
-    \item The message's commitment proof verifies successfully,\\ $\Commit.\Verify(C_\m, m, \pi_m) = 1$
-    \item The aggregate signature verifies successfully,\\ $\BLS.\AggVerify(\ivk, \mu, m || C_{\text{SD}_e}) = 1$\\
-    ( For Mithril split variant only, the batched signature verifies successfully,\\ $\BLS.\AggVerify(\ivk', \mu', m || C_{\text{SD}_e}) = 1$ )
+    \item The message's commitment proof verifies successfully,\\ $\Commit.\Verify(C_{\textsf{SD}_{e+1}}, \textsf{SD}_{e+1}, \pi_{\textsf{SD}_{e+1}}) = 1$
+    \item The aggregate signature verifies successfully,\\ $\BLS.\AggVerify(\ivk, \mu, C_{\textsf{SD}_{e+1}} || C_{\text{SD}_e}) = 1$\\
+    ( For Mithril split variant only, the batched signature verifies successfully,\\ $\BLS.\AggVerify(\ivk', \mu', C_{\textsf{SD}_{e+1}} || C_{\text{SD}_e}) = 1$ )
     \item The proof of eligibility, accumulation and aggregation verifies successfully,\\ $CS.\Verify(\pi_{\acc}, \text{SD}_e, \stake{}^{(e)}) = 1 $
 \end{enumerate}
 
