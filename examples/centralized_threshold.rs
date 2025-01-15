@@ -139,23 +139,24 @@ fn main() {
     // Start new registration process
     let mut registration = Registration::new();
 
-    // Register signers
-    for (index, signer) in signers.iter().enumerate() {
-        registration.register(signer.verification_key, index);
-    }
-    // Close registration to compute the checksum
+    // Register signer candidates and create new registered signers.
+    let mut registered_signers: Vec<RegisteredSigner> = signers
+        .iter()
+        .filter_map(|signer| signer.register(&mut registration))
+        .collect();
+
+    // Close the registration process
     registration.close::<DATA_LENGTH>();
 
-    // Filter out registered signers and create RegisteredSigner instances
-    let registered_signers: Vec<RegisteredSigner> = signers
-        .iter()
-        .filter_map(|signer| signer.new_signer::<DATA_LENGTH>(&registration))
-        .collect();
+    // Update registered signers with the checksum of closed registration
+    for registered_signer in &mut registered_signers {
+        registered_signer.get_closed_registration(&registration);
+    }
 
     // Create individual signatures
     let signature_list: Vec<IndividualSignature> = registered_signers
         .iter()
-        .map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+        .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
         .collect();
 
     // Generate AlbaThresholdSignature proof

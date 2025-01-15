@@ -21,7 +21,7 @@ pub(crate) struct RegisteredSigner {
     /// Registration index of the signer
     pub(crate) index: usize,
     /// Closed registration checksum
-    checksum: Vec<u8>,
+    checksum: Option<Vec<u8>>,
 }
 
 impl Signer {
@@ -40,36 +40,60 @@ impl Signer {
         }
     }
 
-    /// Create a new registered signer if the signer's key exists in the closed registration
-    pub(crate) fn new_signer<const N: usize>(
-        &self,
-        registration: &Registration,
-    ) -> Option<RegisteredSigner> {
-        let index = registration.get_index_of_key(&self.verification_key)?;
-
-        let checksum = if let Some(checksum) = &registration.checksum {
-            checksum.clone()
+    /// Register signer's verification key. If the registration is not closed, i.e., no checksum found and the
+    /// signer's verification key is already registered return `None`. Otherwise, insert new verification key with a
+    /// new index. Return the `RegisteredSigner`.
+    pub(crate) fn register(&self, registration: &mut Registration) -> Option<RegisteredSigner> {
+        if registration.checksum.is_none() {
+            if registration
+                .registered_keys
+                .values()
+                .any(|v| *v == self.verification_key)
+            {
+                println!("Key already registered!");
+                return None;
+            }
+            let index = registration.registered_keys.len().clone() + 1;
+            registration
+                .registered_keys
+                .insert(index, self.verification_key);
+            Some(RegisteredSigner {
+                signing_key: self.signing_key.clone(),
+                index,
+                checksum: None,
+            })
         } else {
-            println!("Error: Registration is not closed. Cannot create a registered signer.");
-            return None;
-        };
-
-        Some(RegisteredSigner {
-            signing_key: self.signing_key.clone(),
-            index,
-            checksum,
-        })
+            println!("Registration is closed!");
+            None
+        }
     }
 }
 
 impl RegisteredSigner {
-    /// Create an individual signature by signing `commitment = Hash(checksum || msg)`
-    pub(crate) fn sign<const N: usize>(&self, msg: &[u8]) -> IndividualSignature {
-        let commitment = get_commitment::<N>(&self.checksum, msg).to_vec();
+    /// Get closed registration. Update the registered signer with the checksum of registration.
+    pub(crate) fn get_closed_registration(&mut self, registration: &Registration) {
+        match &registration.checksum {
+            Some(checksum) => {
+                if registration.registered_keys.contains_key(&self.index) {
+                    self.checksum = Some(checksum.clone());
+                }
+            }
+            None => {
+                println!("Error: Registration is not closed.");
+            }
+        }
+    }
 
-        IndividualSignature {
+    /// Create an individual signature by signing `commitment = Hash(checksum || msg)`
+    pub(crate) fn sign<const N: usize>(&self, msg: &[u8]) -> Option<IndividualSignature> {
+        let commitment = self
+            .checksum
+            .as_ref()
+            .map(|checksum| get_commitment::<N>(checksum, msg));
+
+        commitment.map(|commitment| IndividualSignature {
             signature: self.signing_key.sign(&commitment, &[], &[]),
             index: self.index,
-        }
+        })
     }
 }
