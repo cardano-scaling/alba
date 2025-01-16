@@ -2,7 +2,7 @@ use crate::Element;
 use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::CentralizedTelescope;
-use blst::min_sig::{AggregatePublicKey, AggregateSignature, PublicKey, Signature};
+use blst::min_sig::{PublicKey, Signature};
 use blst::BLST_ERROR;
 use std::collections::HashMap;
 
@@ -37,6 +37,12 @@ impl ThresholdSignature {
     }
 
     /// Validates individual signatures in the threshold signature
+    /// This function verifies each individual signature separately.
+    /// The verification could also be done by using aggregation from blst library as follows:
+    ///     - Aggregate signatures with: `AggregateSignature::aggregate`,
+    ///     - Aggregate public keys with: `AggregatePublicKey::aggregate`,
+    ///     - Convert aggregate signature to a signature and aggregate public key to a public key
+    ///     - Verify the signature with public key against given message.
     fn validate_signatures(&self, msg: &[u8]) -> bool {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         for sig_bytes in &self.proof.element_sequence {
@@ -45,24 +51,14 @@ impl ThresholdSignature {
             };
             signatures.push(signature);
         }
-        let signature_refs: Vec<&Signature> = signatures.iter().collect();
-        let Ok(aggregate_signature) =
-            AggregateSignature::aggregate(signature_refs.as_slice(), false)
-        else {
-            return false;
-        };
-        let final_signature = aggregate_signature.to_signature();
-
-        let public_key_refs: Vec<&PublicKey> = self.key_list.iter().collect();
-        let Ok(aggregate_verification_key) =
-            AggregatePublicKey::aggregate(public_key_refs.as_slice(), false)
-        else {
-            return false;
-        };
-        let final_verification_key = aggregate_verification_key.to_public_key();
-
-        let result = final_signature.verify(false, msg, &[], &[], &final_verification_key, false);
-        result == BLST_ERROR::BLST_SUCCESS
+        for (i, signature) in signatures.iter().enumerate() {
+            if signature.verify(false, msg, &[], &[], &self.key_list[i], false)
+                != BLST_ERROR::BLST_SUCCESS
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     pub(crate) fn verify(&self, msg: &[u8], params: &Params) -> bool {
