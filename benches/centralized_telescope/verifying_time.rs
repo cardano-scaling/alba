@@ -14,24 +14,28 @@ use utils::{
     setup, NAME,
 };
 
-/// Function benchmarking `n` times the verification time
+/// Function benchmarking `sample_size` times the verification time
 fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
     let mut rng = ChaCha20Rng::from_entropy();
     let mut total_duration = Duration::ZERO;
-    for _ in 0..n {
-        // Setup
-        let (mut dataset, telescope) = setup(&mut rng, params);
-        // Truncate the dataset to give truncate_size elements to the prover
-        dataset.truncate(truncate_size as usize);
-        // Prove
-        let proof_opt = telescope.prove(&dataset);
-        if let Some(proof) = proof_opt {
+
+    // Setup
+    let (mut dataset, telescope) = setup(&mut rng, params);
+    // Truncate the dataset to give truncate_size elements to the prover
+    dataset.truncate(truncate_size as usize);
+    // Generate the proof
+    let proof_opt: Option<alba::centralized_telescope::proof::Proof> = telescope.prove(&dataset);
+
+    if let Some(proof) = proof_opt {
+        // Iterate on each sample `n` times
+        for _ in 0..n {
             // Benching the verification time
             let start = Instant::now();
             black_box(telescope.verify(&proof));
             total_duration = total_duration.saturating_add(start.elapsed());
         }
     }
+
     total_duration
 }
 

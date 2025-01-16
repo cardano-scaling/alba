@@ -20,17 +20,20 @@ use utils::{
 
 use alba::centralized_telescope::algorithm::internal::bench;
 
-/// Function benchmarking `n` times the number of DFS calls, aka steps
+/// Function benchmarking `sample_size` times the number of DFS calls, aka steps
 #[allow(clippy::unit_arg)]
 fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     let mut rng = ChaCha20Rng::from_entropy();
     let mut total_steps = 0u64;
+
+    // Setup
+    let (mut dataset, telescope) = setup(&mut rng, param);
+    let setup = telescope.get_setup();
+    // Truncate the dataset to give truncate_size elements to the prover
+    dataset.truncate(truncate_size as usize);
+
+    // Iterate on each sample `n` times
     for _ in 0..n {
-        // Setup
-        let (mut dataset, telescope) = setup(&mut rng, param);
-        let setup = telescope.get_setup();
-        // Truncate the dataset to give truncate_size elements to the prover
-        dataset.truncate(truncate_size as usize);
         // Bench the number of steps/DFS calls while generating a proof
         black_box({
             let steps = bench(&setup, &dataset).0;

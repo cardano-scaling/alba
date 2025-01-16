@@ -14,15 +14,18 @@ use utils::{
     setup, NAME,
 };
 
-/// Function benchmarking `n` times the proving time
+/// Function benchmarking `sample_size` times the proving time
 fn prove_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
     let mut rng = ChaCha20Rng::from_entropy();
     let mut total_duration = Duration::ZERO;
+
+    // Setup
+    let (mut dataset, telescope) = setup(&mut rng, params);
+    // Truncate the dataset to give truncate_size elements to the prover
+    dataset.truncate(truncate_size as usize);
+
+    // Iterate on each sample `n` times
     for _ in 0..n {
-        // Setup
-        let (mut dataset, telescope) = setup(&mut rng, params);
-        // Truncate the dataset to give truncate_size elements to the prover
-        dataset.truncate(truncate_size as usize);
         // Bench the proving time
         let start = Instant::now();
         black_box(telescope.prove(&dataset));
