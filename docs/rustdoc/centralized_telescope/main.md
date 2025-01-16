@@ -37,15 +37,15 @@ This generalized construction uses the same key parameters as prehashed construc
    - This process groups elements based on their hash values, reducing the search space by allowing DFS to focus only on relevant elements.
 3. **Exploring starting points**:
    - The prover iterates over all possible starting indices $t \in \[d\]$.
-   - For each $t$, the prover begins constructing a proof sequence $(t, s_1, ..., s_u)$, starting with $t$ and extending the sequence using elements from $S_p$ within their corresponding bins.
+   - For each $t$, the prover begins constructing a proof sequence $(v, t, s_1, \ldots, s_u)$, starting with $t$ and extending the sequence using elements from $S_p$ within their corresponding bins.
 4. **Bounded DFS**:
-   - A bounded DFS search is used to construct the sequence $(t, s_1, ..., s_u)$, with a shared step limit $B$ applied across all starting points $t$.
+   - A bounded DFS search is used to construct the sequence $(v, t, s_1, \ldots, s_u)$, with a shared step limit $B$ applied across all starting points $t$.
    - At each step of DFS:
-     - The algorithm searches a new element for the current sequence $(t, s_1, ..., s_k)$ in bin numbered $H_1(v, t, s_1, ..., s_k)$.
+     - The algorithm searches a new element for the current sequence $(v, t, s_1, \ldots, s_k)$ in bin numbered $H_1(v, t, s_1, \ldots, s_k)$.
      - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $r$, restarting the process with a new partitioning of elements. 
      - Otherwise, the DFS updates the step limit and then recursively calls itself with the extended tuple.
 5. **Validation**:
-   - When the DFS has constructed a sequence of $u$ elements $(t, s_1, ..., s_u)$, it verifies whether the full sequence satisfies the final condition using $H_2(v, t, s_1, ..., s_u)$.
+   - When the DFS has constructed a sequence of $u$ elements $(v, t, s_1, \ldots, s_u)$, it verifies whether the full sequence satisfies the final condition using $H_2(v, t, s_1, \ldots, s_u)$.
    - If the sequence passes this check, it is accepted as a valid proof, and the prover outputs it.
 6. **Retry Mechanism**:
    - If no valid proof is found for a given $t$ or if the step limit $B$ is exhausted for all $t$, the prover moves to the next retry by incrementing $v$.
