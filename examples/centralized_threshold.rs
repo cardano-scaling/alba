@@ -98,6 +98,8 @@ impl AlbaThresholdSignature {
     }
 }
 
+
+
 fn main() {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let mut msg = [0u8; 16];
@@ -148,5 +150,143 @@ fn main() {
     ) {
         // Verify the proof
         alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, &msg);
+    }
+}
+
+// Some basic tests
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_collect_valid_signatures_no_closed_reg(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let mut msg = [0u8; 16];
+        rng.fill_bytes(&mut msg);
+        let set_size = 100;
+
+        let signers: Vec<Signer> = (0..set_size as usize)
+            .map(|_| Signer::init(&mut rng))
+            .collect();
+
+        let mut registration = Registration::new();
+        let mut registered_signers: Vec<RegisteredSigner> = signers
+            .iter()
+            .filter_map(|signer| signer.register(&mut registration))
+            .collect();
+
+        registration.close::<DATA_LENGTH>();
+        for registered_signer in &mut registered_signers {
+            registered_signer.get_closed_registration(&registration);
+        }
+
+        let signature_list: Vec<IndividualSignature> = registered_signers
+            .iter()
+            .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+            .collect();
+
+        registration.checksum = None;
+
+        let valid_signatures = collect_valid_signatures::<DATA_LENGTH>(&signature_list, &registration, &msg);
+
+        println!("{}", valid_signatures.len());
+    }
+
+    #[test]
+    fn test_collect_valid_signatures_unregistered_signer(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let mut msg = [0u8; 16];
+        rng.fill_bytes(&mut msg);
+        let set_size = 100;
+
+        let signers: Vec<Signer> = (0..set_size as usize)
+            .map(|_| Signer::init(&mut rng))
+            .collect();
+
+        let mut registration = Registration::new();
+        let mut registered_signers: Vec<RegisteredSigner> = signers
+            .iter()
+            .filter_map(|signer| signer.register(&mut registration))
+            .collect();
+
+        registration.close::<DATA_LENGTH>();
+        for registered_signer in &mut registered_signers {
+            registered_signer.get_closed_registration(&registration);
+        }
+        registered_signers[99].index = 999;
+
+        let signature_list: Vec<IndividualSignature> = registered_signers
+            .iter()
+            .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+            .collect();
+
+        let valid_signatures = collect_valid_signatures::<DATA_LENGTH>(&signature_list, &registration, &msg);
+
+        println!("{}", valid_signatures.len());
+    }
+
+    #[test]
+    fn test_sign_without_checksum(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let mut msg = [0u8; 16];
+        rng.fill_bytes(&mut msg);
+        let signer = Signer::init(&mut rng);
+        let mut registration = Registration::new();
+        let registered_signer = signer.register(&mut registration).unwrap();
+        assert!(registered_signer.sign::<DATA_LENGTH>(&msg).is_none());
+
+    }
+
+    #[test]
+    fn test_get_checksum_before_closed(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let set_size = 10;
+        let signers: Vec<Signer> = (0..set_size as usize)
+            .map(|_| Signer::init(&mut rng))
+            .collect();
+        let mut registration = Registration::new();
+
+        let mut registered_signers: Vec<RegisteredSigner> = signers
+            .iter()
+            .filter_map(|signer| signer.register(&mut registration))
+            .collect();
+        registered_signers[0].get_closed_registration(&registration);
+        println!("{:?}", registered_signers[0].checksum);
+    }
+
+    #[test]
+    fn test_duplicate_registering(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let set_size = 10;
+        let signers: Vec<Signer> = (0..set_size as usize)
+            .map(|_| Signer::init(&mut rng))
+            .collect();
+        let mut registration = Registration::new();
+
+        let _registered_signers: Vec<RegisteredSigner> = signers
+            .iter()
+            .filter_map(|signer| signer.register(&mut registration))
+            .collect();
+
+        assert!(signers[0].register(&mut registration).is_none());
+    }
+
+    #[test]
+    fn test_register_closed_registration(){
+        let mut rng = ChaCha20Rng::from_seed(Default::default());
+        let set_size = 10;
+        let signers: Vec<Signer> = (0..set_size as usize)
+            .map(|_| Signer::init(&mut rng))
+            .collect();
+        let mut registration = Registration::new();
+
+        let _registered_signers: Vec<RegisteredSigner> = signers
+            .iter()
+            .filter_map(|signer| signer.register(&mut registration))
+            .collect();
+
+        registration.close::<DATA_LENGTH>();
+        let signer = Signer::init(&mut rng);
+        assert!(signer.register(&mut registration).is_none());
     }
 }

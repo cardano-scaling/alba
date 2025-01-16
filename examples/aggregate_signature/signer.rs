@@ -21,7 +21,7 @@ pub(crate) struct RegisteredSigner {
     /// Registration index of the signer
     pub(crate) index: usize,
     /// Closed registration checksum
-    checksum: Option<Vec<u8>>,
+    pub(crate) checksum: Option<Vec<u8>>,
 }
 
 impl Signer {
@@ -50,7 +50,7 @@ impl Signer {
                 .values()
                 .any(|v| *v == self.verification_key)
             {
-                println!("Key already registered!");
+                println!("Error: Key already registered!");
                 return None;
             }
             let index = registration.registered_keys.len().saturating_add(1);
@@ -63,7 +63,7 @@ impl Signer {
                 checksum: None,
             })
         } else {
-            println!("Registration is closed!");
+            println!("Error: Cannot register, registration is closed!");
             None
         }
     }
