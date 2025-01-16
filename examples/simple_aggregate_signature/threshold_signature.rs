@@ -12,7 +12,7 @@ pub(crate) struct ThresholdSignature {
 }
 
 impl ThresholdSignature {
-    pub(crate) fn aggregate<const N: usize>(
+    pub(crate) fn aggregate(
         alba_signatures: &HashMap<Element, usize>,
         params: &Params,
         key_list: &HashMap<usize, PublicKey>,

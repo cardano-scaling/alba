@@ -19,8 +19,8 @@ impl Signer {
         }
     }
 
-    pub(crate) fn sign<const N: usize>(&self, msg: &[u8]) -> [u8; N] {
-        let mut signature_to_byte = [0u8; N];
+    pub(crate) fn sign(&self, msg: &[u8]) -> [u8; 48] {
+        let mut signature_to_byte = [0u8; 48];
         signature_to_byte.copy_from_slice(&self.signing_key.sign(msg, &[], &[]).to_bytes());
         signature_to_byte
     }

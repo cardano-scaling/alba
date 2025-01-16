@@ -30,10 +30,9 @@ fn main() {
     for i in 0..set_size as usize {
         let signer = Signer::new(&mut rng);
         key_list.insert(i, signer.verification_key);
-        signature_list.insert(signer.sign::<DATA_LENGTH>(&msg), i);
+        signature_list.insert(signer.sign(&msg), i);
     }
-    let threshold_signature =
-        ThresholdSignature::aggregate::<DATA_LENGTH>(&signature_list, &params, &key_list);
+    let threshold_signature = ThresholdSignature::aggregate(&signature_list, &params, &key_list);
 
     print!("{:?}", threshold_signature.verify(&msg, &params));
 }
