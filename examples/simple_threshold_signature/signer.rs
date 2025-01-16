@@ -1,4 +1,4 @@
-use crate::simple_aggregate_signature::signature::Signature;
+use crate::simple_threshold_signature::signature::Signature;
 use blst::min_sig::{PublicKey, SecretKey};
 use rand_core::{CryptoRng, RngCore};
 

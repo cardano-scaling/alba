@@ -1,10 +1,10 @@
 //! Centralized Telescope example with BLS signatures
 
-mod simple_aggregate_signature;
+mod simple_threshold_signature;
 
-use crate::simple_aggregate_signature::signature::Signature;
-use crate::simple_aggregate_signature::signer::Signer;
-use crate::simple_aggregate_signature::threshold_signature::ThresholdSignature;
+use crate::simple_threshold_signature::signature::Signature;
+use crate::simple_threshold_signature::signer::Signer;
+use crate::simple_threshold_signature::threshold_signature::ThresholdSignature;
 use alba::centralized_telescope::params::Params;
 use blst::min_sig::PublicKey;
 use rand_chacha::ChaCha20Rng;

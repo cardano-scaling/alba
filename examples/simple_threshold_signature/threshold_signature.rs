@@ -1,4 +1,4 @@
-use crate::simple_aggregate_signature::signature::Signature;
+use crate::simple_threshold_signature::signature::Signature;
 use crate::Element;
 use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
@@ -12,39 +12,32 @@ pub(crate) struct ThresholdSignature {
 
 impl ThresholdSignature {
     pub(crate) fn aggregate(
-        alba_signatures: &[Signature],
+        signatures: &[Signature],
         params: &Params,
         key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<PublicKey>) {
-        let prover_set = alba_signatures
+        let prover_set = signatures
             .iter()
             .map(|s| s.signature.to_bytes())
             .collect::<Vec<Element>>();
         let alba = CentralizedTelescope::create(params);
         let proof = alba.prove(&prover_set).unwrap();
-        let proof_elements = proof.element_sequence.clone();
 
-        let proof_signatures = proof_elements
+        let proof_signatures: Vec<BLSSignature> = proof
+            .element_sequence
             .iter()
-            .map(|element| BLSSignature::from_bytes(element).unwrap())
-            .collect::<Vec<BLSSignature>>();
+            .filter_map(|element| BLSSignature::from_bytes(element).ok())
+            .collect();
 
         let mut public_keys = Vec::with_capacity(proof_signatures.len());
         for sig in &proof_signatures {
-            // Find the index of the signature in `alba_signatures`
-            if let Some(signature_entry) =
-                alba_signatures.iter().find(|entry| entry.signature == *sig)
-            {
+            if let Some(signature_entry) = signatures.iter().find(|entry| entry.signature == *sig) {
                 if let Some((_, public_key)) = key_list
                     .iter()
                     .find(|entry| entry.0 == signature_entry.index)
                 {
                     public_keys.push(*public_key);
-                } else {
-                    panic!("Public key not found for index: {}", signature_entry.index);
                 }
-            } else {
-                panic!("Signature not found in alba_signatures: {:?}", sig);
             }
         }
         (Self { proof }, public_keys)
