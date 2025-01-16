@@ -19,8 +19,8 @@ fn main() {
     rng.fill_bytes(&mut msg);
     let set_size = 1000;
     let params = Params {
-        soundness_param: 10.0,
-        completeness_param: 10.0,
+        soundness_param: 128.0,
+        completeness_param: 128.0,
         set_size: 80 * set_size / 100,
         lower_bound: 20 * set_size / 100,
     };
