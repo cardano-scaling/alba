@@ -1,5 +1,4 @@
-use blst::min_sig::{PublicKey, Signature as BLSSignature};
-use blst::BLST_ERROR;
+use blst::min_sig::Signature as BLSSignature;
 
 /// Single signature
 #[derive(Debug, Clone)]

@@ -6,12 +6,12 @@ use crate::simple_aggregate_signature::signature::Signature;
 use crate::simple_aggregate_signature::signer::Signer;
 use crate::simple_aggregate_signature::threshold_signature::ThresholdSignature;
 use alba::centralized_telescope::params::Params;
+use blst::min_sig::PublicKey;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
-use std::collections::HashMap;
 
 const DATA_LENGTH: usize = 48;
-pub(crate) type Element = [u8; DATA_LENGTH];
+type Element = [u8; DATA_LENGTH];
 
 fn main() {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
@@ -25,15 +25,19 @@ fn main() {
         lower_bound: 20 * set_size / 100,
     };
 
-    let mut key_list = HashMap::with_capacity(set_size as usize);
+    let mut key_list: Vec<(usize, PublicKey)> = Vec::with_capacity(set_size as usize);
     let mut signature_list: Vec<Signature> = Vec::with_capacity(set_size as usize);
 
     for i in 0..set_size as usize {
         let signer = Signer::new(&mut rng);
-        key_list.insert(i, signer.verification_key);
+        key_list.push((i, signer.verification_key));
         signature_list.push(signer.sign(&msg, i));
     }
-    let threshold_signature = ThresholdSignature::aggregate(&signature_list, &params, &key_list);
+    let (threshold_signature, public_keys) =
+        ThresholdSignature::aggregate(&signature_list, &params, &key_list);
 
-    print!("{:?}", threshold_signature.verify(&msg, &params));
+    print!(
+        "{:?}",
+        threshold_signature.verify(&msg, &params, &public_keys)
+    );
 }
