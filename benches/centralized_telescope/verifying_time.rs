@@ -54,7 +54,7 @@ mod criterion_group {
     use super::{criterion_group, verify_benches, Criterion, Duration};
 
     criterion_group!(name = centralized_verifying_time;
-                     config = Criterion::default().measurement_time(Duration::from_secs(30));
+                     config = Criterion::default().measurement_time(Duration::from_secs(30)).sample_size(500);
                      targets = verify_benches
     );
 }

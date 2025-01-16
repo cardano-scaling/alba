@@ -59,7 +59,7 @@ mod criterion_group {
     use super::{criterion_group, step_benches, Criterion, Duration, Steps};
 
     criterion_group!(name = centralized_step;
-        config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30));
+        config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30)).sample_size(500);
         targets = step_benches
     );
 }
