@@ -130,14 +130,14 @@ $$
 > - Output:
 >   - $\pi:~~$ `proof`, a valid proof $(t, s_1, \ldots, s_u)$ or $\bot$.
 > ---
-> - $bins \leftarrow$ { }
+> - $bins \leftarrow ( ~ )$ 
 > - **for** each $~~ i \in \[n_p\]:$
->   - $bins\[i\] \leftarrow \[~\]$
+>   - $bins\[i\] \leftarrow ( ~ )$
 > - **for** each $~~ s \in S_p:$
 >   - $ind \leftarrow \mathsf{H_0}(s)$
->   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup \[s\]$
+>   - $bins\[ ind \] \leftarrow bins\[ ind \] \cup (s)$
 > - **for** each $~~ t \in \[d\]:$
->   - $\pi \leftarrow \mathsf{DFS}(t, \[~\], bins)$
+>   - $\pi \leftarrow \mathsf{DFS}(t, ( ~ ), bins)$
 >   - **if** $~~ \pi ~!= \bot:$
 >     - **return** $~~ \pi.$
 > - **return** $~~ \bot.$
@@ -159,7 +159,7 @@ $$
 >   - **return** $~~ \bot.$
 > - $ind \leftarrow \mathsf{H_1}(t, slist)$
 > - **for** each $~~ s \in bins\[ind\]:$
->   - $slist_{new} \leftarrow slist \cup \[s\]$
+>   - $slist_{new} \leftarrow slist \cup (s)$
 >   - $\pi \leftarrow \mathsf{DFS}(t, slist_{new}, bins)$
 >   - **if** $~~ \pi ~!= \bot:$
 >     - **return** $~~ \pi.$
