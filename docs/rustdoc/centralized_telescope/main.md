@@ -19,9 +19,9 @@ To address this, the **construction with bounded DFS** expands on the prehashed 
 This generalized construction uses the same key parameters as prehashed construction but introduces:
 - Retries with index $v$: 
   - The prover retries the proof generation process up to $r$ times.
-  - Each retry uses a different retry counter $v$, where $v \in \[1, r\]$, to diversify the search process.
+  - Each retry uses a different retry counter $v$, where $v \in \[r\]$, to diversify the search process.
 - Seeded binning:
-  - Elements in $S_p$ are prehashed into bins using $H_0(v, \cdot)$ where $v \in \[1,r\]$, grouping elements based on their hash values. We prehashed using the retry counter to get different bins for each repetition, reducing the risk of badly distributed bins.
+  - Elements in $S_p$ are prehashed into bins using $H_0(v, \cdot)$ where $v \in \[r\]$, grouping elements based on their hash values. We prehashed using the retry counter to get different bins for each repetition, reducing the risk of badly distributed bins.
   - This process limits the search space for DFS, making it more efficient.
 - Bounded DFS:
   - A depth-first search explores valid proof sequences of size $u$, using the bins for efficient lookup.
@@ -30,13 +30,13 @@ This generalized construction uses the same key parameters as prehashed construc
 ## Protocol
 1. **Initialization**:
    - The prover begins by preparing for up to $r$ retries. 
-   - Each retry introduces a unique retry counter $v \in \[1, r\]$ to diversify the search space.
+   - Each retry introduces a unique retry counter $v \in \[r\]$ to diversify the search space.
    - Each retry is an independent attempt to construct a valid proof.
 2. **Prehashing**:
    - For each retry, elements in $S_p$ are hashed using the hash function $H_0(v, s)$.
    - This process groups elements based on their hash values, reducing the search space by allowing DFS to focus only on relevant elements.
 3. **Exploring starting points**:
-   - The prover iterates over all possible starting indices $t \in \[1, d\]$.
+   - The prover iterates over all possible starting indices $t \in \[d\]$.
    - For each $t$, the prover begins constructing a proof sequence $(t, s_1, ..., s_u)$, starting with $t$ and extending the sequence using elements from $S_p$ within their corresponding bins.
 4. **Bounded DFS**:
    - A bounded DFS search is used to construct the sequence $(t, s_1, ..., s_u)$, with a shared step limit $B$ applied across all starting points $t$.
