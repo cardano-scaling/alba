@@ -53,7 +53,7 @@ mod criterion_group {
     use super::{criterion_group, proving_benches, Criterion, Duration};
 
     criterion_group!(name = centralized_proving_time;
-                     config = Criterion::default().measurement_time(Duration::from_secs(30)).sample_size(500);
+                     config = Criterion::default().measurement_time(Duration::from_secs(30)).sample_size(200);
                      targets = proving_benches
     );
 }
