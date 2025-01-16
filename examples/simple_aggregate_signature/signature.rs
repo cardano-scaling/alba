@@ -9,13 +9,3 @@ pub(crate) struct Signature {
     /// Verification index of the signer
     pub(crate) index: usize,
 }
-
-impl Signature {
-    /// Verify signature against `commitment = Hash(checksum || msg)`
-    pub(crate) fn verify(&self, msg: &[u8], verification_key: &PublicKey) -> bool {
-        let result = self
-            .signature
-            .verify(false, msg, &[], &[], verification_key, false);
-        result == BLST_ERROR::BLST_SUCCESS
-    }
-}
