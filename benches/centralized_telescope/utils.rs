@@ -25,14 +25,8 @@ pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 32]>, Cent
     let params = Params {
         soundness_param: params.lambda_sec,
         completeness_param: params.lambda_rel,
-        set_size: params
-            .set_size_percentage
-            .saturating_mul(params.total_num_elements)
-            .div_ceil(100),
-        lower_bound: params
-            .lower_bound_percentage
-            .saturating_mul(params.total_num_elements)
-            .div_ceil(100),
+        set_size: params.set_size,
+        lower_bound: params.lower_bound,
     };
     let telescope = CentralizedTelescope::create(&params);
     (dataset, telescope)

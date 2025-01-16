@@ -9,8 +9,8 @@ pub mod centralized {
         lambda_sec: 64.0,
         lambda_rel: 64.0,
         total_num_elements: 1_000,
-        set_size_percentage: 90,
-        lower_bound_percentage: 60,
+        set_size: 900,
+        lower_bound: 600,
     };
 
     /// This case corresponds to medium security requirements with more realistic set_size
@@ -18,8 +18,8 @@ pub mod centralized {
         lambda_sec: 80.0,
         lambda_rel: 80.0,
         total_num_elements: 1_000,
-        set_size_percentage: 80,
-        lower_bound_percentage: 60,
+        set_size: 800,
+        lower_bound: 600,
     };
 
     /// This case corresponds to high security requirements with more realistic set_size
@@ -27,8 +27,8 @@ pub mod centralized {
         lambda_sec: 128.0,
         lambda_rel: 128.0,
         total_num_elements: 1_000,
-        set_size_percentage: 80,
-        lower_bound_percentage: 67,
+        set_size: 800,
+        lower_bound: 670,
     };
 
     pub const SHORT_TESTS: &[BenchParam; 2] = &[LOW_PARAM, MID_PARAM];

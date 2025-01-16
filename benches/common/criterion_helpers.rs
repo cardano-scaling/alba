@@ -21,25 +21,35 @@ pub mod centralized {
         pub total_num_elements: u64,
         /// Alba's set_size (np) parameter in percentage of total number of
         /// elements of the dataset
-        pub set_size_percentage: u64,
+        pub set_size: u64,
         /// Alba's lower bound (nf) parameter in percentage of total number of
         /// elements of the dataset
-        pub lower_bound_percentage: u64,
+        pub lower_bound: u64,
     }
 
     impl BenchParam {
         /// Helper function creating a Benchmark ID
-        pub fn bench_id(&self, bench_name: &str, percentage: u64) -> BenchmarkId {
+        pub fn bench_id(&self, bench_name: &str, truncate: u64) -> BenchmarkId {
+            let set_size_percentage =
+                (self.set_size as f32 / self.total_num_elements as f32 * 100.0).round() as u32;
+            let lower_bound_percentage =
+                (self.lower_bound as f32 / self.total_num_elements as f32 * 100.0).round() as u32;
+
+            // Percentage of |Sp| sent to prover when generating proof
+            let truncate_percentage =
+                (truncate as f32 / self.total_num_elements as f32 * 100.0).round() as u32;
+
             BenchmarkId::new(
                 bench_name,
                 format!(
-                    "params={{λsec: {}, λrel: {}, |Sp|: {} ({}% sent to prover), n_p: {}, n_f: {}}}",
+                    "\n\tParams{{λsec: {}, λrel: {}, n_p: {} ({}%), n_f: {} ({}%), {}% sent}}",
                     self.lambda_sec,
                     self.lambda_rel,
-                    self.total_num_elements,
-                    percentage,
-                    self.set_size_percentage,
-                    self.lower_bound_percentage
+                    self.set_size,
+                    set_size_percentage,
+                    self.lower_bound,
+                    lower_bound_percentage,
+                    truncate_percentage
                 ),
             )
         }
@@ -59,16 +69,9 @@ pub mod centralized {
         for param in params {
             // Benchmark where the prover only has access to np percent elements of Sp,
             // i.e. the minimum number of elements such that the soundness is lower than 2^-λ
-            let low = param
-                .total_num_elements
-                .saturating_mul(param.set_size_percentage)
-                .div_ceil(100);
-            group.bench_function(
-                param.bench_id(bench_name, param.set_size_percentage),
-                move |b| {
-                    b.iter_custom(|n| f(param, low, n));
-                },
-            );
+            group.bench_function(param.bench_id(bench_name, param.set_size), move |b| {
+                b.iter_custom(|n| f(param, param.set_size, n));
+            });
 
             // Extra benchmarks to show the proving time and number of steps
             // when giving more than set_size_percentage elements to the prover.
@@ -77,14 +80,13 @@ pub mod centralized {
             // Uncomment the following lines to run these extra benchmarks.
 
             // // Benchmark where the prover only has access to (np+100)/2 percent elements of Sp
-            // let mean = param.set_size_percentage.saturating_add(100).div_ceil(2);
-            // let mid: u64 = param.total_num_elements.saturating_add(low).div_ceil(2);
-            // group.bench_function(param.bench_id(bench_name, mean), move |b| {
+            // let mid: u64 = param.total_num_elements.saturating_add(param.set_size).div_ceil(2);
+            // group.bench_function(param.bench_id(bench_name, mid), move |b| {
             //     b.iter_custom(|n| f(param, mid, n));
             // });
 
             // // Benchmark where the prover only has access to all elements of Sp
-            // group.bench_function(param.bench_id(bench_name, 100), move |b| {
+            // group.bench_function(param.bench_id(bench_name, param.total_num_elements), move |b| {
             //     b.iter_custom(|n| f(param, param.total_num_elements, n));
             // });
         }
