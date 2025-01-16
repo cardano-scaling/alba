@@ -175,7 +175,7 @@ fn main() {
     let signature_list: Vec<IndividualSignature> = registered_signers
         .iter()
         .take(rng.gen_range(900..950))
-        .filter_map(|signer| signer.sign::<DATA_LENGTH>(&msg))
+        .filter_map(|signer| signer.sign::<DATA_LENGTH>(msg))
         .collect();
     println!("-- {} signatures generated.", signature_list.len());
 
@@ -183,13 +183,13 @@ fn main() {
     println!("--------- Generating Alba threshold signature. ---------");
     // Generate AlbaThresholdSignature proof
     if let Some(alba_threshold_signature) =
-        AlbaThresholdSignature::prove::<DATA_LENGTH>(&params, &signature_list, &registration, &msg)
+        AlbaThresholdSignature::prove::<DATA_LENGTH>(&params, &signature_list, &registration, msg)
     {
         println!("-- Alba threshold signature is generated.");
         println!("--------------------------------------------------------");
         println!("--------- Verifying Alba threshold signature. ----------");
         // Verify the proof
-        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, &msg);
+        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, msg);
         println!("--------------------------------------------------------");
     }
 }
