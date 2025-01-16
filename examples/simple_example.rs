@@ -2,6 +2,7 @@
 
 mod simple_aggregate_signature;
 
+use crate::simple_aggregate_signature::signature::Signature;
 use crate::simple_aggregate_signature::signer::Signer;
 use crate::simple_aggregate_signature::threshold_signature::ThresholdSignature;
 use alba::centralized_telescope::params::Params;
@@ -25,12 +26,12 @@ fn main() {
     };
 
     let mut key_list = HashMap::with_capacity(set_size as usize);
-    let mut signature_list = HashMap::with_capacity(set_size as usize);
+    let mut signature_list: Vec<Signature> = Vec::with_capacity(set_size as usize);
 
     for i in 0..set_size as usize {
         let signer = Signer::new(&mut rng);
         key_list.insert(i, signer.verification_key);
-        signature_list.insert(signer.sign(&msg), i);
+        signature_list.push(signer.sign(&msg, i));
     }
     let threshold_signature = ThresholdSignature::aggregate(&signature_list, &params, &key_list);
 
