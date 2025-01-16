@@ -2,9 +2,10 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 
-use super::types::Hash;
-use crate::utils::sample;
-use crate::utils::types::Element;
+use crate::utils::{
+    sample,
+    types::{Element, Hash},
+};
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
