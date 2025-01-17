@@ -51,9 +51,10 @@ fn proving_benches(c: &mut Criterion) {
 mod criterion_group {
     #![allow(missing_docs)]
     use super::{criterion_group, proving_benches, Criterion, Duration};
+    use crate::utils::common::criterion_helpers::{MEASUREMENT_TIME_SEC, SAMPLE_SIZE};
 
     criterion_group!(name = centralized_proving_time;
-                     config = Criterion::default().measurement_time(Duration::from_secs(30)).sample_size(200);
+                     config = Criterion::default().measurement_time(Duration::from_secs(MEASUREMENT_TIME_SEC)).sample_size(SAMPLE_SIZE);
                      targets = proving_benches
     );
 }

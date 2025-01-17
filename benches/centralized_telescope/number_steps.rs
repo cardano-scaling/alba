@@ -60,9 +60,10 @@ fn step_benches(c: &mut Criterion<Steps>) {
 mod criterion_group {
     #![allow(missing_docs)]
     use super::{criterion_group, step_benches, Criterion, Duration, Steps};
+    use crate::utils::common::criterion_helpers::{MEASUREMENT_TIME_SEC, SAMPLE_SIZE};
 
     criterion_group!(name = centralized_step;
-        config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(30)).sample_size(200);
+        config = Criterion::default().with_measurement(Steps).measurement_time(Duration::from_secs(MEASUREMENT_TIME_SEC)).sample_size(SAMPLE_SIZE);
         targets = step_benches
     );
 }
