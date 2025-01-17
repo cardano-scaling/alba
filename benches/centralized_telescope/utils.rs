@@ -18,10 +18,10 @@ use common::criterion_helpers::centralized::BenchParam;
 pub const NAME: &str = "Centralized";
 
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
-pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 32]>, CentralizedTelescope) {
+pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 48]>, CentralizedTelescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 32]> = test_utils::gen_items(&seed, params.total_num_elements);
+    let dataset: Vec<[u8; 48]> = test_utils::gen_items(&seed, params.total_num_elements);
     let params = Params {
         soundness_param: params.lambda_sec,
         completeness_param: params.lambda_rel,
