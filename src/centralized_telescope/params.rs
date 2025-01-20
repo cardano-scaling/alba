@@ -1,4 +1,4 @@
-//! ALBA's Setup structure
+//! Centralized Telescope's `Params` structure comprising the internal parameters
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/params.md")]
 

@@ -5,6 +5,8 @@
 
 mod algorithm;
 
+mod cases;
+
 pub mod init;
 
 pub mod params;
