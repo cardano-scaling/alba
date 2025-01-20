@@ -31,7 +31,7 @@ For this construction, the random functions are as follows:
 - After constructing a sequence of length $u$, the prover validates it with $H_2$. The sequence is a valid proof if $H_2(t, s_1, \dots, s_u) = 1$.
 
 The values precomputed with $H_0$ enable quick checks to see if a new element can extend a sequence, based on whether $H_1(t, s_1, \dots, s_k)$ matches the bin with label $H_0(s_{k+1})$.
-This avoids checking all possible extensions, dramatically reducing the prover’s workload.
+This avoids checking all possible extensions, significantly reducing the prover's workload.
 
 ### Parameter generation
 The parameters for the construction with prehashing are carefully selected to balance *security* and *efficiency*.
