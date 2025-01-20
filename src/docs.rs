@@ -8,6 +8,9 @@ pub mod variables {}
 #[doc = include_str!("../docs/rustdoc/basic_construction.md")]
 pub mod basic {}
 
+#[doc = include_str!("../docs/rustdoc/prehashing.md")]
+pub mod prehashing {}
+
 #[doc = include_str!("../docs/rustdoc/centralized_telescope/main.md")]
 pub mod centralized {
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/params.md")]
