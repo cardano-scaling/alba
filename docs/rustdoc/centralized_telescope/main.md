@@ -3,7 +3,7 @@
 In scenarios where $n_p$ is small, the parameters given for prehashed construction (relative to the security parameter, $\lambda$) are not optimal, resulting in a reduced probability of constructing a valid proof in a single attempt.
 For large $n_p$, the rapid growth in potential proof tuples ensures valid ones can be found efficiently, allowing the prehashed construction to work seamlessly.
 In contrast, small $n_p$ limits the search space, making the previous parameters inadequate.
-To address this, the **construction with bounded DFS** expands on the prehashed version with *retries*, *randomized indexing*, and *bounding* the DFS.
+To address this, the **construction with bounded DFS** expands on the prehashed version with *retries*, *prehashing randomization*, and *bounding* the DFS.
 
 ## Overview
 - When $n_p$ is large, the rapid increase in potential proof tuples enhances the chances of finding a valid proof, simplifying the construction process.
@@ -35,11 +35,11 @@ This generalized construction uses the same key parameters as prehashed construc
 2. **Prehashing**:
    - For each retry, elements in $S_p$ are hashed using the hash function $H_0(v, s)$.
    - This process groups elements based on their hash values, reducing the search space by allowing DFS to focus only on relevant elements.
-3. **Exploring starting points**:
-   - The prover iterates over all possible starting indices $t \in \[d\]$.
+3. **Exploring search counters**:
+   - The prover iterates over all possible search counters $t \in \[d\]$.
    - For each $t$, the prover begins constructing a proof sequence $(v, t, s_1, \ldots, s_u)$, starting with $t$ and extending the sequence using elements from $S_p$ within their corresponding bins.
 4. **Bounded DFS**:
-   - A bounded DFS search is used to construct the sequence $(v, t, s_1, \ldots, s_u)$, with a shared step limit $B$ applied across all starting points $t$.
+   - A bounded DFS search is used to construct the sequence $(v, t, s_1, \ldots, s_u)$, with a shared step limit $B$ applied across all search counters $t$ Note that the bound is reset for each $v$.
    - At each step of DFS:
      - The algorithm searches a new element for the current sequence $(v, t, s_1, \ldots, s_k)$ in bin numbered $H_1(v, t, s_1, \ldots, s_k)$.
      - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $v \in \[r\]$ , restarting the process with a new partitioning of elements. 
