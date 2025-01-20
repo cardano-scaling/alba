@@ -7,7 +7,7 @@ To address this, the **construction with bounded DFS** expands on the prehashed 
 
 ## Overview
 - When $n_p$ is large, the rapid increase in potential proof tuples enhances the chances of finding a valid proof, simplifying the construction process.
-- For small $n_p$, the element distribution across bins becomes skewed, some bins may contain multiple elements while others remain empty.
+- For small $n_p$, the element distribution across bins is more likely to be skewed, some bins may contain multiple elements while others remain empty.
   - It reduces the probability of finding a valid proof in a single attempt.
 - Although the average number of elements per bin remains one, this imbalance increases the completeness error. 
   - Prehashing can still be applied, but the error becomes more pronounced.
@@ -42,10 +42,10 @@ This generalized construction uses the same key parameters as prehashed construc
    - A bounded DFS search is used to construct the sequence $(v, t, s_1, \ldots, s_u)$, with a shared step limit $B$ applied across all starting points $t$.
    - At each step of DFS:
      - The algorithm searches a new element for the current sequence $(v, t, s_1, \ldots, s_k)$ in bin numbered $H_1(v, t, s_1, \ldots, s_k)$.
-     - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $r$, restarting the process with a new partitioning of elements. 
+     - If the step limit $B$ is reached or no valid extension exists, the DFS backtracks and explores another retry $v \in \[r\]$ , restarting the process with a new partitioning of elements. 
      - Otherwise, the DFS updates the step limit and then recursively calls itself with the extended tuple.
 5. **Validation**:
-   - When the DFS has constructed a sequence of $u$ elements $(v, t, s_1, \ldots, s_u)$, it verifies whether the full sequence satisfies the final condition using $H_2(v, t, s_1, \ldots, s_u)$.
+   - When the DFS has constructed a sequence of $u$ elements $(v, t, s_1, \ldots, s_u)$, it verifies whether the full sequence satisfies the final oracle check, $H_2(v, t, s_1, \ldots, s_u) == 1$.
    - If the sequence passes this check, it is accepted as a valid proof, and the prover outputs it.
 6. **Retry Mechanism**:
    - If no valid proof is found for a given $t$ or if the step limit $B$ is exhausted for all $t$, the prover moves to the next retry by incrementing $v$.
