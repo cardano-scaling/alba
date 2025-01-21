@@ -3,13 +3,11 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/main.md")]
 
-mod algorithm;
+pub mod params;
 
 pub mod proof;
 
 mod round;
-
-pub mod params;
 
 mod telescope;
 pub use telescope::Telescope;

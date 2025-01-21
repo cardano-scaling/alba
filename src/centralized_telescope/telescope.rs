@@ -1,4 +1,3 @@
-use super::algorithm;
 use super::params::Params;
 use super::proof::Proof;
 use crate::utils::types::Element;
@@ -36,12 +35,12 @@ impl Telescope {
     /// Alba's proving algorithm, based on a depth-first search algorithm.
     /// Returns either a `Proof` or `None` if no proof is found.
     pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        algorithm::prove(self.set_size, &self.params, prover_set)
+        Proof::new(self.set_size, &self.params, prover_set)
     }
 
     /// Alba's verification algorithm.
     /// Returns true if and only if the proof is successfully verified.
     pub fn verify(&self, proof: &Proof) -> bool {
-        algorithm::verify(self.set_size, &self.params, proof)
+        proof.verify(self.set_size, &self.params)
     }
 }
