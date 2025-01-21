@@ -4,20 +4,13 @@ use crate::aggregate_signature::signature::IndividualSignature;
 use blst::min_sig::{PublicKey, SecretKey};
 use rand_core::{CryptoRng, RngCore};
 
-/// Threshold signature candidate signer
+/// Threshold signature signer
 #[derive(Debug, Clone)]
-pub struct Signer {
+pub(crate) struct Signer {
     /// Signature generation key
     signing_key: SecretKey,
     /// Signature verification key
     pub(crate) verification_key: PublicKey,
-}
-
-/// Registered threshold signature signer
-#[derive(Debug, Clone)]
-pub(crate) struct RegisteredSigner {
-    /// Signature generation key
-    signing_key: SecretKey,
     /// Registration index of the signer
     pub(crate) index: usize,
     /// Closed registration checksum
@@ -37,39 +30,36 @@ impl Signer {
         Self {
             signing_key: sk,
             verification_key: vk,
+            index: 0,
+            checksum: None,
         }
     }
 
     /// Register signer's verification key. If the registration is not closed, i.e., no checksum found and the
     /// signer's verification key is already registered return `None`. Otherwise, insert new verification key with a
     /// new index. Return the `RegisteredSigner`.
-    pub(crate) fn register(&self, registration: &mut Registration) -> Option<RegisteredSigner> {
-        if registration.checksum.is_none() {
+    pub(crate) fn register(&mut self, registration: &mut Registration) -> bool {
+        return if registration.checksum.is_none() {
             if registration
                 .registered_keys
                 .values()
                 .any(|v| *v == self.verification_key)
             {
                 println!("Error: Key already registered!");
-                return None;
+                return false;
             }
             let index = registration.registered_keys.len().saturating_add(1);
             registration
                 .registered_keys
                 .insert(index, self.verification_key);
-            Some(RegisteredSigner {
-                signing_key: self.signing_key.clone(),
-                index,
-                checksum: None,
-            })
+            self.index = index;
+            true
         } else {
             println!("Error: Cannot register, registration is closed!");
-            None
-        }
+            false
+        };
     }
-}
 
-impl RegisteredSigner {
     /// Get closed registration. Update the registered signer with the checksum of registration.
     pub(crate) fn get_closed_registration(&mut self, registration: &Registration) {
         match &registration.checksum {
