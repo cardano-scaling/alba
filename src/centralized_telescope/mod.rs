@@ -5,15 +5,11 @@
 
 mod algorithm;
 
-pub mod init;
-
-pub mod params;
-
 pub mod proof;
 
 mod round;
 
-pub mod setup;
+pub mod params;
 
 mod telescope;
 pub use telescope::Telescope;
