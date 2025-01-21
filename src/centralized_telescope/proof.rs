@@ -23,7 +23,7 @@ pub struct Proof {
 
 impl Proof {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
-    /// Calls up to params.max_retries times the prove_index function and
+    /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
     ///
     /// # Arguments
@@ -119,8 +119,8 @@ impl Proof {
     }
 
     /// Indexed proving algorithm, returns the total number of DFS calls done
-    /// to find a proof and Some(proof) if found within params.dfs_bound calls
-    /// of DFS, otherwise None
+    /// to find a proof and `Some(proof)` if found within `params.dfs_bound` calls
+    /// of DFS, otherwise `None`
     fn prove_index(
         set_size: u64,
         params: &Params,
@@ -169,7 +169,7 @@ impl Proof {
     /// Depth-First Search (DFS) algorithm which goes through all potential
     /// round candidates and returns the total number of recursive DFS calls
     /// done and, if not found under params.dfs_bound calls, None otherwise
-    /// Some(Proof), that is the first "round", i.e. the first proof candidate,
+    /// `Some(Proof)`, that is the first "round", i.e. the first proof candidate,
     /// Round{retry_counter, search_counter, x_1, ..., x_u)} such that:
     /// - ∀i ∈ [0, u-1], bin_hash(x_i+1) ∈ bins[round_hash(...round_hash(round_hash(v, t), x_1), ..., x_i)]
     /// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
