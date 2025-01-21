@@ -20,6 +20,8 @@ pub(crate) struct AlbaThresholdSignature {
     pub(crate) proof: Proof,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
+    /// Commitment `Hash(checksum || msg)`
+    pub(crate) commitment: Vec<u8>,
 }
 
 impl AlbaThresholdSignature {
@@ -32,46 +34,61 @@ impl AlbaThresholdSignature {
         registration: &Registration,
         msg: &[u8],
     ) -> Option<Self> {
-        // Collect valid individual signatures' byte representation into a hashmap
-        let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
-        println!("-- Collected {} valid signatures. ", valid_signatures.len());
-        // Check if there are enough valid signatures
-        if valid_signatures.len() < alba.get_set_size() as usize {
-            println!(
-                    "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
-                    alba.get_set_size(),
-                    valid_signatures.len()
+        match &registration.checksum {
+            Some(checksum) => {
+                // Collect valid individual signatures' byte representation into a hashmap
+                let valid_signatures =
+                    collect_valid_signatures::<N>(signature_list, registration, msg);
+                println!("-- Collected {} valid signatures. ", valid_signatures.len());
+                // Check if there are enough valid signatures
+                if valid_signatures.len() < alba.get_set_size() as usize {
+                    println!(
+                        "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
+                        alba.get_set_size(),
+                        valid_signatures.len()
+                    );
+                    return None;
+                }
+                // Collect the byte representation of valid signatures into a Vec
+                let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
+
+                println!("-- Creating alba proof. ");
+                let proof = alba.prove(&prover_set)?;
+                println!("-- Alba proof created: ");
+                println!(
+                    " - Numbers of retries done to find the proof: {}",
+                    proof.retry_counter
                 );
-            return None;
+                println!(
+                    " - Index of the searched subtree to find the proof: {}",
+                    proof.search_counter
+                );
+                println!(
+                    " - Number of elements in the proof sequence: {}",
+                    proof.element_sequence.len()
+                );
+
+                // Extract the registration indices of the elements that form the proof element sequence
+                let indices: Vec<usize> = proof
+                    .element_sequence
+                    .iter()
+                    .filter_map(|element| valid_signatures.get(element.as_slice()).copied())
+                    .collect();
+
+                let commitment = get_commitment::<N>(checksum, msg).to_vec();
+
+                // Return the constructed AlbaThresholdSignature
+                Some(Self {
+                    proof,
+                    indices,
+                    commitment,
+                })
+            }
+            None => {
+                println!("Error: Registration is not closed.");
+                None
+            }
         }
-        // Collect the byte representation of valid signatures into a Vec
-        let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
-
-        println!("-- Creating alba proof. ");
-        let proof = alba.prove(&prover_set)?;
-        println!("-- Alba proof created: ");
-        println!(
-            " - Numbers of retries done to find the proof: {}",
-            proof.retry_counter
-        );
-        println!(
-            " - Index of the searched subtree to find the proof: {}",
-            proof.search_counter
-        );
-        println!(
-            " - Number of elements in the proof sequence: {}",
-            proof.element_sequence.len()
-        );
-
-        // Extract the registration indices of the elements that form the proof element sequence
-        let indices: Vec<usize> = proof
-            .element_sequence
-            .iter()
-            .filter_map(|element| valid_signatures.get(element.as_slice()).copied())
-            .collect();
-
-        // Return the constructed AlbaThresholdSignature
-        Some(Self { proof, indices })
     }
 
     /// Verify AlbaThresholdSignature. Validate individual signatures and verify Alba proof.
@@ -81,35 +98,41 @@ impl AlbaThresholdSignature {
         registration: &Registration,
         msg: &[u8],
     ) -> bool {
-        // Ensure that the registration is closed, and retrieve the correct checksum
-        let Some(checksum) = &registration.checksum else {
-            println!("Error: Registration is not closed.");
-            return false;
-        };
+        match &registration.checksum {
+            Some(checksum) => {
+                let commitment = get_commitment::<N>(checksum, msg).to_vec();
 
-        // Compute the commitment
-        let commitment = get_commitment::<N>(checksum, msg).to_vec();
+                if commitment != self.commitment {
+                    println!("Error: Commitment mismatch.");
+                    return false;
+                }
 
-        println!("-- Validating proof elements. ");
-        // Aggregate the signatures and verify them at once
-        if !validate_signatures(self, registration, &commitment) {
-            println!("Error: Signature validation failed.");
-            return false;
+                println!("-- Validating proof elements. ");
+                // Aggregate the signatures and verify them at once
+                if !validate_signatures(self, registration, &commitment) {
+                    println!("Error: Signature validation failed.");
+                    return false;
+                }
+                println!(
+                    "-- {} proof elements are validated. ",
+                    self.proof.element_sequence.len()
+                );
+
+                println!("-- Verifying alba proof. ");
+                let result = alba.verify(&self.proof);
+
+                if result {
+                    println!("-- Success: Alba proof verification passed.");
+                } else {
+                    println!("Error: Alba proof verification failed.");
+                }
+                result
+            }
+            None => {
+                println!("Error: Registration is not closed.");
+                false
+            }
         }
-        println!(
-            "-- {} proof elements are validated. ",
-            self.proof.element_sequence.len()
-        );
-
-        println!("-- Verifying alba proof. ");
-        let result = alba.verify(&self.proof);
-
-        if result {
-            println!("-- Success: Alba proof verification passed.");
-        } else {
-            println!("Error: Alba proof verification failed.");
-        }
-        result
     }
 }
 
