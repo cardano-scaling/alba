@@ -19,7 +19,21 @@ impl ThresholdSignature {
             .iter()
             .map(|s| s.signature.to_bytes())
             .collect::<Vec<Element>>();
+        println!("-- Creating alba proof. ");
         let proof = alba.prove(&prover_set).unwrap();
+        println!("-- Alba proof created: ");
+        println!(
+            " - Numbers of retries done to find the proof: {}",
+            proof.retry_counter
+        );
+        println!(
+            " - Index of the searched subtree to find the proof: {}",
+            proof.search_counter
+        );
+        println!(
+            " - Number of elements in the proof sequence: {}",
+            proof.element_sequence.len()
+        );
 
         let proof_signatures: Vec<BLSSignature> = proof
             .element_sequence
