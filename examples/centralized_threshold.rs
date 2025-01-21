@@ -5,9 +5,8 @@ use crate::aggregate_signature::helpers::{
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
 use crate::aggregate_signature::signer::Signer;
-use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
-use alba::centralized_telescope::CentralizedTelescope;
+use alba::centralized_telescope::Telescope;
 use rand::Rng;
 use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
@@ -28,7 +27,7 @@ impl AlbaThresholdSignature {
     /// Create Alba proof and extract indices of proof elements.
     /// Return proof, commitment, and indices.
     fn prove<const N: usize>(
-        params: &Params,
+        alba: &Telescope,
         signature_list: &[IndividualSignature],
         registration: &Registration,
         msg: &[u8],
@@ -37,10 +36,10 @@ impl AlbaThresholdSignature {
         let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
         println!("-- Collected {} valid signatures. ", valid_signatures.len());
         // Check if there are enough valid signatures
-        if valid_signatures.len() < params.set_size as usize {
+        if valid_signatures.len() < alba.get_set_size() as usize {
             println!(
                     "Error: Not enough valid signatures to create an ATS! Expected at least {} signatures, but got {}.",
-                    params.set_size,
+                    alba.get_set_size(),
                     valid_signatures.len()
                 );
             return None;
@@ -48,8 +47,6 @@ impl AlbaThresholdSignature {
         // Collect the byte representation of valid signatures into a Vec
         let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
 
-        // Initialise Alba with the parameters and generates a proof using the prover set
-        let alba = CentralizedTelescope::create(params);
         println!("-- Creating alba proof. ");
         let proof = alba.prove(&prover_set)?;
         println!("-- Alba proof created: ");
@@ -80,7 +77,7 @@ impl AlbaThresholdSignature {
     /// Verify AlbaThresholdSignature. Validate individual signatures and verify Alba proof.
     fn verify<const N: usize>(
         &self,
-        params: &Params,
+        alba: &Telescope,
         registration: &Registration,
         msg: &[u8],
     ) -> bool {
@@ -104,8 +101,6 @@ impl AlbaThresholdSignature {
             self.proof.element_sequence.len()
         );
 
-        // Initialise Alba with the parameters and generates a proof using the prover set
-        let alba = CentralizedTelescope::create(params);
         println!("-- Verifying alba proof. ");
         let result = alba.verify(&self.proof);
 
@@ -127,21 +122,21 @@ fn main() {
     println!("--------------------------------------------------------");
 
     println!("-- Telescope parameters:");
-    let set_size = 1_000;
-    let params = Params {
-        soundness_param: 10.0,
-        completeness_param: 10.0,
-        set_size: 80 * set_size / 100,
-        lower_bound: 20 * set_size / 100,
-    };
-    println!(" - Soundness parameter: {}", params.soundness_param);
-    println!(" - Completeness parameter: {}", params.completeness_param);
-    println!(" - Prover set size: {}", params.set_size);
-    println!(" - Lower bound: {}", params.lower_bound);
+    let nb_elements: u64 = 1_000;
+    let soundness_param = 128.0;
+    let completeness_param = 128.0;
+    let set_size = nb_elements.saturating_mul(80).div_ceil(100);
+    let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
+    let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
+
+    println!(" - Soundness parameter: {}", soundness_param);
+    println!(" - Completeness parameter: {}", completeness_param);
+    println!(" - Prover set size: {}", set_size);
+    println!(" - Lower bound: {}", lower_bound);
 
     // Initialize signers
     println!("--------------------------------------------------------");
-    let mut signers: Vec<Signer> = (0..set_size as usize)
+    let mut signers: Vec<Signer> = (0..nb_elements as usize)
         .map(|_| Signer::init(&mut rng))
         .collect();
     println!("-- {} signers initialized.", signers.len());
@@ -151,26 +146,28 @@ fn main() {
     println!("-- Registration is opened.");
 
     // Register signer candidates
-    let mut register_count = 0;
-    for i in 0..rng.gen_range(950..1000) {
+    let mut count = 0;
+    let register_range = rng.gen_range(set_size..nb_elements);
+    for i in 0..register_range as usize {
         if signers[i].register(&mut registration) {
-            register_count += 1;
+            count += 1;
         }
     }
-    println!("-- {} signers are registered.", register_count);
+    println!("-- {} signers are registered.", count);
 
     // Close the registration process
     registration.close::<DATA_LENGTH>();
     println!("-- Registration is closed.");
 
-    for signer in &mut signers {
-        signer.get_closed_registration(&registration);
+    for i in 0..register_range as usize {
+        signers[i].get_closed_registration(&registration);
     }
 
     // Create individual signatures
+    let signature_range = rng.gen_range(set_size..register_range);
     let signature_list: Vec<IndividualSignature> = signers
         .iter()
-        .take(rng.gen_range(900..950))
+        .take(signature_range as usize)
         .filter_map(|signer| signer.sign::<DATA_LENGTH>(msg))
         .collect();
     println!("-- {} signatures generated.", signature_list.len());
@@ -179,13 +176,13 @@ fn main() {
     println!("--------- Generating Alba threshold signature. ---------");
     // Generate AlbaThresholdSignature proof
     if let Some(alba_threshold_signature) =
-        AlbaThresholdSignature::prove::<DATA_LENGTH>(&params, &signature_list, &registration, msg)
+        AlbaThresholdSignature::prove::<DATA_LENGTH>(&alba, &signature_list, &registration, msg)
     {
         println!("-- Alba threshold signature is generated.");
         println!("--------------------------------------------------------");
         println!("--------- Verifying Alba threshold signature. ----------");
         // Verify the proof
-        alba_threshold_signature.verify::<DATA_LENGTH>(&params, &registration, msg);
+        alba_threshold_signature.verify::<DATA_LENGTH>(&alba, &registration, msg);
         println!("--------------------------------------------------------");
     }
 }
