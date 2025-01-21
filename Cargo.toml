@@ -13,6 +13,8 @@ blake2 = "0.10.6"
 rand = "0.8"
 
 [dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"]}
+rand = "0.8.5"
 rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 test-case = "3.3.1"
