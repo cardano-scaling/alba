@@ -114,6 +114,7 @@ impl AlbaThresholdSignature {
 }
 
 fn main() {
+    // Initialize RNG
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let sentence = "ALBA Rocks!";
     let msg = sentence.as_bytes();
@@ -121,6 +122,7 @@ fn main() {
     println!("\n--------------- ALBA Threshold Signature ---------------");
     println!("--------------------------------------------------------");
 
+    // Telescope parameters
     println!("-- Telescope parameters:");
     let nb_elements: u64 = 1_000;
     let soundness_param = 128.0;
@@ -129,10 +131,10 @@ fn main() {
     let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
     let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
 
-    println!(" - Soundness parameter: {}", soundness_param);
-    println!(" - Completeness parameter: {}", completeness_param);
-    println!(" - Prover set size: {}", set_size);
-    println!(" - Lower bound: {}", lower_bound);
+    println!(" - Soundness parameter: {soundness_param}");
+    println!(" - Completeness parameter: {completeness_param}");
+    println!(" - Prover set size: {set_size}");
+    println!(" - Lower bound: {lower_bound}");
 
     // Initialize signers
     println!("--------------------------------------------------------");
@@ -148,19 +150,19 @@ fn main() {
     // Register signer candidates
     let mut count = 0;
     let register_range = rng.gen_range(set_size..nb_elements);
-    for i in 0..register_range as usize {
-        if signers[i].register(&mut registration) {
+    for signer in signers.iter_mut().take(register_range as usize) {
+        if signer.register(&mut registration) {
             count += 1;
         }
     }
-    println!("-- {} signers are registered.", count);
+    println!("-- {count} signers are registered.");
 
     // Close the registration process
     registration.close::<DATA_LENGTH>();
     println!("-- Registration is closed.");
 
-    for i in 0..register_range as usize {
-        signers[i].get_closed_registration(&registration);
+    for signer in signers.iter_mut().take(register_range as usize) {
+        signer.get_closed_registration(&registration);
     }
 
     // Create individual signatures
@@ -174,6 +176,7 @@ fn main() {
 
     println!("--------------------------------------------------------");
     println!("--------- Generating Alba threshold signature. ---------");
+
     // Generate AlbaThresholdSignature proof
     if let Some(alba_threshold_signature) =
         AlbaThresholdSignature::prove::<DATA_LENGTH>(&alba, &signature_list, &registration, msg)
@@ -181,9 +184,16 @@ fn main() {
         println!("-- Alba threshold signature is generated.");
         println!("--------------------------------------------------------");
         println!("--------- Verifying Alba threshold signature. ----------");
+
         // Verify the proof
-        alba_threshold_signature.verify::<DATA_LENGTH>(&alba, &registration, msg);
+        if alba_threshold_signature.verify::<DATA_LENGTH>(&alba, &registration, msg) {
+            println!("-- Verification successful.");
+        } else {
+            println!("-- Verification failed.");
+        }
         println!("--------------------------------------------------------");
+    } else {
+        println!("-- Failed to generate Alba threshold signature.");
     }
 }
 

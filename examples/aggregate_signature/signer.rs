@@ -39,7 +39,7 @@ impl Signer {
     /// signer's verification key is already registered return `None`. Otherwise, insert new verification key with a
     /// new index. Return the `RegisteredSigner`.
     pub(crate) fn register(&mut self, registration: &mut Registration) -> bool {
-        return if registration.checksum.is_none() {
+        if registration.checksum.is_none() {
             if registration
                 .registered_keys
                 .values()
@@ -57,7 +57,7 @@ impl Signer {
         } else {
             println!("Error: Cannot register, registration is closed!");
             false
-        };
+        }
     }
 
     /// Get closed registration. Update the registered signer with the checksum of registration.
