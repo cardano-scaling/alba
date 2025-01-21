@@ -15,7 +15,7 @@
   - Finalize the registration by computing the checksum of registered keys.
   - Update each registered signer with the computed checksum.
 5. **Generate Individual Signatures**:
-  - Randomly select a subset of registered signers.
+  - Select a subset of registered signers.
   - Generate `IndividualSignature`s for each selected signer based on the input message.
 6. **Generate ALBA Threshold Signature**:
   - Use valid individual signatures to create an `AlbaThresholdSignature`.
