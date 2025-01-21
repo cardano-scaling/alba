@@ -2,10 +2,8 @@
 
 mod utils;
 
-use alba::centralized_telescope::init::make_setup;
-use alba::centralized_telescope::params::Params;
-use alba::centralized_telescope::proof::Proof;
-use alba::centralized_telescope::CentralizedTelescope;
+use alba::centralized_telescope::Telescope;
+use alba::centralized_telescope::{params::Params, proof::Proof};
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 use utils::gen_items;
@@ -15,21 +13,19 @@ const DATA_LENGTH: usize = 48;
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let nb_tests = 1_000;
-    let set_size = 1_000;
-    let params = Params {
-        soundness_param: 10.0,
-        completeness_param: 10.0,
-        set_size: 80 * set_size / 100,
-        lower_bound: 20 * set_size / 100,
-    };
+    let nb_elements: u64 = 1_000;
+    let soundness_param = 10.0;
+    let completeness_param = 10.0;
+    let set_size = nb_elements.saturating_mul(80).div_ceil(100);
+    let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
-        let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
+        let s_p = gen_items::<DATA_LENGTH>(&seed, nb_elements);
         let alba = if created_with_params {
-            CentralizedTelescope::create(&params)
+            Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
-            let setup = make_setup(&params);
-            CentralizedTelescope::create_unsafe(&setup)
+            let setup = Params::new(soundness_param, completeness_param, set_size, lower_bound);
+            Telescope::setup_unsafe(set_size, &setup)
         };
         let proof = alba.prove(&s_p).unwrap();
         assert!(alba.verify(&proof));
