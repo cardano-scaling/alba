@@ -26,6 +26,11 @@ name = "centralized_proving_time"
 harness = false
 path = "benches/centralized_telescope/proving_time.rs"
 
+[[bench]]
+name = "centralized_verifying_time"
+harness = false
+path = "benches/centralized_telescope/verifying_time.rs"
+
 [lints.rust]
 missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"
