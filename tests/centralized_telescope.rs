@@ -15,7 +15,7 @@ const DATA_LENGTH: usize = 48;
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let nb_tests = 1_000;
-    let set_size: u64 = 1_000;
+    let nb_elements: u64 = 1_000;
     let params = Params {
         soundness_param: 10.0,
         completeness_param: 10.0,
@@ -24,7 +24,7 @@ fn test(created_with_params: bool) {
     };
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
-        let s_p = gen_items::<DATA_LENGTH>(&seed, set_size);
+        let s_p = gen_items::<DATA_LENGTH>(&seed, nb_elements);
         let alba = if created_with_params {
             Telescope::create(&params)
         } else {
