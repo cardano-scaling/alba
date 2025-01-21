@@ -12,18 +12,17 @@
 
 ## Code structure
 ### Signer
-- There are two types of signers:
-  - `Signer`: 
-    - Candidate signer, 
-    - including only the signing key and its verification key.
-    - Initialization of a new signer is done by `init` function.
-    - A signer can register its verification key by `register` function if it is not already registered or the registration is still open. 
-      - This will return a `RegisteredSigner` if registration succeeds.
-  - `RegisteredSigner`:
-    - is a signer whose verification key exists in registration. 
-    - Contains signer's signing key, checksum (ff the registration is closed), and the registration index corresponding to signer's verification key.
-    - After the registration is closed, registered signer update itself with `get_closed_registration` to fill its checksum from closed registration.
-    - Registered signer can create an `IndividualSignature` by signing `commitment = Hash(checksum||msg)` with `sign` function.
+- Signer structure covering signing key, verification key, registration index and registration checksum.
+- Initialization of a signer is handled by `new` function. 
+  - It generates a signing key and its verification key. 
+  - The index is set to `0` since the signer is not registered yet.
+  - The checksum is not initialized since the registration is not closed.
+- An initialized signer can be registered with `register` function.
+  - If the registration is not already closed and the signer is not already registered, the registration can be done.
+  - The verification key is added to the registration table with the next index.
+  - The `index` field of the signer is updated with the registration index.
+- After the registration is closed, a registered signer is updated with the `get_closed_registration`.
+  - If the registration is closed and the key of the signer exists in the registered keys, `checksum` field of the signer is updated.
 
 ### Registration
 - Registration includes registered keys as a `BTreeMap` and the checksum of all registered keys.
