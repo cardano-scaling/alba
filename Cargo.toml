@@ -36,6 +36,10 @@ name = "centralized_number_steps"
 harness = false
 path = "benches/centralized_telescope/number_steps.rs"
 
+[[bench]]
+name = "centralized_proof_size"
+harness = false
+path = "benches/centralized_telescope/proof_size.rs"
 
 [lints.rust]
 missing-copy-implementations = "warn"
