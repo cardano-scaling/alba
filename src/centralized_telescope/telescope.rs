@@ -88,7 +88,7 @@ impl Telescope {
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ; 48]);
     /// }
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// ```
@@ -115,7 +115,7 @@ impl Telescope {
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ; 48]);
     /// }
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// assert!(telescope.verify(&proof));

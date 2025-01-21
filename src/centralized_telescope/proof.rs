@@ -35,20 +35,6 @@ impl Proof {
     /// # Returns
     ///
     /// A `Proof` structure
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use alba::centralized_telescope::params::Params;
-    /// use alba::centralized_telescope::proof::Proof;
-    /// let set_size = 200;
-    /// let params = Params::new(128.0, 128.0, set_size, 100);
-    /// let mut prover_set = Vec::new();
-    /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
-    /// }
-    /// let proof = Proof::new(set_size, &params, &prover_set).unwrap();
-    /// ```
     pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
         // Run prove_index up to max_retries times
         (0..params.max_retries).find_map(|retry_counter| {
@@ -69,22 +55,6 @@ impl Proof {
     /// # Returns
     ///
     /// A boolean, true if the proof verifies successfully otherwise false
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use alba::centralized_telescope::params::Params;
-    /// use alba::centralized_telescope::proof::Proof;
-    /// let set_size = 200;
-    /// let params = Params::new(128.0, 128.0, set_size, 100);
-    /// let mut prover_set = Vec::new();
-    /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
-    /// }
-    /// let proof = Proof::new(set_size, &params, &prover_set).unwrap();
-    /// let b = proof.verify(set_size, &params);
-    /// assert!(b);
-    /// ```
     pub(super) fn verify(&self, set_size: u64, params: &Params) -> bool {
         if self.search_counter >= params.search_width
             || self.retry_counter >= params.max_retries
