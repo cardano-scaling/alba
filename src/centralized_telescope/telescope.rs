@@ -92,6 +92,29 @@ impl Telescope {
         self.set_size
     }
 
+    /// Returns the `Params` structure from the `Telescope` structure
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current `Telescope` structure
+    ///
+    /// # Returns
+    ///
+    /// A `Params` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::Telescope;
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params {proof_size : 200, max_retries: 128, search_width: 10, valid_proof_probability: 0.001, dfs_bound: 40_000};
+    /// let telescope = Telescope::create(128.0, 128.0, 1_000, 750);
+    /// let params = telescope.get_params();
+    /// ```
+    pub fn get_params(&self) -> Params {
+        self.params
+    }
+
     /// Generates a Centralized Telescope proof.
     ///
     /// # Arguments
