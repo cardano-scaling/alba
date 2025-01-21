@@ -105,7 +105,7 @@ impl AlbaThresholdSignature {
             }
 
             println!("-- Validating proof elements. ");
-            // Aggregate the signatures and verify them at once
+            // Verify the signers were registered, aggregate the signatures and verify them at once
             if !validate_signatures(self, registration, &commitment) {
                 println!("Error: Signature validation failed.");
                 return false;

@@ -45,7 +45,7 @@
 
 ### Signature
 - A single signature is represented with `IndividualSignature`. 
-- It contains the bls signature and the index of the signer of signature.
+- It contains the BLS signature and the index of the signer of signature.
 - An `IndividualSignature` is verified by `verify` function with given verification key, against `commitment = Hash(checksum||msg)`.
 
 ### Helpers
@@ -80,5 +80,5 @@
 - The `verify` function:
   - Checks whether the registration is closed,
   - Creates the commitment and compares it with the provided commitment,
-  - Verifies the signatures that creates the alba proof by calling `validate_signatures` function.
+  - Verifies the signatures that are included in the alba proof by calling `validate_signatures` function.
   - Verifies the alba proof.
