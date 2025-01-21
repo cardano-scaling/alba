@@ -81,7 +81,7 @@ impl Lottery {
     /// let lottery = Lottery::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = lottery.prove(&prover_set).unwrap();
     /// ```
@@ -108,7 +108,7 @@ impl Lottery {
     /// let lottery = Lottery::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = lottery.prove(&prover_set).unwrap();
     /// assert!(lottery.verify(&proof));

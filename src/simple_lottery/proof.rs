@@ -34,7 +34,7 @@ impl Proof {
     /// let params = Params::new(128.0, 128.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = Proof::new(&params, &prover_set).unwrap();
     /// ```
@@ -75,7 +75,7 @@ impl Proof {
     /// let params = Params::new(128.0, 128.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;32]);
+    ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = Proof::new(&params, &prover_set).unwrap();
     /// let b = proof.verify(&params);
