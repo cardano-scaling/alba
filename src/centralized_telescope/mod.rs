@@ -15,8 +15,6 @@ mod round;
 
 pub mod setup;
 
-mod types;
-
 mod wrapper;
 
 // Re-exports
