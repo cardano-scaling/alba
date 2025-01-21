@@ -148,7 +148,7 @@ fn main() {
     println!("-- Registration is opened.");
 
     // Register signer candidates
-    let mut count:u64 = 0;
+    let mut count: u64 = 0;
     let register_range = rng.gen_range(set_size..nb_elements);
     for signer in signers.iter_mut().take(register_range as usize) {
         if signer.register(&mut registration) {
