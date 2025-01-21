@@ -62,6 +62,28 @@ impl Lottery {
         Self { params: *params }
     }
 
+    /// Returns the `Params` structure from the `Lottery` structure
+    ///
+    /// # Arguments
+    ///
+    /// * `self` - the current `Lottery` structure
+    ///
+    /// # Returns
+    ///
+    /// A `Params` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::simple_lottery::Lottery;
+    /// use alba::simple_lottery::params::Params;
+    /// let lottery = Lottery::create(128.0, 128.0, 1_000, 750);
+    /// let params = lottery.get_params();
+    /// ```
+    pub fn get_params(&self) -> Params {
+        self.params
+    }
+
     /// Generates a Lottery proof.
     ///
     /// # Arguments
