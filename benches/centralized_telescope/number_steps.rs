@@ -33,15 +33,14 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     // Truncate the dataset to give truncate_size elements to the prover
     dataset.truncate(truncate_size as usize);
 
-    // Iterate on each sample `n` times
-    for _ in 0..n {
-        // Bench the number of steps/DFS calls while generating a proof
-        black_box({
-            let steps = Proof::bench(set_size, &params, &dataset).0;
-            total_steps = total_steps.saturating_add(steps);
-        });
-    }
-    total_steps
+    // As the number of steps is determinitistic, we do not iterate but bench a
+    // single time the number of steps/DFS calls while generating a proof and
+    // retun this number times n to fasten the bechmark.
+    black_box({
+        let steps = Proof::bench(set_size, &params, &dataset).0;
+        total_steps = total_steps.saturating_add(steps);
+    });
+    total_steps.saturating_mul(n)
 }
 
 /// Run step benchmarks on list of parameters, varying the dataset the prover
