@@ -1,14 +1,28 @@
 # Centralized Telescope with BLS Signatures
 
-## Flow of the example
-- Create a list of `Signer`s. This list contains candidate signers.
-- Start a new `Registration`.
-- Register candidate signers.
-- Close the registration.
-- Create a list of `RegisteredSigner`s.
-- Create a list of `IndividualSignature`s.
-- Generate `AlbaThresholdSignature` based on collected signatures.
-- Verify the alba threshold signature.
+## Workflow: ALBA Threshold Signature Example
+1. **Define Telescope Parameters**:
+  - Set the number of elements (`nb_elements`) to 1,000.
+  - Specify `soundness_param` and `completeness_param` as 128.0 each.
+  - Calculate the prover set size (`set_size`) as 80% of `nb_elements` and the lower bound as 20%.
+  - Initialize the Telescope with these parameters.
+2. **Initialize Signers**:
+  - Create a list of candidate signers (`Signer`s) with randomly generated keys.
+3. **Start Registration**:
+  - Open a new `Registration`.
+  - Select and register a subset of candidate signers, updating the count of successfully registered signers.
+4. **Close Registration**:
+  - Finalize the registration by computing the checksum of registered keys.
+  - Update each registered signer with the computed checksum.
+5. **Generate Individual Signatures**:
+  - Randomly select a subset of registered signers.
+  - Generate `IndividualSignature`s for each selected signer based on the input message.
+6. **Generate ALBA Threshold Signature**:
+  - Use valid individual signatures to create an `AlbaThresholdSignature`.
+  - If successful, print details of the generated threshold signature.
+7. **Verify ALBA Threshold Signature**:
+  - Verify the generated threshold signature using the Telescope parameters, registration, and input message.
+  - Print whether the verification succeeded or failed.
 
 ## Code structure
 ### Signer
