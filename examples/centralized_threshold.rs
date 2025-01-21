@@ -222,12 +222,12 @@ mod tests {
     use rand_core::RngCore;
 
     // Error: Registration is not closed. Cannot verify signatures.
-    // Number of collected valid signatures: 0.
     #[test]
     fn test_collect_valid_signatures_no_closed_reg() {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
         let mut msg = [0u8; 16];
         rng.fill_bytes(&mut msg);
+
         let set_size = 100;
         let mut signers: Vec<Signer> = (0..set_size).map(|_| Signer::init(&mut rng)).collect();
 
@@ -257,20 +257,27 @@ mod tests {
         let valid_signatures =
             collect_valid_signatures::<DATA_LENGTH>(&signature_list, &registration, &msg);
 
-        // Print the number of valid signatures
-        println!(
-            "Number of collected valid signatures: {}.",
-            valid_signatures.len()
+        // Assert that the registration is not closed and no signatures are collected
+        if valid_signatures.len() != 0 {
+            println!(
+                "Test failed: Expected 0 valid signatures, but got {}.",
+                valid_signatures.len()
+            );
+        }
+        assert_eq!(
+            valid_signatures.len(),
+            0,
+            "Error: Registration is not closed. Cannot verify signatures."
         );
     }
 
-    //Warning: No verification key found for index 999
-    // Expected 100 signatures, got 99.
+    // Warning: No verification key found for index 999
     #[test]
     fn test_collect_valid_signatures_unregistered_signer() {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
         let mut msg = [0u8; 16];
         rng.fill_bytes(&mut msg);
+
         let set_size = 100;
         let mut signers: Vec<Signer> = (0..set_size).map(|_| Signer::init(&mut rng)).collect();
 
@@ -297,11 +304,20 @@ mod tests {
         let valid_signatures =
             collect_valid_signatures::<DATA_LENGTH>(&signature_list, &registration, &msg);
 
-        // Print the number of valid signatures
-        println!(
+        // Assert the number of valid signatures is one less than the total
+        assert_eq!(
+            valid_signatures.len(),
+            set_size - 1,
             "Expected {} signatures, got {}.",
-            set_size,
+            set_size - 1,
             valid_signatures.len()
+        );
+
+        // Ensure the unregistered signer's signature is not included in valid signatures
+        let invalid_index_bytes = 999u64.to_le_bytes(); // Convert the invalid index to bytes
+        assert!(
+            !valid_signatures.contains_key(&invalid_index_bytes[..]),
+            "Unregistered signer's signature should not be included in valid signatures."
         );
     }
 
@@ -319,7 +335,6 @@ mod tests {
     }
 
     //Error: Registration is not closed.
-    // None
     #[test]
     fn test_get_checksum_before_closed() {
         let mut rng = ChaCha20Rng::from_seed(Default::default());
@@ -333,7 +348,12 @@ mod tests {
 
         // Attempt to get the closed registration checksum (before it's closed)
         signers[0].get_closed_registration(&registration);
-        println!("{:?}", signers[0].checksum);
+
+        // Assert that the checksum is still None
+        assert!(
+            signers[0].checksum.is_none(),
+            "Checksum should remain None before registration is closed."
+        );
     }
 
     // Error: Key already registered!

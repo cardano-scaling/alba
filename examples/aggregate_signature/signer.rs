@@ -66,6 +66,8 @@ impl Signer {
             Some(checksum) => {
                 if registration.registered_keys.contains_key(&self.index) {
                     self.checksum = Some(checksum.clone());
+                } else {
+                    println!("Error: Registration is closed, but the signer is not registered.");
                 }
             }
             None => {
@@ -76,12 +78,10 @@ impl Signer {
 
     /// Create an individual signature by signing `commitment = Hash(checksum || msg)`
     pub(crate) fn sign<const N: usize>(&self, msg: &[u8]) -> Option<IndividualSignature> {
-        let commitment = self
-            .checksum
-            .as_ref()
-            .map(|checksum| get_commitment::<N>(checksum, msg));
+        let checksum = self.checksum.as_ref()?;
+        let commitment = get_commitment::<N>(checksum, msg);
 
-        commitment.map(|commitment| IndividualSignature {
+        Some(IndividualSignature {
             signature: self.signing_key.sign(&commitment, &[], &[]),
             index: self.index,
         })
