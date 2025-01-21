@@ -15,7 +15,5 @@ mod round;
 
 pub mod setup;
 
-mod wrapper;
-
-// Re-exports
-pub use wrapper::Wrapper as CentralizedTelescope;
+mod telescope;
+pub use telescope::Telescope;
