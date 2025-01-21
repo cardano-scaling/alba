@@ -1,8 +1,7 @@
 use crate::simple_threshold_signature::signature::Signature;
 use crate::Element;
-use alba::centralized_telescope::params::Params;
 use alba::centralized_telescope::proof::Proof;
-use alba::centralized_telescope::CentralizedTelescope;
+use alba::centralized_telescope::Telescope;
 use blst::min_sig::{PublicKey, Signature as BLSSignature};
 use blst::BLST_ERROR;
 
@@ -13,14 +12,13 @@ pub(crate) struct ThresholdSignature {
 impl ThresholdSignature {
     pub(crate) fn aggregate(
         signatures: &[Signature],
-        params: &Params,
+        alba: &Telescope,
         key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<PublicKey>) {
         let prover_set = signatures
             .iter()
             .map(|s| s.signature.to_bytes())
             .collect::<Vec<Element>>();
-        let alba = CentralizedTelescope::create(params);
         let proof = alba.prove(&prover_set).unwrap();
 
         let proof_signatures: Vec<BLSSignature> = proof
@@ -68,9 +66,8 @@ impl ThresholdSignature {
         true
     }
 
-    pub(crate) fn verify(&self, msg: &[u8], params: &Params, public_keys: &[PublicKey]) -> bool {
+    pub(crate) fn verify(&self, msg: &[u8], alba: &Telescope, public_keys: &[PublicKey]) -> bool {
         if self.validate_signatures(msg, public_keys) {
-            let alba = CentralizedTelescope::create(params);
             return alba.verify(&self.proof);
         }
         false
