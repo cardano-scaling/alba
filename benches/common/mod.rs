@@ -4,3 +4,4 @@
 
 pub mod criterion_helpers;
 
+pub mod test_vectors;
