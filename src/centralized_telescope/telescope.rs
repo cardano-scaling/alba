@@ -1,6 +1,5 @@
 use super::algorithm;
 use super::init::make_setup;
-use super::params::Params;
 use super::proof::Proof;
 use super::setup::Setup;
 use crate::utils::types::Element;
@@ -13,14 +12,19 @@ pub struct Telescope {
 
 impl Telescope {
     /// Initialize ALBA with `Params`.
-    pub fn create(params: &Params) -> Self {
-        let setup = make_setup(params);
-        Self::create_unsafe(&setup)
+    pub fn create(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+    ) -> Self {
+        let setup = make_setup(soundness_param, completeness_param, set_size, lower_bound);
+        Self { setup }
     }
 
-    /// This function is unsafe to use and should be avoided.
-    /// Initialize ALBA with `Setup`.
-    pub fn create_unsafe(setup: &Setup) -> Self {
+    /// Initialize ALBA with `set_size` and unchecked `Setup`.
+    /// Use with caution, in tests or with trusted parameters.
+    pub fn setup_unsafe(setup: &Setup) -> Self {
         Self { setup: *setup }
     }
 
