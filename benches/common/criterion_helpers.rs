@@ -6,7 +6,9 @@ use criterion::{
     BenchmarkId, Criterion, Throughput,
 };
 
+pub const SAMPLE_SIZE: usize = 200;
 
+pub const MEASUREMENT_TIME_SEC: u64 = 30;
 pub mod centralized {
     use super::{BenchmarkId, Criterion, Measurement};
     /// Benchmark parameters

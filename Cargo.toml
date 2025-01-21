@@ -21,6 +21,10 @@ test-case = "3.3.1"
 blst = "0.3.13"
 time-elapsed = "0.1.0"
 
+[[bench]]
+name = "centralized_proving_time"
+harness = false
+path = "benches/centralized_telescope/proving_time.rs"
 
 [lints.rust]
 missing-copy-implementations = "warn"
