@@ -10,7 +10,7 @@ pub(crate) struct Signer {
     /// Signature generation key
     signing_key: SecretKey,
     /// Signature verification key
-    pub(crate) verification_key: PublicKey,
+    verification_key: PublicKey,
     /// Registration index of the signer
     pub(crate) index: usize,
     /// Closed registration checksum
