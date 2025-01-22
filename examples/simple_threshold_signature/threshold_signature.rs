@@ -13,8 +13,8 @@ impl ThresholdSignature {
     pub(crate) fn aggregate(
         signatures: &[Signature],
         alba: &Telescope,
-        key_list: &[(usize, PublicKey)],
-    ) -> (Self, Vec<PublicKey>) {
+        public_key_list: &[(usize, PublicKey)],
+    ) -> (Self, Vec<usize>) {
         let prover_set = signatures
             .iter()
             .map(|s| s.signature.to_bytes())
@@ -41,18 +41,18 @@ impl ThresholdSignature {
             .filter_map(|element| BLSSignature::from_bytes(element).ok())
             .collect();
 
-        let mut public_keys = Vec::with_capacity(proof_signatures.len());
+        let mut indices = Vec::with_capacity(proof_signatures.len());
         for sig in &proof_signatures {
             if let Some(signature_entry) = signatures.iter().find(|entry| entry.signature == *sig) {
-                if let Some((_, public_key)) = key_list
+                if public_key_list
                     .iter()
-                    .find(|entry| entry.0 == signature_entry.index)
+                    .any(|entry| entry.0 == signature_entry.index)
                 {
-                    public_keys.push(*public_key);
+                    indices.push(signature_entry.index);
                 }
             }
         }
-        (Self { proof }, public_keys)
+        (Self { proof }, indices)
     }
 
     /// Validates individual signatures in the threshold signature
@@ -62,7 +62,12 @@ impl ThresholdSignature {
     ///     - Aggregate public keys with: `AggregatePublicKey::aggregate`,
     ///     - Convert aggregate signature to a signature and aggregate public key to a public key
     ///     - Verify the signature with public key against given message.
-    fn validate_signatures(&self, msg: &[u8], public_keys: &[PublicKey]) -> bool {
+    fn validate_signatures(
+        &self,
+        msg: &[u8],
+        public_key_list: &[(usize, PublicKey)],
+        indices: &[usize],
+    ) -> bool {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         for sig_bytes in &self.proof.element_sequence {
             let Ok(signature) = BLSSignature::from_bytes(sig_bytes.as_slice()) else {
@@ -70,17 +75,28 @@ impl ThresholdSignature {
             };
             signatures.push(signature);
         }
-        for (i, signature) in signatures.iter().enumerate() {
-            if signature.verify(false, msg, &[], &[], &public_keys[i], false)
-                != BLST_ERROR::BLST_SUCCESS
-            {
+
+        for (signature, &index) in signatures.iter().zip(indices.iter()) {
+            if let Some((_, public_key)) = public_key_list.iter().find(|(idx, _)| *idx == index) {
+                if signature.verify(false, msg, &[], &[], public_key, false)
+                    != BLST_ERROR::BLST_SUCCESS
+                {
+                    return false;
+                }
+            } else {
                 return false;
             }
         }
         true
     }
 
-    pub(crate) fn verify(&self, msg: &[u8], alba: &Telescope, public_keys: &[PublicKey]) -> bool {
-        self.validate_signatures(msg, public_keys) && alba.verify(&self.proof)
+    pub(crate) fn verify(
+        &self,
+        msg: &[u8],
+        alba: &Telescope,
+        public_key_list: &[(usize, PublicKey)],
+        indices: &[usize],
+    ) -> bool {
+        self.validate_signatures(msg, public_key_list, indices) && alba.verify(&self.proof)
     }
 }

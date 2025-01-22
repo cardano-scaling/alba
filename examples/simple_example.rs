@@ -34,12 +34,12 @@ fn main() {
 
     let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
 
-    let mut key_list: Vec<(usize, PublicKey)> = Vec::with_capacity(set_size as usize);
+    let mut public_key_list: Vec<(usize, PublicKey)> = Vec::with_capacity(set_size as usize);
     let mut signature_list: Vec<Signature> = Vec::with_capacity(set_size as usize);
 
     for i in 0..set_size as usize {
         let signer = Signer::new(&mut rng);
-        key_list.push((i, signer.verification_key));
+        public_key_list.push((i, signer.verification_key));
         signature_list.push(signer.sign(&msg, i));
     }
     println!("--------------------------------------------------------");
@@ -48,14 +48,14 @@ fn main() {
 
     println!("--------------------------------------------------------");
     println!("----------- Generating Alba multi-signature. -----------");
-    let (threshold_signature, public_keys) =
-        ThresholdSignature::aggregate(&signature_list, &alba, &key_list);
+    let (threshold_signature, indices) =
+        ThresholdSignature::aggregate(&signature_list, &alba, &public_key_list);
 
     println!("-- Alba multi-signature is generated.");
     println!("--------------------------------------------------------");
     println!("----------- Verifying Alba multi-signature. ------------");
 
-    if threshold_signature.verify(&msg, &alba, &public_keys) {
+    if threshold_signature.verify(&msg, &alba, &public_key_list, &indices) {
         println!("-- Verification successful.");
     } else {
         println!("-- Verification failed.");
