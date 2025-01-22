@@ -21,6 +21,7 @@ fn main() {
     println!("\n-------------- ALBA with Multi-Signature ---------------");
     println!("--------------------------------------------------------");
 
+    // Define telescope parameters
     let nb_elements: u64 = 1_000;
     let soundness_param = 128.0;
     let completeness_param = 128.0;
@@ -32,25 +33,28 @@ fn main() {
     println!(" - Prover set size: {set_size}");
     println!(" - Lower bound: {lower_bound}");
 
+    // Create the telescope structure
     let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
 
-    let mut public_key_list: Vec<(usize, PublicKey)> = Vec::with_capacity(set_size as usize);
+    let mut public_key_list: Vec<(usize, PublicKey)> = Vec::with_capacity(nb_elements as usize);
     let mut signature_list: Vec<Signature> = Vec::with_capacity(set_size as usize);
 
-    for i in 0..set_size as usize {
+    // Generate `nb_elements` signers and `set_size` signatures
+    for i in 0..nb_elements as usize {
         let signer = Signer::new(&mut rng);
         public_key_list.push((i, signer.verification_key));
-        signature_list.push(signer.sign(&msg, i));
+        if i < set_size as usize {
+            signature_list.push(signer.sign(&msg, i));
+        }
     }
     println!("--------------------------------------------------------");
-    println!(" -- {set_size} (sk, pk) are generated.");
+    println!(" -- {nb_elements} (sk, pk) are generated.");
     println!(" -- {set_size} signatures are generated.");
 
     println!("--------------------------------------------------------");
     println!("----------- Generating Alba multi-signature. -----------");
     let (threshold_signature, indices) =
         ThresholdSignature::aggregate(&signature_list, &alba, &public_key_list);
-
     println!("-- Alba multi-signature is generated.");
     println!("--------------------------------------------------------");
     println!("----------- Verifying Alba multi-signature. ------------");
