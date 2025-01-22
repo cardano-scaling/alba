@@ -142,6 +142,7 @@ fn main() {
 
     // Telescope parameters
     println!("-- Telescope parameters:");
+    let nb_signers: u64 = 3_000;
     let nb_elements: u64 = 1_000;
     let soundness_param = 128.0;
     let completeness_param = 128.0;
@@ -156,7 +157,7 @@ fn main() {
 
     // Initialize signers
     println!("--------------------------------------------------------");
-    let mut signers: Vec<Signer> = (0..nb_elements as usize)
+    let mut signers: Vec<Signer> = (0..nb_signers as usize)
         .map(|_| Signer::init(&mut rng))
         .collect();
     println!("-- {} signers initialized.", signers.len());
@@ -179,12 +180,12 @@ fn main() {
     registration.close::<DATA_LENGTH>();
     println!("-- Registration is closed.");
 
-    for signer in signers.iter_mut().take(register_range as usize) {
+    for signer in signers.iter_mut().take(count as usize) {
         signer.get_closed_registration(&registration);
     }
 
     // Create individual signatures
-    let signature_range = rng.gen_range(set_size..register_range);
+    let signature_range = rng.gen_range(set_size..count);
     let signature_list: Vec<IndividualSignature> = signers
         .iter()
         .take(signature_range as usize)
