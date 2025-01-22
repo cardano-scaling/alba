@@ -8,6 +8,7 @@ pub(crate) struct Signer {
 }
 
 impl Signer {
+    /// Create a pair of bls signing key and verification key
     pub(crate) fn new(rng: &mut (impl RngCore + CryptoRng)) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
@@ -20,6 +21,7 @@ impl Signer {
         }
     }
 
+    /// Sign given message. Return the signature and given signer index.
     pub(crate) fn sign(&self, msg: &[u8], index: usize) -> Signature {
         Signature {
             signature: self.signing_key.sign(msg, &[], &[]),
