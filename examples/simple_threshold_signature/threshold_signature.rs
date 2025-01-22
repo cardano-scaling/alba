@@ -81,9 +81,6 @@ impl ThresholdSignature {
     }
 
     pub(crate) fn verify(&self, msg: &[u8], alba: &Telescope, public_keys: &[PublicKey]) -> bool {
-        if self.validate_signatures(msg, public_keys) {
-            return alba.verify(&self.proof);
-        }
-        false
+        self.validate_signatures(msg, public_keys) && alba.verify(&self.proof)
     }
 }
