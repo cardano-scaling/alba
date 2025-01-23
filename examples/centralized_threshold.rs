@@ -147,7 +147,7 @@ fn main() {
     let soundness_param = 128.0;
     let completeness_param = 128.0;
     let set_size = nb_elements.saturating_mul(80).div_ceil(100);
-    let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
+    let lower_bound = nb_elements.saturating_mul(50).div_ceil(100);
     let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
 
     println!(" - Soundness parameter: {soundness_param}");
@@ -167,25 +167,25 @@ fn main() {
     println!("-- Registration is opened.");
 
     // Register signer candidates
-    let mut count: u64 = 0;
-    let register_range = rng.gen_range(set_size..nb_elements);
+    let mut registered_count: u64 = 0;
+    let register_range = nb_elements;
     for signer in signers.iter_mut().take(register_range as usize) {
         if signer.register(&mut registration) {
-            count = count.saturating_add(1);
+            registered_count = registered_count.saturating_add(1);
         }
     }
-    println!("-- {count} signers are registered.");
+    println!("-- {registered_count} signers are registered.");
 
     // Close the registration process
     registration.close::<DATA_LENGTH>();
     println!("-- Registration is closed.");
 
-    for signer in signers.iter_mut().take(count as usize) {
+    for signer in signers.iter_mut().take(registered_count as usize) {
         signer.get_closed_registration(&registration);
     }
 
     // Create individual signatures
-    let signature_range = rng.gen_range(set_size..count);
+    let signature_range = rng.gen_range(set_size..registered_count);
     let signature_list: Vec<IndividualSignature> = signers
         .iter()
         .take(signature_range as usize)
