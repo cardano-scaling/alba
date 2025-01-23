@@ -10,6 +10,7 @@ use alba::centralized_telescope::Telescope;
 use rand::Rng;
 use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
+use std::time::Instant;
 mod aggregate_signature;
 const DATA_LENGTH: usize = 48;
 pub(crate) type Element = [u8; DATA_LENGTH];
@@ -146,14 +147,16 @@ fn main() {
     let nb_elements: u64 = 1_000;
     let soundness_param = 128.0;
     let completeness_param = 128.0;
-    let set_size = nb_elements.saturating_mul(80).div_ceil(100);
-    let lower_bound = nb_elements.saturating_mul(50).div_ceil(100);
+    let np_percentage: u64 = 80;
+    let nf_percentage: u64 = 60;
+    let set_size = nb_elements.saturating_mul(np_percentage).div_ceil(100);
+    let lower_bound = nb_elements.saturating_mul(nf_percentage).div_ceil(100);
     let alba = Telescope::create(soundness_param, completeness_param, set_size, lower_bound);
 
     println!(" - Soundness parameter: {soundness_param}");
     println!(" - Completeness parameter: {completeness_param}");
-    println!(" - Prover set size: {set_size}");
-    println!(" - Lower bound: {lower_bound}");
+    println!(" - Prover set size: {np_percentage}%");
+    println!(" - Lower bound: {nf_percentage}%");
 
     // Initialize signers
     println!("--------------------------------------------------------");
@@ -197,16 +200,28 @@ fn main() {
     println!("--------- Generating Alba threshold signature. ---------");
 
     // Generate AlbaThresholdSignature proof
+    let start_prove = Instant::now();
     if let Some(alba_threshold_signature) =
         AlbaThresholdSignature::prove::<DATA_LENGTH>(&alba, &signature_list, &registration, msg)
     {
+        let duration_prove = start_prove.elapsed();
         println!("-- Alba threshold signature is generated.");
+        println!(
+            "** Time elapsed in signature generation: {:.3}s",
+            duration_prove.as_secs_f64()
+        );
         println!("--------------------------------------------------------");
         println!("--------- Verifying Alba threshold signature. ----------");
 
         // Verify the proof
+        let start_verify = Instant::now();
         if alba_threshold_signature.verify::<DATA_LENGTH>(&alba, &registration, msg) {
+            let duration_verify = start_verify.elapsed();
             println!("-- Verification successful.");
+            println!(
+                "** Time elapsed in signature verification: {:?}µs",
+                duration_verify.as_micros()
+            );
         } else {
             println!("-- Verification failed.");
         }

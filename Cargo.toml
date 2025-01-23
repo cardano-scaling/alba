@@ -17,6 +17,7 @@ rand_core = "0.6.4"
 rand_chacha = "0.3.1"
 test-case = "3.3.1"
 blst = "0.3.13"
+time-elapsed = "0.1.0"
 
 [lints.rust]
 missing-copy-implementations = "warn"
