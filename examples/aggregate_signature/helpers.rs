@@ -101,3 +101,15 @@ pub(crate) fn validate_signatures(
         false
     }
 }
+
+pub(crate) fn ats_size<const N: usize>(ats: &AlbaThresholdSignature) -> usize {
+    let nb_elements = ats.indices.len();
+    let size_indices = nb_elements.saturating_mul(8);
+    let size_elements = nb_elements.saturating_mul(N);
+    let size_commitment = ats.commitment.len();
+
+    size_indices
+        .saturating_add(size_elements)
+        .saturating_add(size_commitment)
+        .saturating_add(16)
+}

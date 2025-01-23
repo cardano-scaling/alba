@@ -1,6 +1,6 @@
 //! Centralized Telescope example with BLS multi-signature
 use crate::aggregate_signature::helpers::{
-    collect_valid_signatures, get_commitment, validate_signatures,
+    ats_size, collect_valid_signatures, get_commitment, validate_signatures,
 };
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
@@ -209,6 +209,10 @@ fn main() {
         println!(
             "** Time elapsed in signature generation: {:.3}s",
             duration_prove.as_secs_f64()
+        );
+        println!(
+            "** Alba Threshold Signature Size: {} B",
+            ats_size::<DATA_LENGTH>(&alba_threshold_signature)
         );
         println!("--------------------------------------------------------");
         println!("--------- Verifying Alba threshold signature. ----------");
