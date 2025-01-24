@@ -36,9 +36,12 @@ impl AlbaThresholdSignature {
         msg: &[u8],
     ) -> Option<Self> {
         if let Some(checksum) = &registration.checksum {
+            let time_validate_sigs = Instant::now();
             // Collect valid individual signatures' byte representation into a hashmap
             let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
-            println!("-- Collected {} valid signatures. ", valid_signatures.len());
+            // let duration_sig_validate = start_prove.elapsed();
+            println!("-- Collected {} valid signatures in {:.3}s. ", valid_signatures.len(), time_validate_sigs.elapsed()
+                .as_secs_f64());
 
             // Check if there are enough valid signatures
             if valid_signatures.len() < alba.get_set_size() as usize {
@@ -54,8 +57,9 @@ impl AlbaThresholdSignature {
             let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
 
             println!("-- Creating alba proof. ");
+            let time_gen_proof = Instant::now();
             let proof = alba.prove(&prover_set)?;
-            println!("-- Alba proof created: ");
+            println!("-- Alba proof is created in {:.3}s.", time_gen_proof.elapsed().as_secs_f64());
             println!(
                 " - Numbers of retries done to find the proof: {}",
                 proof.retry_counter
@@ -107,20 +111,22 @@ impl AlbaThresholdSignature {
 
             println!("-- Validating proof elements. ");
             // Verify the signers were registered, aggregate the signatures and verify them at once
+            let time_validate_sigs = Instant::now();
             if !validate_signatures(self, registration, &commitment) {
                 println!("Error: Signature validation failed.");
                 return false;
             }
             println!(
-                "-- {} proof elements are validated. ",
-                self.proof.element_sequence.len()
+                "-- {} proof elements are validated in {:?}µs. ",
+                self.proof.element_sequence.len(), time_validate_sigs.elapsed().as_micros()
             );
 
             println!("-- Verifying alba proof. ");
+            let time_verify_proof = Instant::now();
             let result = alba.verify(&self.proof);
 
             if result {
-                println!("-- Success: Alba proof verification passed.");
+                println!("-- Success: Alba proof verification took {:?}µs.", time_verify_proof.elapsed().as_micros());
             } else {
                 println!("Error: Alba proof verification failed.");
             }
@@ -138,8 +144,8 @@ fn main() {
     let sentence = "ALBA Rocks!";
     let msg = sentence.as_bytes();
 
-    println!("\n--------------- ALBA Threshold Signature ---------------");
-    println!("--------------------------------------------------------");
+    println!("\n---------------------- ALBA Threshold Signature ----------------------");
+    println!("----------------------------------------------------------------------");
 
     // Telescope parameters
     println!("-- Telescope parameters:");
@@ -147,7 +153,7 @@ fn main() {
     let nb_elements: u64 = 1_000;
     let soundness_param = 128.0;
     let completeness_param = 128.0;
-    let np_percentage: u64 = 80;
+    let np_percentage: u64 = 95;
     let nf_percentage: u64 = 60;
     let set_size = nb_elements.saturating_mul(np_percentage).div_ceil(100);
     let lower_bound = nb_elements.saturating_mul(nf_percentage).div_ceil(100);
@@ -159,7 +165,7 @@ fn main() {
     println!(" - Lower bound: {nf_percentage}%");
 
     // Initialize signers
-    println!("--------------------------------------------------------");
+    println!("----------------------------------------------------------------------");
     let mut signers: Vec<Signer> = (0..nb_signers as usize)
         .map(|_| Signer::init(&mut rng))
         .collect();
@@ -196,8 +202,8 @@ fn main() {
         .collect();
     println!("-- {} signatures generated.", signature_list.len());
 
-    println!("--------------------------------------------------------");
-    println!("--------- Generating Alba threshold signature. ---------");
+    println!("----------------------------------------------------------------------");
+    println!("---------------- Generating Alba threshold signature. ----------------");
 
     // Generate AlbaThresholdSignature proof
     let start_prove = Instant::now();
@@ -207,15 +213,15 @@ fn main() {
         let duration_prove = start_prove.elapsed();
         println!("-- Alba threshold signature is generated.");
         println!(
-            "** Time elapsed in signature generation: {:.3}s",
+            "** Total elapsed time in Alba threshold signature generation: {:.3}s",
             duration_prove.as_secs_f64()
         );
         println!(
             "** Alba Threshold Signature Size: {} B",
             ats_size::<DATA_LENGTH>(&alba_threshold_signature)
         );
-        println!("--------------------------------------------------------");
-        println!("--------- Verifying Alba threshold signature. ----------");
+        println!("----------------------------------------------------------------------");
+        println!("---------------- Verifying Alba threshold signature. -----------------");
 
         // Verify the proof
         let start_verify = Instant::now();
@@ -229,7 +235,7 @@ fn main() {
         } else {
             println!("-- Verification failed.");
         }
-        println!("--------------------------------------------------------");
+        println!("----------------------------------------------------------------------");
     } else {
         println!("-- Failed to generate Alba threshold signature.");
     }
