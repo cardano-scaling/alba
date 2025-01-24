@@ -40,8 +40,11 @@ impl AlbaThresholdSignature {
             // Collect valid individual signatures' byte representation into a hashmap
             let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
             // let duration_sig_validate = start_prove.elapsed();
-            println!("-- Collected {} valid signatures in {:.3}s. ", valid_signatures.len(), time_validate_sigs.elapsed()
-                .as_secs_f64());
+            println!(
+                "-- Collected {} valid signatures in {:.3}s. ",
+                valid_signatures.len(),
+                time_validate_sigs.elapsed().as_secs_f64()
+            );
 
             // Check if there are enough valid signatures
             if valid_signatures.len() < alba.get_set_size() as usize {
@@ -59,7 +62,10 @@ impl AlbaThresholdSignature {
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
             let proof = alba.prove(&prover_set)?;
-            println!("-- Alba proof is created in {:.3}s.", time_gen_proof.elapsed().as_secs_f64());
+            println!(
+                "-- Alba proof is created in {:.3}s.",
+                time_gen_proof.elapsed().as_secs_f64()
+            );
             println!(
                 " - Numbers of retries done to find the proof: {}",
                 proof.retry_counter
@@ -118,7 +124,8 @@ impl AlbaThresholdSignature {
             }
             println!(
                 "-- {} proof elements are validated in {:?}µs. ",
-                self.proof.element_sequence.len(), time_validate_sigs.elapsed().as_micros()
+                self.proof.element_sequence.len(),
+                time_validate_sigs.elapsed().as_micros()
             );
 
             println!("-- Verifying alba proof. ");
@@ -126,7 +133,10 @@ impl AlbaThresholdSignature {
             let result = alba.verify(&self.proof);
 
             if result {
-                println!("-- Success: Alba proof verification took {:?}µs.", time_verify_proof.elapsed().as_micros());
+                println!(
+                    "-- Success: Alba proof verification took {:?}µs.",
+                    time_verify_proof.elapsed().as_micros()
+                );
             } else {
                 println!("Error: Alba proof verification failed.");
             }
