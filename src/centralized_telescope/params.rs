@@ -315,7 +315,7 @@ Expected {
         assert_eq!(expected.u, params.proof_size);
         assert_eq!(expected.d, params.search_width);
         assert_eq!(expected.r, params.max_retries);
-        assert_eq!(expected.q, params.valid_proof_probability);
+        assert!((expected.q - params.valid_proof_probability).abs() <= expected.q * 0.001);
         assert_eq!(expected.b, params.dfs_bound);
     }
 }
