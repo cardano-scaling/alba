@@ -41,8 +41,9 @@ impl Proof {
         Self::prove_routine(set_size, params, prover_set).1
     }
 
-    /// Alba's proving algorithm used for benchmarking, returning a proof if found
-    /// as well as the number of steps done when generating it.
+    /// Alba's proving algorithm used for benchmarking, returning a proof if
+    /// found as well as the number of steps done when generating it. Only for
+    ///  internal usage. Do not use.
     ///
     /// # Arguments
     ///
