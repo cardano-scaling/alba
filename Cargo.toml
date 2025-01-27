@@ -19,6 +19,7 @@ test-case = "3.3.1"
 blst = "0.3.13"
 time-elapsed = "0.1.0"
 
+
 [lints.rust]
 missing-copy-implementations = "warn"
 missing-debug-implementations = "warn"
