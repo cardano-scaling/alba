@@ -1,12 +1,12 @@
 //! Centralized Telescope integration tests
 
-mod utils;
-
 use alba::centralized_telescope::Telescope;
 use alba::centralized_telescope::{params::Params, proof::Proof};
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
-use utils::gen_items;
+
+mod common;
+use common::gen_items;
 
 const DATA_LENGTH: usize = 48;
 

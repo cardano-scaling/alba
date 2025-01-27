@@ -36,10 +36,67 @@ impl Proof {
     ///
     /// A `Proof` structure
     pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
+        debug_assert!(crate::utils::misc::check_distinct(prover_set));
+
+        Self::prove_routine(set_size, params, prover_set).1
+    }
+
+    /// Alba's proving algorithm used for benchmarking, returning a proof if
+    /// found as well as the number of steps done when generating it. Only for
+    ///  internal usage. Do not use.
+    ///
+    /// # Arguments
+    ///
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `params` - the internal parameters to generate a proof from
+    /// * `prover_set` - the dataset to generate a proof from
+    ///
+    /// # Returns
+    ///
+    /// The number of steps, and `Some(Proof)` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::params::Params;
+    /// use alba::centralized_telescope::proof::Proof;
+    /// let set_size = 200;
+    /// let params = Params::new(128.0, 128.0, 1_000, 750);
+    /// let mut prover_set = Vec::new();
+    /// for i in 0..set_size {
+    ///     prover_set.push([(i % 256) as u8 ; 48]);
+    /// }
+    /// let (setps, proof_opt) = Proof::bench(set_size, &params, &prover_set);
+    /// ```
+    pub fn bench(set_size: u64, params: &Params, prover_set: &[Element]) -> (u64, Option<Proof>) {
+        Self::prove_routine(set_size, params, prover_set)
+    }
+
+    /// Alba's prove routine.
+    /// Calls up to `params.max_retries` times the prove_index function and
+    /// returns the number of steps done when searching a proof as well as a
+    /// `Proof` if a suitable candidate tuple is found, otherwise `None`.
+    fn prove_routine(
+        set_size: u64,
+        params: &Params,
+        prover_set: &[Element],
+    ) -> (u64, Option<Proof>) {
+        let mut steps: u64 = 0;
+
         // Run prove_index up to max_retries times
-        (0..params.max_retries).find_map(|retry_counter| {
-            Self::prove_index(set_size, params, prover_set, retry_counter).1
-        })
+        for retry_counter in 0..params.max_retries {
+            let (dfs_calls, proof_opt) = Self::prove_index(
+                set_size,
+                params,
+                prover_set,
+                retry_counter.saturating_add(1),
+            );
+            steps = steps.saturating_add(dfs_calls);
+            if proof_opt.is_some() {
+                return (steps, proof_opt);
+            }
+        }
+        (steps, None)
     }
 
     /// Centralized Telescope's verification algorithm, returns true if the
