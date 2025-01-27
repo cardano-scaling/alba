@@ -247,3 +247,75 @@ impl Params {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Params;
+    use test_case::test_case;
+
+    #[derive(Debug, Clone, Copy)]
+    struct Expected {
+        u: u64, // proof size
+        d: u64, // search width
+        r: u64, // max retries
+        q: f64, // valid proof probability
+        b: u64, // DFS bound
+    }
+
+    #[test_case(
+            128.0,
+            128.0,
+            10_000,
+            6_666,
+        Expected {
+            u: 239,
+            d: 19_005,
+            r: 128,
+            q: 0.000_261_500_305_160_536_7,
+            b: 14_684_495,
+        };
+        "small"
+    )]
+    #[test_case(
+            64.0,
+            64.0,
+            10_000_000,
+            6_666_666,
+        Expected {
+            u: 128,
+            d: 38_928,
+            r: 4,
+            q: 0.000_976_545_833_617_772_9,
+            b: 6_178_942_541,
+        };
+        "mid"
+    )]
+    #[test_case(
+            64.0,
+            64.0,
+            10_000_000,
+            10,
+        Expected {
+            u: 4,
+            d: 2_928,
+            r: 1,
+            q: 0.031_248_438_467_866_384,
+            b: 11_982,
+        };
+        "high"
+    )]
+    fn all(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        expected: Expected,
+    ) {
+        let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
+        assert_eq!(expected.u, params.proof_size);
+        assert_eq!(expected.d, params.search_width);
+        assert_eq!(expected.r, params.max_retries);
+        assert!((expected.q - params.valid_proof_probability).abs() <= expected.q * 0.001);
+        assert_eq!(expected.b, params.dfs_bound);
+    }
+}
