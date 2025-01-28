@@ -10,16 +10,18 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 
 [dependencies]
 blake2 = "0.10.6"
-rand = "0.8"
+digest = "0.10.7"
+rand = "0.9.0"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"]}
-rand = "0.8.5"
-rand_core = "0.6.4"
-rand_chacha = "0.3.1"
 test-case = "3.3.1"
-blst = "0.3.13"
 time-elapsed = "0.1.0"
+rand_core = "0.9.0"
+rand_chacha = "0.9.0"
+blst = "0.3.13"
+blake2 = "0.10.6"
+sha2 = "0.10.6"
 
 [[bench]]
 name = "centralized_proving_time"
