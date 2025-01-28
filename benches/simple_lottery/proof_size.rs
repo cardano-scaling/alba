@@ -16,8 +16,7 @@ fn print_bench(
     lottery_proba: &str,
 ) {
     println!(
-        "{0: <23} | {1: <26} | {2: <14} | {3: <17} | {4: <14} | {5: <23}",
-        soundness_param, completeness_param, set_size, lower_bound, proof_size, lottery_proba
+        "{soundness_param: <23} | {completeness_param: <26} | {set_size: <14} | {lower_bound: <17} | {proof_size: <14} | {lottery_proba: <23}"
     );
 }
 

@@ -15,8 +15,7 @@ fn print_bench(
     proof_size: &str,
 ) {
     println!(
-        "{0: <23} | {1: <26} | {2: <14} | {3: <17} | {4: <14}",
-        soundness_param, completeness_param, set_size, lower_bound, proof_size
+        "{soundness_param: <23} | {completeness_param: <26} | {set_size: <14} | {lower_bound: <17} | {proof_size: <14}"
     );
 }
 
