@@ -4,6 +4,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
+use sha2::Sha256;
 use std::time::Duration;
 
 mod utils;
@@ -13,7 +14,7 @@ use utils::{
             centralized::{benchmarks, BenchParam},
             Steps,
         },
-        test_vectors::centralized::SHORT_TESTS,
+        test_vectors::{centralized::SHORT_TESTS, Data},
     },
     setup, NAME,
 };
@@ -23,7 +24,7 @@ use alba::centralized_telescope::proof::Proof;
 /// Function benchmarking `sample_size` times the number of DFS calls, aka steps
 #[allow(clippy::unit_arg)]
 fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
-    let mut rng = ChaCha20Rng::from_entropy();
+    let mut rng = ChaCha20Rng::from_os_rng();
     let mut total_steps = 0u64;
 
     // Setup
@@ -37,7 +38,7 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     // single time the number of steps/DFS calls while generating a proof and
     // retun this number times n to fasten the bechmark.
     black_box({
-        let steps = Proof::bench(set_size, &params, &dataset).0;
+        let steps = Proof::<Data, Sha256>::bench(set_size, &params, &dataset).0;
         total_steps = total_steps.saturating_add(steps);
     });
     total_steps.saturating_mul(n)
