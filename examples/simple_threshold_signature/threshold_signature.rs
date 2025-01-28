@@ -1,17 +1,20 @@
 use crate::simple_threshold_signature::signature::Signature;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::Telescope;
-use blst::min_sig::{PublicKey, Signature as BlsSignature};
-use blst::BLST_ERROR;
+use blst::{
+    min_sig::{PublicKey, Signature as BlsSignature},
+    BLST_ERROR,
+};
+use digest::{Digest, FixedOutput};
 
 const SIG_LENGTH: usize = 48;
 pub(crate) type SigBytes = [u8; SIG_LENGTH];
 
-pub(crate) struct ThresholdSignature {
-    proof: Proof<SigBytes>,
+pub(crate) struct ThresholdSignature<H: Digest + FixedOutput> {
+    proof: Proof<SigBytes, H>,
 }
 
-impl ThresholdSignature {
+impl<H: Digest + FixedOutput> ThresholdSignature<H> {
     // Create the Alba proof. Convert signatures to bytes and use them as the prover set. Create Alba proof with the
     // prover set. Collect signatures by converting proof elements to bls signatures. Find each signature's index and
     // collect them in a list. Return alba proof and the indices.

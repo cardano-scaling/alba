@@ -15,18 +15,20 @@ mod aggregate_signature;
 
 const DATA_LENGTH: usize = 48;
 pub(crate) type Data = [u8; DATA_LENGTH];
+use digest::{Digest, FixedOutput};
+use sha2::Sha512;
 
 #[derive(Debug, Clone)]
-pub(crate) struct AlbaThresholdSignature {
+pub(crate) struct AlbaThresholdSignature<H: Digest + FixedOutput> {
     /// Centralized telescope proof
-    pub(crate) proof: Proof<Data>,
+    pub(crate) proof: Proof<Data, H>,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
     /// Commitment `Hash(checksum || msg)`
     pub(crate) commitment: Vec<u8>,
 }
 
-impl AlbaThresholdSignature {
+impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
     /// Create AlbaThresholdSignature. Validate and collect signatures in byte representation.
     /// Create Alba proof and extract indices of proof elements.
     /// Return proof, commitment, and indices.
@@ -205,7 +207,7 @@ fn main() {
     }
 
     // Create individual signatures
-    let signature_range = rng.gen_range(set_size..registered_count);
+    let signature_range = rng.random_range(set_size..registered_count);
     let signature_list: Vec<IndividualSignature> = signers
         .iter()
         .take(signature_range as usize)
@@ -218,9 +220,12 @@ fn main() {
 
     // Generate AlbaThresholdSignature proof
     let start_prove = Instant::now();
-    if let Some(alba_threshold_signature) =
-        AlbaThresholdSignature::prove::<DATA_LENGTH>(&alba, &signature_list, &registration, msg)
-    {
+    if let Some(alba_threshold_signature) = AlbaThresholdSignature::<Sha512>::prove::<DATA_LENGTH>(
+        &alba,
+        &signature_list,
+        &registration,
+        msg,
+    ) {
         let duration_prove = start_prove.elapsed();
         println!("-- Alba threshold signature is generated.");
         println!(
@@ -229,7 +234,7 @@ fn main() {
         );
         println!(
             "** Alba Threshold Signature Size: {} B",
-            ats_size::<DATA_LENGTH>(&alba_threshold_signature)
+            ats_size::<Sha512, DATA_LENGTH>(&alba_threshold_signature)
         );
         println!("----------------------------------------------------------------------");
         println!("---------------- Verifying Alba threshold signature. -----------------");
