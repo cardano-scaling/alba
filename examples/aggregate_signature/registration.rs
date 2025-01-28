@@ -1,9 +1,12 @@
-use blake2::digest::{Update, VariableOutput};
-use blake2::Blake2bVar;
 use blst::min_sig::PublicKey;
 use std::collections::BTreeMap;
 
 type Keys = BTreeMap<usize, PublicKey>;
+
+use blake2::{
+    digest::{Update, VariableOutput},
+    Blake2bVar,
+};
 
 /// Structure for registration functionality.
 #[derive(Debug, Clone)]
