@@ -281,7 +281,7 @@ impl<H: Digest + FixedOutput> Proof<H> {
             .chain_update(element)
             .finalize()
             .to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
         sample::sample_uniform(&hash, set_size)
     }
 
@@ -293,7 +293,7 @@ impl<H: Digest + FixedOutput> Proof<H> {
             .chain_update(r.hash)
             .finalize()
             .to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
         sample::sample_bernoulli(&hash, valid_proof_probability)
     }
 }

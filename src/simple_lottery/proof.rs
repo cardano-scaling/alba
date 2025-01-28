@@ -102,7 +102,7 @@ impl<H: Digest + FixedOutput> Proof<H> {
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: Element) -> bool {
         let digest = H::new().chain_update(element).finalize().to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
 
         sample::sample_bernoulli(&hash, lottery_probability)
     }
