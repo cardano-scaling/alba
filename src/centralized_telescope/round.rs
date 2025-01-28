@@ -4,13 +4,14 @@
 
 use crate::utils::{
     sample,
-    types::{Element, Hash},
+    types::{truncate, Element, Hash},
 };
-use blake2::{Blake2s256, Digest};
+use digest::{Digest, FixedOutput};
+use std::marker::PhantomData;
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round {
+pub struct Round<H: Digest + FixedOutput> {
     /// Numbers of retries done so far
     pub retry_counter: u64,
     /// Index of the current subtree being searched
@@ -23,9 +24,11 @@ pub struct Round {
     pub id: u64,
     /// Approximate size of prover set to lower bound
     pub set_size: u64,
+    // Phantom type to link the tree with its hasher
+    hasher: PhantomData<H>,
 }
 
-impl Round {
+impl<H: Digest + FixedOutput> Round<H> {
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
     /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)
@@ -40,6 +43,7 @@ impl Round {
             hash,
             id,
             set_size,
+            hasher: PhantomData,
         })
     }
 
@@ -56,17 +60,20 @@ impl Round {
             hash,
             id,
             set_size: r.set_size,
+            hasher: PhantomData,
         })
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for round candidates
     /// We also return hash(data) to follow the optimization presented in Section 3.3
     fn round_hash(first_input: &[u8], second_input: &[u8], set_size: u64) -> (Hash, Option<u64>) {
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-round_hash");
-        hasher.update(first_input);
-        hasher.update(second_input);
-        let digest: Hash = hasher.finalize().into();
-        (digest, sample::sample_uniform(&digest, set_size))
+        let digest = H::new()
+            .chain_update(b"Telescope-round_hash")
+            .chain_update(first_input)
+            .chain_update(second_input)
+            .finalize()
+            .to_vec();
+        let hash = truncate(digest);
+        (hash, sample::sample_uniform(&hash, set_size))
     }
 }
