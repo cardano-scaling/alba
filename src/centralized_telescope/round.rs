@@ -73,7 +73,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Round<E, H> {
             .chain_update(second_input)
             .finalize()
             .to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
         (hash, sample::sample_uniform(&hash, set_size))
     }
 }

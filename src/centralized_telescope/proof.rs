@@ -274,7 +274,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
             .chain_update(element.as_ref())
             .finalize()
             .to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
         sample::sample_uniform(&hash, set_size)
     }
 
@@ -286,7 +286,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
             .chain_update(r.hash)
             .finalize()
             .to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
         sample::sample_bernoulli(&hash, valid_proof_probability)
     }
 }

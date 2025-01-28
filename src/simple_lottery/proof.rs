@@ -101,7 +101,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &E) -> bool {
         let digest = H::new().chain_update(element.as_ref()).finalize().to_vec();
-        let hash = truncate(digest);
+        let hash = truncate(&digest);
 
         sample::sample_bernoulli(&hash, lottery_probability)
     }
