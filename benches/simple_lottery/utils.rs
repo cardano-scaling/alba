@@ -12,16 +12,22 @@ mod test_utils;
 
 #[path = "../common/mod.rs"]
 pub mod common;
-use common::criterion_helpers::centralized::BenchParam;
+use common::{
+    criterion_helpers::centralized::BenchParam,
+    test_vectors::{Data, DATA_LENGTH},
+};
+
+use blake2::Blake2bVar;
 
 /// Global variables
 pub const NAME: &str = "Lottery";
 
 /// Function generating a random set of elements to bench and calling Simple Lottery setup
-pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 48]>, Lottery) {
+pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<Data>, Lottery) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 48]> = test_utils::gen_items(&seed, params.total_num_elements);
+    let dataset =
+        test_utils::gen_items::<Blake2bVar, DATA_LENGTH>(&seed, params.total_num_elements);
     let telescope = Lottery::create(
         params.lambda_sec,
         params.lambda_rel,

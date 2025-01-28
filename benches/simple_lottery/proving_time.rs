@@ -9,14 +9,21 @@ mod utils;
 use utils::{
     common::{
         criterion_helpers::centralized::{benchmarks, BenchParam},
-        test_vectors::centralized::SHORT_TESTS,
+        test_vectors::{centralized::SHORT_TESTS, Data},
     },
     setup, NAME,
 };
 
+use digest::{Digest, FixedOutput};
+use sha2::Sha256;
+
 /// Function benchmarking n times the proving time
-fn prove_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
-    let mut rng = ChaCha20Rng::from_entropy();
+fn prove_duration<H: Digest + FixedOutput>(
+    params: &BenchParam,
+    truncate_size: u64,
+    n: u64,
+) -> Duration {
+    let mut rng = ChaCha20Rng::from_os_rng();
     let mut total_duration = Duration::ZERO;
 
     // Setup
@@ -28,7 +35,7 @@ fn prove_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
     for _ in 0..n {
         // Bench the proving time
         let start = Instant::now();
-        black_box(telescope.prove(&dataset));
+        black_box(telescope.prove::<Data, H>(&dataset));
         total_duration = total_duration.saturating_add(start.elapsed());
     }
     total_duration
@@ -43,8 +50,8 @@ fn proving_benches(c: &mut Criterion) {
         c,
         SHORT_TESTS,
         format!("{} - {}", NAME, "Time"),
-        "Prove",
-        &prove_duration,
+        "Sha256/Prove",
+        &prove_duration::<Sha256>,
     );
 }
 
