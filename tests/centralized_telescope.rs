@@ -9,6 +9,7 @@ mod common;
 use common::gen_items;
 
 const DATA_LENGTH: usize = 48;
+type Data = [u8; DATA_LENGTH];
 
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
@@ -20,7 +21,7 @@ fn test(created_with_params: bool) {
     let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
-        let s_p = gen_items::<DATA_LENGTH>(&seed, nb_elements);
+        let s_p: Vec<Data> = gen_items::<DATA_LENGTH>(&seed, nb_elements);
         let alba = if created_with_params {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
@@ -47,7 +48,7 @@ fn test(created_with_params: bool) {
         let proof_item = Proof {
             retry_counter: proof.retry_counter,
             search_counter: proof.search_counter,
-            element_sequence: Vec::new(),
+            element_sequence: Vec::<Data>::new(),
         };
         assert!(!alba.verify(&proof_item));
         // Checking that the proof fails when wrong elements are included
