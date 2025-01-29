@@ -12,13 +12,14 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::SeedableRng;
 use std::time::Instant;
 mod aggregate_signature;
+
 const DATA_LENGTH: usize = 48;
-pub(crate) type Element = [u8; DATA_LENGTH];
+pub(crate) type Data = [u8; DATA_LENGTH];
 
 #[derive(Debug, Clone)]
 pub(crate) struct AlbaThresholdSignature {
     /// Centralized telescope proof
-    pub(crate) proof: Proof,
+    pub(crate) proof: Proof<Data>,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
     /// Commitment `Hash(checksum || msg)`
@@ -57,7 +58,7 @@ impl AlbaThresholdSignature {
             }
 
             // Collect the byte representation of valid signatures into a Vec
-            let prover_set: Vec<Element> = valid_signatures.keys().copied().collect();
+            let prover_set: Vec<Data> = valid_signatures.keys().copied().collect();
 
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
@@ -83,7 +84,7 @@ impl AlbaThresholdSignature {
             let indices: Vec<usize> = proof
                 .element_sequence
                 .iter()
-                .filter_map(|element| valid_signatures.get(element.as_slice()).copied())
+                .filter_map(|element: &Data| valid_signatures.get(element.as_slice()).copied())
                 .collect();
 
             let commitment = get_commitment::<N>(checksum, msg).to_vec();
