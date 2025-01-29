@@ -6,22 +6,22 @@ use super::params::Params;
 use super::round::Round;
 use crate::utils::{
     sample,
-    types::{Element, Hash},
+    types::{Hash, ToBytes},
 };
 use blake2::{Blake2s256, Digest};
 
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
-pub struct Proof {
+pub struct Proof<E: ToBytes + Clone + Sized + Ord> {
     /// Numbers of retries done to find the proof
     pub retry_counter: u64,
     /// Index of the searched subtree to find the proof
     pub search_counter: u64,
     /// Sequence of elements from prover's set
-    pub element_sequence: Vec<Element>,
+    pub element_sequence: Vec<E>,
 }
 
-impl Proof {
+impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
@@ -35,7 +35,7 @@ impl Proof {
     /// # Returns
     ///
     /// A `Proof` structure
-    pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element]) -> Option<Self> {
+    pub(super) fn new(set_size: u64, params: &Params, prover_set: &[E]) -> Option<Self> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
         Self::prove_routine(set_size, params, prover_set).1
@@ -68,7 +68,7 @@ impl Proof {
     /// }
     /// let (setps, proof_opt) = Proof::bench(set_size, &params, &prover_set);
     /// ```
-    pub fn bench(set_size: u64, params: &Params, prover_set: &[Element]) -> (u64, Option<Proof>) {
+    pub fn bench(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
         Self::prove_routine(set_size, params, prover_set)
     }
 
@@ -76,11 +76,7 @@ impl Proof {
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns the number of steps done when searching a proof as well as a
     /// `Proof` if a suitable candidate tuple is found, otherwise `None`.
-    fn prove_routine(
-        set_size: u64,
-        params: &Params,
-        prover_set: &[Element],
-    ) -> (u64, Option<Proof>) {
+    fn prove_routine(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Proof<E>>) {
         let mut steps: u64 = 0;
 
         // Run prove_index up to max_retries times
@@ -121,20 +117,21 @@ impl Proof {
         }
 
         // Initialise a round with given retry and search counters
-        let Some(mut round) = Round::new(self.retry_counter, self.search_counter, set_size) else {
+        let Some(mut round) = Round::<E>::new(self.retry_counter, self.search_counter, set_size)
+        else {
             return false;
         };
 
         // For each element in the proof's sequence
-        for &element in &self.element_sequence {
+        for element in &self.element_sequence {
             // Retrieve the bin id associated to this new element
-            let Some(bin_id) = Proof::bin_hash(set_size, self.retry_counter, element) else {
+            let Some(bin_id) = Self::bin_hash(set_size, self.retry_counter, element.clone()) else {
                 return false;
             };
             // Check that the new element was chosen correctly
             // i.e. that we chose the new element such that its bin id equals the round id
             if round.id == bin_id {
-                match Round::update(&round, element) {
+                match Round::update(&round, element.clone()) {
                     Some(r) => round = r,
                     None => return false,
                 }
@@ -151,21 +148,21 @@ impl Proof {
     fn prove_index(
         set_size: u64,
         params: &Params,
-        prover_set: &[Element],
+        prover_set: &[E],
         retry_counter: u64,
     ) -> (u64, Option<Self>) {
         // Initialize set_size bins
-        let mut bins: Vec<Vec<Element>> = Vec::with_capacity(set_size as usize);
+        let mut bins = Vec::with_capacity(set_size as usize);
         for _ in 0..set_size {
             bins.push(Vec::new());
         }
 
         // Take only up to 2*set_size elements for efficiency and fill the bins
         // with them
-        for &element in prover_set.iter().take(set_size.saturating_mul(2) as usize) {
-            match Proof::bin_hash(set_size, retry_counter, element) {
+        for element in prover_set.iter().take(set_size.saturating_mul(2) as usize) {
+            match Self::bin_hash(set_size, retry_counter, element.clone()) {
                 Some(bin_index) => {
-                    bins[bin_index as usize].push(element);
+                    bins[bin_index as usize].push(element.clone());
                 }
                 None => return (0, None),
             }
@@ -202,8 +199,8 @@ impl Proof {
     /// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
     fn dfs(
         params: &Params,
-        bins: &[Vec<Element>],
-        round: &Round,
+        bins: &[Vec<E>],
+        round: &Round<E>,
         mut step: u64,
     ) -> (u64, Option<Self>) {
         // If current round comprises params.proof_size elements and satisfies
@@ -222,14 +219,14 @@ impl Proof {
         }
 
         // For each element in bin numbered id
-        for &element in &bins[round.id as usize] {
+        for element in &bins[round.id as usize] {
             // If DFS was called more than params.dfs_bound times, abort this
             // round
             if step == params.dfs_bound {
                 return (step, None);
             }
             // Update round with such element
-            if let Some(r) = Round::update(round, element) {
+            if let Some(r) = Round::update(round, element.clone()) {
                 // Run DFS on updated round, incrementing step
                 let (dfs_calls, proof_opt) = Self::dfs(params, bins, &r, step.saturating_add(1));
                 // Return proof if found
@@ -246,19 +243,19 @@ impl Proof {
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
     /// prehashing S_p
-    fn bin_hash(set_size: u64, retry_counter: u64, element: Element) -> Option<u64> {
+    fn bin_hash(set_size: u64, retry_counter: u64, element: E) -> Option<u64> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-bin_hash");
         hasher.update(retry_bytes);
-        hasher.update(element);
+        hasher.update(element.to_be_bytes());
         let digest: Hash = hasher.finalize().into();
         sample::sample_uniform(&digest, set_size)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
-    fn proof_hash(valid_proof_probability: f64, r: &Round) -> bool {
+    fn proof_hash(valid_proof_probability: f64, r: &Round<E>) -> bool {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-proof_hash");
         hasher.update(r.hash);
