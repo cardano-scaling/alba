@@ -1,6 +1,6 @@
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
-use crate::AlbaThresholdSignature;
+use crate::{AlbaThresholdSignature, Element};
 use blake2::digest::{Update, VariableOutput};
 use blake2::Blake2bVar;
 use blst::min_sig::{AggregatePublicKey, AggregateSignature, PublicKey, Signature};
@@ -26,7 +26,7 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
     signature_list: &[IndividualSignature],
     registration: &Registration,
     msg: &[u8],
-) -> HashMap<[u8; 48], usize> {
+) -> HashMap<Element, usize> {
     let mut valid_signatures = HashMap::new();
 
     match &registration.checksum {

@@ -2,18 +2,18 @@
 use super::params::Params;
 use crate::utils::{
     sample,
-    types::{Hash, ToBytes},
+    types::{Element, Hash},
 };
 use blake2::{Blake2s256, Digest};
 
 /// Simple lottery proof
 #[derive(Debug, Clone)]
-pub struct Proof<E: ToBytes + Clone + Sized + Ord> {
+pub struct Proof {
     /// Sequence of elements from prover's set
-    pub element_sequence: Vec<E>,
+    pub element_sequence: Vec<Element>,
 }
 
-impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
+impl Proof {
     /// Simple Lottery's proving algorithm, based on a DFS algorithm.
     ///
     /// # Arguments
@@ -38,13 +38,13 @@ impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
     /// }
     /// let proof = Proof::new(&params, &prover_set).unwrap();
     /// ```
-    pub fn new(params: &Params, prover_set: &[E]) -> Option<Self> {
+    pub fn new(params: &Params, prover_set: &[Element]) -> Option<Self> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
         let mut element_sequence = Vec::with_capacity(params.proof_size as usize);
-        for element in prover_set {
-            if Proof::lottery_hash(params.lottery_probability, element.clone()) {
-                element_sequence.push(element.clone());
+        for &element in prover_set {
+            if Proof::lottery_hash(params.lottery_probability, element) {
+                element_sequence.push(element);
             }
             if element_sequence.len() as u64 >= params.proof_size {
                 element_sequence.sort_unstable();
@@ -87,14 +87,14 @@ impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
             && self
                 .element_sequence
                 .iter()
-                .all(|element| Self::lottery_hash(params.lottery_probability, element.clone()))
+                .all(|&element| Proof::lottery_hash(params.lottery_probability, element))
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
-    fn lottery_hash(lottery_probability: f64, element: E) -> bool {
+    fn lottery_hash(lottery_probability: f64, element: Element) -> bool {
         let mut hasher = Blake2s256::new();
-        hasher.update(element.to_be_bytes());
+        hasher.update(element);
         let digest: Hash = hasher.finalize().into();
         sample::sample_bernoulli(&digest, lottery_probability)
     }

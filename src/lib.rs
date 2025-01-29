@@ -1,7 +1,7 @@
 // #![deny(missing_docs)]
 #![doc = include_str!("../README.md")]
 
-pub mod utils;
+mod utils;
 
 pub mod centralized_telescope;
 pub mod simple_lottery;
