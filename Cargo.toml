@@ -11,6 +11,7 @@ include = ["**/*.rs", "Cargo.toml", "README.md", ".gitignore"]
 [dependencies]
 blake2 = "0.10.6"
 rand = "0.8"
+rayon = "1.10.0"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"]}
@@ -25,36 +26,6 @@ time-elapsed = "0.1.0"
 name = "centralized_proving_time"
 harness = false
 path = "benches/centralized_telescope/proving_time.rs"
-
-[[bench]]
-name = "centralized_verifying_time"
-harness = false
-path = "benches/centralized_telescope/verifying_time.rs"
-
-[[bench]]
-name = "centralized_number_steps"
-harness = false
-path = "benches/centralized_telescope/number_steps.rs"
-
-[[bench]]
-name = "centralized_proof_size"
-harness = false
-path = "benches/centralized_telescope/proof_size.rs"
-
-[[bench]]
-name = "simple_lottery_proving_time"
-harness = false
-path = "benches/simple_lottery/proving_time.rs"
-
-[[bench]]
-name = "simple_lottery_verifying_time"
-harness = false
-path = "benches/simple_lottery/verifying_time.rs"
-
-[[bench]]
-name = "simple_lottery_proof_size"
-harness = false
-path = "benches/simple_lottery/proof_size.rs"
 
 [lints.rust]
 missing-copy-implementations = "warn"

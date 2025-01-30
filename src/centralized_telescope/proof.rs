@@ -2,6 +2,8 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof.md")]
 
+use std::sync::Mutex;
+
 use super::params::Params;
 use super::round::Round;
 use crate::utils::{
@@ -9,6 +11,8 @@ use crate::utils::{
     types::{Element, Hash},
 };
 use blake2::{Blake2s256, Digest};
+use rayon::prelude::*;
+use std::sync::Arc;
 
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
@@ -167,30 +171,42 @@ impl Proof {
                 Some(bin_index) => {
                     bins[bin_index as usize].push(element);
                 }
-                None => return (0, None),
+                None => (),
             }
         }
 
         // Run the DFS algorithm on up to params.search_width different trees
-        let mut step = 0;
-        for search_counter in 0..params.search_width {
-            // If DFS was called more than dfs_bound times, abort this retry
-            if step >= params.dfs_bound {
-                return (step, None);
-            }
-            // Initialize new round
-            if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
-                // Run DFS on such round, incrementing step
-                let (dfs_calls, proof_opt) = Self::dfs(params, &bins, &r, step.saturating_add(1));
-                // Return proof if found
-                if proof_opt.is_some() {
-                    return (dfs_calls, proof_opt);
+        let step = Arc::new(Mutex::new(0u64));
+        let proof_found = Arc::new(Mutex::new(false));
+        let proof_opt = (0..params.search_width)
+            .into_par_iter()
+            .find_map_first(|search_counter| {
+                // If DFS was called more than dfs_bound times, abort this retry
+                if *step.lock().unwrap() >= params.dfs_bound
+                    || *proof_found.lock().unwrap() == true
+                {
+                    return None;
                 }
-                // Update step, that is the number of DFS calls
-                step = dfs_calls;
-            }
-        }
-        (step, None)
+                // Initialize new round
+                if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
+                    // Run DFS on such round, incrementing step
+                    let mut step_guard = step.lock().unwrap();
+                    *step_guard += 1;
+                    drop(step_guard);
+                    let x = Self::dfs(params, &bins, &r, step.clone(), proof_found.clone());
+                    if x.is_some() {
+                        let mut proof_found_guard = proof_found.lock().unwrap();
+                        *proof_found_guard = true;
+                        drop(proof_found_guard);
+                    }
+                    x
+                } else {
+                    None
+                }
+            });
+
+        let total_steps = step.lock().unwrap();
+        (*total_steps, proof_opt)
     }
 
     /// Depth-First Search (DFS) algorithm which goes through all potential
@@ -204,44 +220,51 @@ impl Proof {
         params: &Params,
         bins: &[Vec<Element>],
         round: &Round,
-        mut step: u64,
-    ) -> (u64, Option<Self>) {
+        step: Arc<Mutex<u64>>,
+        proof_found: Arc<Mutex<bool>>,
+    ) -> Option<Self> {
+        // If proof already found, stop thread
+        if *proof_found.lock().unwrap() == true {
+            return None;
+        }
+
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
-            let proof_opt = if Proof::proof_hash(params.valid_proof_probability, round) {
-                Some(Self {
-                    retry_counter: round.retry_counter,
-                    search_counter: round.search_counter,
-                    element_sequence: round.element_sequence.clone(),
-                })
-            } else {
-                None
-            };
-            return (step, proof_opt);
+            let proof_opt: Option<Proof> =
+                if Proof::proof_hash(params.valid_proof_probability, round) {
+                    Some(Self {
+                        retry_counter: round.retry_counter,
+                        search_counter: round.search_counter,
+                        element_sequence: round.element_sequence.clone(),
+                    })
+                } else {
+                    None
+                };
+            return proof_opt;
         }
-
         // For each element in bin numbered id
         for &element in &bins[round.id as usize] {
             // If DFS was called more than params.dfs_bound times, abort this
             // round
-            if step == params.dfs_bound {
-                return (step, None);
+            if *step.lock().unwrap() >= params.dfs_bound || *proof_found.lock().unwrap() == true {
+                return None;
             }
             // Update round with such element
             if let Some(r) = Round::update(round, element) {
                 // Run DFS on updated round, incrementing step
-                let (dfs_calls, proof_opt) = Self::dfs(params, bins, &r, step.saturating_add(1));
+                let mut step_guard = step.lock().unwrap();
+                *step_guard += 1;
+                drop(step_guard);
+                let proof_opt = Self::dfs(params, bins, &r, step.clone(), proof_found.clone());
                 // Return proof if found
                 if proof_opt.is_some() {
-                    return (dfs_calls, proof_opt);
+                    return proof_opt;
                 }
-                // Update step, i.e. is the number of DFS calls
-                step = dfs_calls;
             }
         }
         // If no proof was found, return number of steps and None
-        (step, None)
+        None
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
