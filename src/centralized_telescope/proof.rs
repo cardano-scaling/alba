@@ -182,8 +182,7 @@ impl Proof {
             .into_par_iter()
             .find_map_first(|search_counter| {
                 // If DFS was called more than dfs_bound times, abort this retry
-                if *step.lock().unwrap() >= params.dfs_bound
-                    || *proof_found.lock().unwrap() == true
+                if *step.lock().unwrap() >= params.dfs_bound || *proof_found.lock().unwrap() == true
                 {
                     return None;
                 }
@@ -244,27 +243,26 @@ impl Proof {
             return proof_opt;
         }
         // For each element in bin numbered id
-        for &element in &bins[round.id as usize] {
-            // If DFS was called more than params.dfs_bound times, abort this
-            // round
-            if *step.lock().unwrap() >= params.dfs_bound || *proof_found.lock().unwrap() == true {
-                return None;
-            }
-            // Update round with such element
-            if let Some(r) = Round::update(round, element) {
-                // Run DFS on updated round, incrementing step
-                let mut step_guard = step.lock().unwrap();
-                *step_guard += 1;
-                drop(step_guard);
-                let proof_opt = Self::dfs(params, bins, &r, step.clone(), proof_found.clone());
-                // Return proof if found
-                if proof_opt.is_some() {
-                    return proof_opt;
+        bins[round.id as usize]
+            .par_iter()
+            .find_map_first(|&element| {
+                // If DFS was called more than params.dfs_bound times, abort this
+                // round
+                if *step.lock().unwrap() >= params.dfs_bound || *proof_found.lock().unwrap() == true
+                {
+                    return None;
                 }
-            }
-        }
-        // If no proof was found, return number of steps and None
-        None
+                // Update round with such element
+                if let Some(r) = Round::update(round, element) {
+                    // Run DFS on updated round, incrementing step
+                    let mut step_guard = step.lock().unwrap();
+                    *step_guard += 1;
+                    drop(step_guard);
+                    Self::dfs(params, bins, &r, step.clone(), proof_found.clone())
+                } else {
+                    None
+                }
+            })
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
