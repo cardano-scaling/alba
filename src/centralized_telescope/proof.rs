@@ -8,6 +8,9 @@ use crate::utils::{sample, types::truncate};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
 
+use rayon::prelude::*;
+use std::sync::{Arc, Mutex};
+
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
 pub struct Proof<E, H> {
@@ -173,25 +176,33 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
         }
 
         // Run the DFS algorithm on up to params.search_width different trees
-        let mut step = 0;
-        for search_counter in 0..params.search_width {
-            // If DFS was called more than dfs_bound times, abort this retry
-            if step >= params.dfs_bound {
-                return (step, None);
-            }
-            // Initialize new round
-            if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
-                // Run DFS on such round, incrementing step
-                let (dfs_calls, proof_opt) = Self::dfs(params, &bins, &r, step.saturating_add(1));
-                // Return proof if found
-                if proof_opt.is_some() {
-                    return (dfs_calls, proof_opt);
+        let step = Arc::new(Mutex::new(0u64));
+        let proof_found = Arc::new(Mutex::new(false));
+        let proof_opt = (0..params.search_width)
+            .into_par_iter()
+            .find_map_first(|search_counter| {
+                // If DFS was called more than params.dfs_bound times,or a proof was
+                // already found abort this retru
+                if Self::check_locks(params, step.clone(), proof_found.clone()) {
+                    return None;
                 }
-                // Update step, that is the number of DFS calls
-                step = dfs_calls;
-            }
-        }
-        (step, None)
+                // Initialize new round
+                if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
+                    // Run DFS on such round, incrementing step
+                    Self::update_step_lock(step.clone());
+                    let dfs_result =
+                        Self::dfs(params, &bins, &r, step.clone(), proof_found.clone());
+                    if dfs_result.is_some() {
+                        Self::update_proof_lock(proof_found.clone());
+                    }
+                    dfs_result
+                } else {
+                    None
+                }
+            });
+
+        let total_steps = step.lock().unwrap();
+        (*total_steps, proof_opt)
     }
 
     /// Depth-First Search (DFS) algorithm which goes through all potential
@@ -205,45 +216,47 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
         params: &Params,
         bins: &[Vec<E>],
         round: &Round<E, H>,
-        mut step: u64,
-    ) -> (u64, Option<Self>) {
+        step: Arc<Mutex<u64>>,
+        proof_found: Arc<Mutex<bool>>,
+    ) -> Option<Self> {
+        // If DFS was called more than params.dfs_bound times,or a proof was
+        // already found abort this round
+        if Self::check_locks(params, step.clone(), proof_found.clone()) {
+            return None;
+        }
+
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
-            let proof_opt = if Self::proof_hash(params.valid_proof_probability, round) {
-                Some(Self {
-                    retry_counter: round.retry_counter,
-                    search_counter: round.search_counter,
-                    element_sequence: round.element_sequence.clone(),
-                    hasher: PhantomData::<H>,
-                })
-            } else {
-                None
-            };
-            return (step, proof_opt);
+            return Self::proof_hash(params.valid_proof_probability, round).then_some(Self {
+                retry_counter: round.retry_counter,
+                search_counter: round.search_counter,
+                element_sequence: round.element_sequence.clone(),
+                hasher: PhantomData::<H>,
+            });
         }
 
         // For each element in bin numbered id
         for element in &bins[round.id as usize] {
-            // If DFS was called more than params.dfs_bound times, abort this
-            // round
-            if step == params.dfs_bound {
-                return (step, None);
+            // If DFS was called more than params.dfs_bound times,or a
+            // proof was already found abort this round
+            if Self::check_locks(params, step.clone(), proof_found.clone()) {
+                return None;
             }
+
             // Update round with such element
             if let Some(r) = Round::update(round, element) {
                 // Run DFS on updated round, incrementing step
-                let (dfs_calls, proof_opt) = Self::dfs(params, bins, &r, step.saturating_add(1));
+                Self::update_step_lock(step.clone());
+                let proof_opt = Self::dfs(params, bins, &r, step.clone(), proof_found.clone());
                 // Return proof if found
                 if proof_opt.is_some() {
-                    return (dfs_calls, proof_opt);
+                    return proof_opt;
                 }
-                // Update step, i.e. is the number of DFS calls
-                step = dfs_calls;
             }
         }
         // If no proof was found, return number of steps and None
-        (step, None)
+        None
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
@@ -268,5 +281,25 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
             .finalize();
         let hash = truncate(digest.as_slice());
         sample::sample_bernoulli(&hash, valid_proof_probability)
+    }
+
+    fn check_locks(
+        params: &Params,
+        step_lock: Arc<Mutex<u64>>,
+        proof_lock: Arc<Mutex<bool>>,
+    ) -> bool {
+        *step_lock.lock().unwrap() >= params.dfs_bound || *proof_lock.lock().unwrap() == true
+    }
+
+    fn update_step_lock(step_lock: Arc<Mutex<u64>>) -> () {
+        let mut step_guard = step_lock.lock().unwrap();
+        *step_guard += 1;
+        drop(step_guard);
+    }
+
+    fn update_proof_lock(proof_found_lock: Arc<Mutex<bool>>) -> () {
+        let mut proof_guard = proof_found_lock.lock().unwrap();
+        *proof_guard = true;
+        drop(proof_guard);
     }
 }
