@@ -1,8 +1,10 @@
 //! Centralized Telescope's `Params` structure comprising the internal parameters
 
+#![doc = include_str!("../../docs/rustdoc/centralized_telescope/params/overview.md")]
+
 use std::f64::consts::LOG2_E;
 
-/// Internal parameters
+#[doc = include_str!("../../docs/rustdoc/centralized_telescope/params/parameters.md")]
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
     /// Number of prover set's elements
@@ -16,7 +18,7 @@ pub struct Params {
     /// Maximum number of DFS calls permitted to find a proof
     pub dfs_bound: u64,
 }
-
+#[doc = include_str!("../../docs/rustdoc/centralized_telescope/params/setup.md")]
 impl Params {
     /// Returns a `Params` structure from user parameters
     ///
