@@ -10,29 +10,29 @@ Recall the telescope parameters:
 - $\lambda_{rel}: ~~$ The probability that an honest prover, with knowledge of a sufficiently large set $S_p$, can successfully generate a valid proof. 
 
 ### Parameters
-- $u: ~~$
-- $d: ~~$
-- $q: ~~$
-- $r: ~~$
-- $b: ~~$
+- $u: ~~$ Proof size.
+- $d: ~~$ Maximum number of subtrees to search to find a proof.
+- $q: ~~$ Probability that a tuple of element is a valid proof.
+- $r: ~~$ Maximum number of retries to find a proof.
+- $b: ~~$ Maximum number of DFS calls permitted to find a proof, DFS bound.
 
 ### Initialization
 1. Set the proof size $u$:
-$$
-u \coloneqq \left\lceil \frac{\lambda_{\text{sec}} + \log \lambda_{\text{rel}} + 5 - \log \log e}{\log \left(\frac{n_p}{n_f}\right)} \right\rceil
-$$
-$$
+
+  $$
+    u \coloneqq \left\lceil \frac{\lambda_{\text{sec}} + \log \lambda_{\text{rel}} + 5 - \log \log e}{\log \left(\frac{n_p}{n_f}\right)} \right\rceil
+  $$
 
 2. Set the check values $s_1$ and $s_2$:
-$$
-ratio \coloneqq \frac{9 n_p \log e}{17u^2}
-$$
+    $$
+        ratio \coloneqq \frac{9 n_p \log e}{17u^2}
+    $$
+    $$
+        s_1 \coloneqq ratio - 7, \quad s_2 \coloneqq ratio - 2.
+    $$
 
-$$
-s_1 \coloneqq ratio - 7, \quad s_2 \coloneqq ratio - 2.
-$$
 3. Set the values of $\lambda_{rel}^{(1)}$ and $\lambda_{rel}^{(2)}$:
-
+    
 If $s_1 < 1 \implies \lambda_{rel}^{(1)} \coloneqq \bot$, else $\implies \lambda_{rel}^{(1)} \coloneqq \mathsf{min}(\lambda_{rel}, s_1)$
 
 If $s_2 < 1 \implies \lambda_{rel}^{(2)} \coloneqq \bot$, else $\implies \lambda_{rel}^{(2)} \coloneqq \mathsf{min}(\lambda_{rel}, s_2)$
@@ -53,21 +53,25 @@ $$
 If $s_2 > 1$, we know that $\lambda_{rel}^{(2)} \coloneqq min(\lambda_{rel}, s_2)$. 
 In this case, if ($u > \lambda_{rel}^{(2)}$) $\implies$ MID CASE, $\quad \lambda^3 > n_p > \lambda^2$.
 
-First, we set $\lambda_{rel}^{(1)}$, and compute $\bar{\lambda}$ and $d$:
+First, we set $\lambda_{rel}^{(1)}$, and compute $\overline{\lambda_{rel}}$ and $d$:
 $$
 \lambda_{rel}^{(1)} \coloneqq min(\lambda_{rel}, s_1 )
 $$
 $$
-\bar{\lambda} \coloneqq \frac{\lambda_{rel}^{(1)} + 7}{\log{e}}, \quad d \coloneqq \lceil 16 \cdot u \cdot \bar{\lambda}\rceil
+\overline{\lambda_{rel}} \coloneqq \frac{\lambda_{rel}^{(1)} + 7}{\log{e}}, \quad d \coloneqq \lceil 16 \cdot u \cdot \bar{\lambda}\rceil
 $$
 Then, we check the prover's set size. 
 If $n_p \geq \frac{d^2}{9 \cdot \bar{\lambda}}$, we abort the process.
 Otherwise, we compute $w$, $r$, $q$, $b$ as follows:
 $$
-w \coloneqq \mathsf{compute_w}(u, \lambda_{rel}^{(1)}), \quad r \coloneqq \Big\lceil\frac{\lambda_{rel}}{\lambda_{rel}^{(1)}}\Big\rceil, \quad q \coloneqq \mathsf{recip}\Big(2 \cdot \frac{\bar{\lambda}}{d}\Big)
+w \coloneqq min\Big\\{w: w \in \mathbb{N} \wedge w \geq u \wedge \frac{14 \cdot w^2 \cdot (w + 2) \cdot e^\frac{w+1}{w}} {e \cdot (w + 2 - e^{1/w}) \cdot (w + 1)!} \le 2^{-\lambda_{rel}^{(1)}}\Big\\}
+$$
+For realistic values of $\lambda_{rel}^{(1)}$, $w = u$ can be used.
+$$
+r \coloneqq \Big\lceil\frac{\lambda_{rel}}{\lambda_{rel}^{(1)}}\Big\rceil, \quad q \coloneqq 2 \cdot \frac{\overline{\lambda_{rel}}}{d}
 $$
 $$
-b \coloneqq \Bigg\lfloor\Big(\frac{w \bar{\lambda}}{d} + 1\Big) \cdot \mathsf{exp}\Big(\frac{2 u w \bar{\lambda}}{n_p} + \frac{7 u}{w}\Big)d u + d \Bigg\rfloor
+b \coloneqq \Bigg\lfloor\Big(\frac{w \overline{\lambda_{rel}}}{d} + 1\Big) \cdot \mathsf{exp}\Big(\frac{2 u w \overline{\lambda_{rel}}}{n_p} + \frac{7 u}{w}\Big)d u + d \Bigg\rfloor
 $$
 
 ---
