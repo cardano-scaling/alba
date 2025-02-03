@@ -1,9 +1,4 @@
-Recall the telescope parameters:
-- $n_p: ~~$ Total number of elements available to the prover.
-- $n_f: ~~$ The lower bound to prove on prover set.
-- $\lambda_{sec}: ~~$ The probability that an adversary, who knows at most $n_f$ elements, can construct a valid proof.
-- $\lambda_{rel}: ~~$ The probability that an honest prover, with knowledge of a sufficiently large set $S_p$, can successfully generate a valid proof.
-
+## Parameter generation protocol
 ### Initialization
 1. Set the proof size $u$:
 
