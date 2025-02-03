@@ -37,3 +37,28 @@ impl Display for ProofGenerationError {
 
 impl Error for ProofGenerationError {}
 
+/// Proof verification error
+#[derive(Debug, Clone, Copy)]
+pub enum VerificationError {
+    /// Proof does not contain the correct number of elements
+    IncorrectNumberElements,
+    /// Proof does not respect the given parameters
+    InvalidParameters,
+    /// Proof does not contain unique elements (Lottery)
+    RepeatedElements,
+    /// Proof does not verify successfully
+    InvalidProof,
+}
+
+impl Display for VerificationError {
+    fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
+        match self {
+            Self::IncorrectNumberElements => write!(f, "Incorrect number of elements in the proof"),
+            Self::InvalidParameters => write!(f, "Some parameters are not respected"),
+            Self::RepeatedElements => write!(f, "Some elements are repeated"),
+            Self::InvalidProof => write!(f, "The proof does not verify"),
+        }
+    }
+}
+
+impl Error for VerificationError {}
