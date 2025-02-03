@@ -1,6 +1,30 @@
 # Parameter Setup
 
 ## Overview
+The parameter setup ensures that the **DFS (Depth-First Search) algorithm** completes in a reasonable number of steps, even when the number of elements, $n_p$, is small.
+- The scheme must handle both large and small $n_p$ efficiently while keeping proof generation practical.
+- The goal is to **balance the prover's workload and the reliability of the proof**.
+
+### Parameter selection strategy
+- When $n_p$ is large:
+  - If $n_p$ is at least $\lambda^3$, proof generation is straightforward.
+  - The prover can find a valid proof in roughly the time it takes to process all elements.
+  - The worst case, where the prover needs extra work, still remains within a manageable margin.
+- When $n_p$ is small:
+  - If $n_p < \lambda^3$, the standard approach no longer guarantees that the prover finds a valid proof quickly.
+  - To fix this, we allow the prover to retry multiple times, increasing the chances of success without overwhelming computational cost.
+  - Extra retries increase reliability, but they must be controlled to avoid unnecessary work.
+- Handling intermediate cases ($\lambda^2 < n_p < \lambda^3$):
+  - A hybrid strategy balances efficiency and reliability.
+  - The prover makes more retries than in the large $n_p$ case but fewer than in the small $n_p$ case.
+  - This keeps the average workload low while ensuring the proof remains trustworthy and compact.
+- Keeping proof size practical:
+  - The number of elements included in the proof remains almost unchanged, ensuring that verification remains efficient.
+  - Security adjustments are made to prevent the prover from taking shortcuts that might compromise reliability.
+- Preventing unbounded search:
+  - Without restrictions, DFS could explore too many possibilities before finding a valid proof.
+  - We limit the depth of the search, forcing it to stop early.
+  - This ensures that even in the worst case, the prover finishes within a predictable time frame.
 
 ## Parameter generation protocol
 Recall the telescope parameters:
@@ -50,21 +74,21 @@ $$
 
 ---
 #### Mid case
-If $s_2 > 1$, we know that $\lambda_{rel}^{(2)} \coloneqq min(\lambda_{rel}, s_2)$. 
+If $s_2 > 1$, we know that $\lambda_{rel}^{(2)} \coloneqq \mathsf{min}(\lambda_{rel}, s_2)$. 
 In this case, if ($u > \lambda_{rel}^{(2)}$) $\implies$ MID CASE, $\quad \lambda^3 > n_p > \lambda^2$.
 
 First, we set $\lambda_{rel}^{(1)}$, and compute $\overline{\lambda_{rel}}$ and $d$:
 $$
-\lambda_{rel}^{(1)} \coloneqq min(\lambda_{rel}, s_1 )
+\lambda_{rel}^{(1)} \coloneqq \mathsf{min}(\lambda_{rel}, s_1 )
 $$
 $$
-\overline{\lambda_{rel}} \coloneqq \frac{\lambda_{rel}^{(1)} + 7}{\log{e}}, \quad d \coloneqq \lceil 16 \cdot u \cdot \bar{\lambda}\rceil
+\overline{\lambda_{rel}} \coloneqq \frac{\lambda_{rel}^{(1)} + 7}{\log{e}}, \quad d \coloneqq \lceil 16 \cdot u \cdot \overline{\lambda_{rel}}\rceil
 $$
 Then, we check the prover's set size. 
 If $n_p \geq \frac{d^2}{9 \cdot \bar{\lambda}}$, we abort the process.
 Otherwise, we compute $w$, $r$, $q$, $b$ as follows:
 $$
-w \coloneqq min\Big\\{w: w \in \mathbb{N} \wedge w \geq u \wedge \frac{14 \cdot w^2 \cdot (w + 2) \cdot e^\frac{w+1}{w}} {e \cdot (w + 2 - e^{1/w}) \cdot (w + 1)!} \le 2^{-\lambda_{rel}^{(1)}}\Big\\}
+w \coloneqq \mathsf{min}\Big\\{w: w \in \mathbb{N} \wedge w \geq u \wedge \frac{14 \cdot w^2 \cdot (w + 2) \cdot e^\frac{w+1}{w}} {e \cdot (w + 2 - e^{1/w}) \cdot (w + 1)!} \le 2^{-\lambda_{rel}^{(1)}}\Big\\}
 $$
 For realistic values of $\lambda_{rel}^{(1)}$, $w = u$ can be used.
 $$
@@ -76,7 +100,7 @@ $$
 
 ---
 #### High case
-Since $s_2 > 1$ and $\lambda_{rel}^{(2)} \coloneqq min(\lambda_{rel}, s_2)$.
+Since $s_2 > 1$ and $\lambda_{rel}^{(2)} \coloneqq \mathsf{min}(\lambda_{rel}, s_2)$.
 If ($u > \lambda_{rel}^{(2)}$) $\implies$ HIGH CASE, $\quad n_p \geq \lambda^3$.
 
 First, we compute $d$:
