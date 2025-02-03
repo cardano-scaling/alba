@@ -109,6 +109,6 @@ impl ThresholdSignature {
         public_key_list: &[(usize, PublicKey)],
         indices: &[usize],
     ) -> bool {
-        self.validate_signatures(msg, public_key_list, indices) && alba.verify(&self.proof)
+        self.validate_signatures(msg, public_key_list, indices) && alba.verify(&self.proof).is_ok()
     }
 }
