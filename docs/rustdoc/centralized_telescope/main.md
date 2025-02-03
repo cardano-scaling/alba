@@ -1,10 +1,3 @@
-# Telescope - Construction with Bounded DFS
-
-In scenarios where $n_p$ is small, the parameters given for prehashed construction (relative to the security parameter, $\lambda$) are not optimal, resulting in a reduced probability of constructing a valid proof in a single attempt.
-For large $n_p$, the rapid growth in potential proof tuples ensures valid ones can be found efficiently, allowing the prehashed construction to work seamlessly.
-In contrast, small $n_p$ limits the search space, making the previous parameters inadequate.
-To address this, the **construction with bounded DFS** expands on the prehashed version with *retries*, *prehashing randomization*, and *bounding* the DFS.
-
 ## Overview
 - When $n_p$ is large, the rapid increase in potential proof tuples enhances the chances of finding a valid proof, simplifying the construction process.
 - For small $n_p$, the element distribution across bins is more likely to be skewed, some bins may contain multiple elements while others remain empty.

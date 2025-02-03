@@ -1,7 +1,9 @@
 //! ALBA's bounded DFS scheme using Blake2b as hash function.
 //! (c.f. Section 3.2.2 of Alba paper)
 
-#![doc = include_str!("../../docs/rustdoc/centralized_telescope/main.md")]
+#![doc = include_str!("../../docs/rustdoc/centralized_telescope/intro.md")]
+//!
+//! See full documentation: [Telescope - Construction with Bounded DFS][crate::docs::centralized]
 
 pub mod params;
 
