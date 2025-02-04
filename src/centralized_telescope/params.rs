@@ -8,7 +8,7 @@ use std::f64::consts::LOG2_E;
 /// Internal parameters
 ///
 /// See the documentation: [Internal parameters of centralized
-/// telescope][crate::docs::centralized::params#internal-parameters]
+/// telescope][crate::docs::centralized::params#parameters]
 #[derive(Debug, Clone, Copy)]
 pub struct Params {
     /// Number of prover set's elements
