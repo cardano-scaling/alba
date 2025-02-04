@@ -26,7 +26,4 @@ pub mod centralized {
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/dfs.md")]
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/hash_functions.md")]
     pub mod proof {}
-
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/round.md")]
-    pub mod round {}
 }
