@@ -20,10 +20,21 @@ pub mod centralized {
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/params/setup.md")]
     pub mod params {}
 
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/fields.md")]
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/prove.md")]
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/prove_index.md")]
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/dfs.md")]
-    #[doc = include_str!("../docs/rustdoc/centralized_telescope/hash_functions.md")]
-    pub mod proof {}
+    #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/main.md")]
+    pub mod proof {
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/structures/struct_params.md")]
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/structures/struct_round.md")]
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/structures/struct_proof.md")]
+        pub mod variables {}
+
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/prove.md")]
+        pub mod prove_verify {}
+
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/prove_index.md")]
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/dfs.md")]
+        pub mod internal_functions {}
+
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/hash_functions.md")]
+        pub mod hash_functions {}
+    }
 }
