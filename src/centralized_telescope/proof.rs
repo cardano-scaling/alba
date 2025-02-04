@@ -1,7 +1,5 @@
 //! Centralized Telescope's `Proof` structure
 
-#![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof.md")]
-
 use super::params::Params;
 use super::round::Round;
 use crate::utils::{

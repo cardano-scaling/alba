@@ -1,0 +1,11 @@
+## Prove
+- $\mathsf{prove} (n_p,~$ [$params$](#parameters) $, ~S_p) \rightarrow ($ [$proof$](#proof)$/ \bot)$:
+---
+- $step \leftarrow 0$
+- **for** each $~~ v \in \[$ [$params.r$](#params-r) $\]:$
+  - $(dfs\\_calls, ~ proof) \leftarrow$ [$\mathsf{prove\\_index}$](#prove-index) $(n_p,~$ [$params$](#parameters), $~S_p$, $~v+1)$
+  - $step = step + dfs\\_calls$
+  - **if** $~~ proof ~~!= \bot:$
+    - **return** $~~ proof.$
+- **return** $~~ \bot.$
+---
