@@ -1,3 +1,5 @@
+# Centralized Telescope - Proof
+
 This module implements the **proof generation** and **verification** functionalities in the **Centralized Telescope** scheme.
 The `proof` structure represents a cryptographic proof generated using a depth-first search (DFS) algorithm. 
 It contains three key fields: 

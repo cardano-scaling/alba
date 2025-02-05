@@ -20,6 +20,7 @@ pub mod centralized {
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/params/setup.md")]
     pub mod params {}
 
+    /// Centralized Telescope - proof structure
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/overview.md")]
     #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/main.md")]
     pub mod proof {
