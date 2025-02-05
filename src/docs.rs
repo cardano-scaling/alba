@@ -34,6 +34,7 @@ pub mod centralized {
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/verify.md")]
         pub mod verify {}
 
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/internal_functions/intro.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/internal_functions/prove_index.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/internal_functions/dfs.md")]
         pub mod internal_functions {}
