@@ -29,8 +29,10 @@ pub mod centralized {
         pub mod variables {}
 
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/prove.md")]
+        pub mod prove {}
+
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/verify.md")]
-        pub mod prove_verify {}
+        pub mod verify {}
 
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/prove_index.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/dfs.md")]
