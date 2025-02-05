@@ -1,11 +1,14 @@
 ## Verify
-The `verify` function checks the validity of a given proof by ensuring that it satisfies the necessary constraints. It begins by verifying that the proof’s search index \( t \) does not exceed the maximum search width \( d \), the retry count \( v \) does not exceed the maximum retries \( r \), and the number of elements in the proof sequence matches the required proof size \( u \). If any of these conditions are violated, the function immediately returns `false`.
+The `verify` function checks whether a given proof meets the necessary constraints:
+- Ensures `search_index` $t$ does not exceed `search_width` $d$, `retry_counter` $v$ does not exceed `max_retries` $r$, and the size of  `element_sequence` of proof matches `proof_size` $u$.
+- Reconstructs the initial round using `round_hash` $\mathsf{H_1}$. If no valid identifier is obtained, returns `false`.
+- Iterates through `element_sequence`, computing bin indices using `bin_hash` $\mathsf{H_0}$.
+  - If no valid bin index is found, returns `false`.
+  - If the bin index matches the round identifier, updates the round using `round_hash` $\mathsf{H_1}$; otherwise, returns `false`.
+- After processing all elements, applies `proof_hash` $\mathsf{H_2}$ to check probability constraint $q$.
+- Returns `true` if the proof is valid; otherwise, returns `false`.
 
-Next, the function reconstructs the initial round using the round hash function \( \mathsf{H_1} \), which maps the retry counter \( v \) and search index \( t \) to a unique identifier \( id \). If this identifier is invalid, the function returns `false`. Otherwise, it initializes an empty round structure with the computed hash and identifier.
-
-The function then iterates through each element in the proof sequence. For each element, it computes its corresponding bin index using the bin hash function \( \mathsf{H_0} \). If the computed bin index is invalid, the function returns `false`. If the bin index matches the current round identifier, the function updates the round by computing a new round hash using \( \mathsf{H_1} \). If the update is successful, the function continues; otherwise, it returns `false`. If an element’s bin index does not match the expected identifier, the function immediately rejects the proof.
-
-Finally, after processing all elements in the sequence, the function applies the proof hash function \( \mathsf{H_2} \) to check whether the proof satisfies the probability constraint \( q \). If the final check is successful, the function returns `true`, confirming the validity of the proof. Otherwise, it returns `false`, indicating that the proof does not meet the required criteria.
+---
 
 - $\mathsf{verify}($ [$proof$](variables#proof)$, n_p,~ $ [$params$](variables#parameters) $)\rightarrow (true ~ / ~ false):$
 ---
