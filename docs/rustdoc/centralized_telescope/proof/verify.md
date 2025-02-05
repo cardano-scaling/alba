@@ -1,5 +1,24 @@
 ## Verify
 - $\mathsf{verify}($ [$proof$](variables#proof)$, n_p,~ $ [$params$](variables#parameters) $)\rightarrow (true ~ / ~ false):$
 ---
-- ...
+- **if** $ ~~($[$proof.t$](variables#proof-t) $\geq$ [$params.d$](variables#params-d) $) ~ \Vert ~ ($ [$proof.v$](variables#proof-v) $\geq$ [$params.r$](variables#params-r) $) ~ \Vert ~ (\mathsf{size}($ [$proof.slist$](variables#proof-slist) $)~ != $ [$params.u$](variables#params-u)$):$
+  - **return** $false.$
+- $(hash,~ id) \leftarrow $ [$\mathsf{H_1}$](hash_functions#round-hash) $(\mathsf{bytes}($ [$proof.v$](variables#proof-v) $),~ \mathsf{bytes}($ [$proof.t$](variables#proof-t) $),~ n_p)$
+- **if** $~~ id ~~== \bot:$
+  - **return** $false.$
+- $round \leftarrow ($ [$proof.v$](variables#proof-v) $,~ $ [$proof.t$](variables#proof-t) $,~ \\{ ~ \\},~ hash,~ id,~ n_p)$
+- **for** each $~~ s \in$ [$proof.slist$](variables#proof-slist) $:$
+  - $bin\\_id \leftarrow$ [$\mathsf{H_0}$](hash_functions#bin-hash) $(n_p,~ $ [$proof.v$](variables#proof-v) $,~ s )$
+  - **if** $~~ bin\\_id ~== \bot :$
+    - **return** $false.$
+  - **if** $~~ bin\\_id ~== ~ $ [$round.id$](variables#round-id) $:$
+    - $(hash,~ id) \leftarrow $ [$\mathsf{H_1}$](hash_functions#round-hash) $($ [$round.hash$](variables#round-digest) $,~ s,~ n_p)$
+    - **if** $~~ id ~~!= \bot:$
+      - $round.hash ~ \leftarrow ~ hash$
+      - $round.id ~ \leftarrow ~ id$
+    - **else** :
+      - **return** $false.$
+  - **else** :
+    - **return** $false.$
+- **return** [$\mathsf{H_2}$](hash_functions#proof-hash) $($ [$params.q$](variables#params-q) $,~ round).$ 
 ---

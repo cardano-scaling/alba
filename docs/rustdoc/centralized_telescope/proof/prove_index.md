@@ -3,7 +3,7 @@
 ---
 - $bins \leftarrow \big\\{ \\{ ~ \\}$ **for** $~ i \in \[n_p\] \big\\}:$
 - **for** each $~~ s \in S_p:$
-    - $ind \leftarrow$ [$\mathsf{H_0}$](hash_functions#bin-hash) $(n_p, v, s)$
+    - $ind \leftarrow$ [$\mathsf{H_0}$](hash_functions#bin-hash) $(n_p,~ v,~ s)$
     - **if** $~~ ind ~~!= \bot:$
         - $bins\[ind\] \leftarrow bins\[ind\] \cup \\{s\\}$
     - **else**:
