@@ -12,3 +12,5 @@ If sampling fails, it returns `⊥` along with the computed hash.
 The `proof_hash` function determines proof validity using a probabilistic check. 
 It computes a hash from the round's hash value and performs a Bernoulli trial based on the probability threshold [$q$](variables#params-q). 
 The function returns `true` with probability in $[q - \varepsilon, q]$ for a negligible $\varepsilon$; otherwise, it returns `false`, ensuring that valid proofs are accepted with the desired probability.
+
+---

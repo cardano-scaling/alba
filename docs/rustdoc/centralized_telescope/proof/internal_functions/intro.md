@@ -18,3 +18,4 @@ Its process is as follows:
     - If a proof is found, returns it immediately.
     - Otherwise, updates the step counter and continues searching.
 - If all elements are exhausted without finding a proof, returns total DFS calls and an empty proof.
+---

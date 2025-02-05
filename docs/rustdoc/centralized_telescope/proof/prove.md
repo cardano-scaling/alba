@@ -7,10 +7,8 @@ It follows these steps:
 - The number of DFS calls taken in each retry is accumulated into the step counter. 
 - If `prove_index` successfully finds a proof, it is immediately returned, as there is no need to continue searching. 
 - If the function exhausts all retries without finding a proof, it returns an empty proof, indicating that no valid proof could be constructed within the given constraints.
-
 ---
-
-- $\mathsf{prove} (n_p,~$ [$params$](variables#parameters) $, ~S_p) \rightarrow ($ [$proof$](variables#proof)$/ \bot)$:
+$\mathsf{prove} (n_p,~$ [$params$](variables#parameters) $, ~S_p) \rightarrow ($ [$proof$](variables#proof) $/ \bot)$:
 ---
 - $step \leftarrow 0$
 - **for** each $~~ v \in \[$ [$params.r$](variables#params-r) $\]:$

@@ -1,5 +1,5 @@
-## DFS
-- $\mathsf{dfs} ($ [$params$](variables#parameters) $,~ bins,~ $ [$round$](variables#round) $,~ step) \rightarrow (step, ~$ [$proof$](variables#proof)$)$:
+
+<a id="dfs">$\mathsf{dfs}$</a> $($ [$params$](variables#parameters) $,~ bins,~ $ [$round$](variables#round) $,~ step) \rightarrow (step, ~$ [$proof$](variables#proof) $)$:
 ---
 - **if** $~~ \mathsf{size}($ [$round.slist$](variables#round-slist) $) ==~ $ [$params.u$](variables#params-u) $:$
   - **if** $~~ $ [$\mathsf{H_2}$](hash_functions#proof-hash) $($ [$params.q$](variables#params-q) $,~ $ [$round$](variables#round) $) ==~ true :$

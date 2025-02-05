@@ -7,10 +7,8 @@ The `verify` function checks whether a given proof meets the necessary constrain
   - If the bin index matches the round identifier, updates the round using `round_hash` $\mathsf{H_1}$; otherwise, returns `false`.
 - After processing all elements, applies `proof_hash` $\mathsf{H_2}$ to check probability constraint $q$.
 - Returns `true` if the proof is valid; otherwise, returns `false`.
-
 ---
-
-- $\mathsf{verify}($ [$proof$](variables#proof)$, n_p,~ $ [$params$](variables#parameters) $)\rightarrow (true ~ / ~ false):$
+$\mathsf{verify} ($ [$proof$](variables#proof) $, n_p,~ $ [$params$](variables#parameters) $)\rightarrow (true ~ / ~ false):$
 ---
 - **if** $ ~~($[$proof.t$](variables#proof-t) $\geq$ [$params.d$](variables#params-d) $) ~ \Vert ~ ($ [$proof.v$](variables#proof-v) $\geq$ [$params.r$](variables#params-r) $) ~ \Vert ~ (\mathsf{size}($ [$proof.slist$](variables#proof-slist) $)~ != $ [$params.u$](variables#params-u)$):$
   - **return** $false.$

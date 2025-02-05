@@ -1,5 +1,4 @@
-## Prove Index
-- $\mathsf{prove\\_index} (n_p,~$ [$params$](variables#parameters) $, ~S_p, ~v) \rightarrow (step, ~$ [$proof$](variables#proof)$/ \bot)$:
+<a id="prove-index">$\mathsf{prove\\_index}$</a> $(n_p,~$ [$params$](variables#parameters) $, ~S_p, ~v) \rightarrow (step, ~$ [$proof$](variables#proof) $/ \bot)$:
 ---
 - $bins \leftarrow \big\\{ \\{ ~ \\}$ **for** $~ i \in \[n_p\] \big\\}:$
 - **for** each $~~ s \in S_p:$
