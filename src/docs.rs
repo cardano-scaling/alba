@@ -39,6 +39,7 @@ pub mod centralized {
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/internal_functions/dfs.md")]
         pub mod internal_functions {}
 
+        #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/hash_functions/intro.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/hash_functions/bin_hash.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/hash_functions/round_hash.md")]
         #[doc = include_str!("../docs/rustdoc/centralized_telescope/proof/hash_functions/proof_hash.md")]
