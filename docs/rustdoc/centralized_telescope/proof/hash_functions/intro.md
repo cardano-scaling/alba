@@ -1,5 +1,4 @@
 ## Overview
-
 The centralized telescope makes use of three core oracle functions: `bin_hash`, `round_hash`, and `proof_hash`, each serving a distinct role in the system.
 
 The `bin_hash` function assigns an element $s$ to a bin within the range $[0, n_p[$ based on the `retry_counter` [$v$](variables#params-v). 
