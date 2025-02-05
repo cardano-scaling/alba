@@ -1,5 +1,5 @@
 //! Centralized Telescope's `Proof` structure
-
+//!
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof/overview.md")]
 //!
 //! See full documentation: [Proof - Centralized Telescope][crate::docs::centralized::proof].

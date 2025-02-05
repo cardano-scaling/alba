@@ -1,4 +1,3 @@
-
 <a id="dfs">$\mathsf{dfs}$</a> $($ [$params$](variables#parameters) $,~ bins,~ $ [$round$](variables#round) $,~ step) \rightarrow (step, ~$ [$proof$](variables#proof) $)$:
 ---
 - **if** $~~ \mathsf{size}($ [$round.slist$](variables#round-slist) $) ==~ $ [$params.u$](variables#params-u) $:$
