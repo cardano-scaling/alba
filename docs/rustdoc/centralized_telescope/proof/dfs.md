@@ -1,10 +1,17 @@
 ## DFS
+The `dfs` function performs a depth-first search to construct a valid proof by iterating through elements in bins. 
+Its process is as follows:
+- If the sequence reaches `proof_size` $u$, it checks validity using `proof_hash` $\mathsf{H_2}$.
+  - If valid, returns the proof; otherwise, returns total DFS calls and an empty proof.
+- If incomplete, iterates over elements in the bin corresponding to the current round identifier $id$.
+  - If DFS calls reach `dfs_bound` $b$, terminates early.
+  - Adds elements to the sequence and computes a new round identifier using `round_hash` $\mathsf{H_1}$.
+- If the new identifier is valid, recursively calls `dfs` on the updated round.
+  - If a proof is found, returns it immediately.
+  - Otherwise, updates the step counter and continues searching.
+- If all elements are exhausted without finding a proof, returns total DFS calls and an empty proof.
 
-The `dfs` function performs a depth-first search to construct a valid proof by iterating through elements in bins and progressively building the proof sequence. It starts by checking whether the current sequence of elements has reached the required proof size \( u \). If so, it evaluates the proof’s validity using the proof hash function \( \mathsf{H_2} \), which determines whether the sequence meets the required probability threshold \( q \). If valid, the function returns a proof containing the retry counter \( v \), search index \( t \), and sequence of elements \( s_1, \dots, s_u \); otherwise, it returns failure.
-
-If the proof sequence is incomplete, the function proceeds by iterating over elements in the bin corresponding to the current round identifier \( id \). If the number of DFS calls has already reached the maximum bound \( b \), the function terminates early to prevent excessive computation. Otherwise, each element from the bin is added to the current sequence, forming a new candidate sequence. The round hash function \( \mathsf{H_1} \) is then applied to generate a new candidate round identifier, mapping the updated sequence to a new position in the prover’s dataset.
-
-If the new round identifier is valid, the function recursively calls `dfs` on the updated round, continuing the search for a valid proof. If a valid proof is found in any recursive step, it is immediately returned. Otherwise, the function updates the step counter and continues searching. If all elements in the bin are exhausted without finding a valid proof, the function returns failure, signaling that the current search path did not lead to a solution.
+---
 
 - $\mathsf{dfs} ($ [$params$](variables#parameters) $,~ bins,~ $ [$round$](variables#round) $,~ step) \rightarrow (step, ~$ [$proof$](variables#proof)$)$:
 ---
