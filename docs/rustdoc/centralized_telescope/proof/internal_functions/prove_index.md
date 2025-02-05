@@ -28,7 +28,7 @@ Its functionality is as follows:
     - $(hash,~ id) \leftarrow $ [$\mathsf{H_1}$](hash_functions#round-hash) $(\mathsf{bytes}(v),~ \mathsf{bytes}(t),~ n_p)$
     - **if** $~~ id ~~!= \bot:$
         - $round \leftarrow (v,~ t,~ \\{ ~ \\},~ hash,~ id,~ n_p)$
-        - $(dfs\\_calls, ~ proof) \leftarrow$ [$\mathsf{dfs}$](internal_functions#dfs) $($ [$params$](variables#parameters) $,~ bins,~ round,~ step+1)$
+        - $(dfs\\_calls, ~ proof) \leftarrow$ [$\mathsf{dfs}$](#dfs) $($ [$params$](variables#parameters) $,~ bins,~ round,~ step+1)$
         - **if** $~~ proof ~~!= \bot :$
             - **return** $(dfs\\_calls, ~ proof).$
         - $step \leftarrow dfs\\_calls$
