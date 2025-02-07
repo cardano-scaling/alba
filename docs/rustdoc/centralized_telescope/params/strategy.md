@@ -4,7 +4,7 @@
     - The prover can find a valid proof in roughly the time it takes to process all elements.
     - The worst case, where the prover needs extra work, still remains within a manageable margin.
 - When $n_p$ is small:
-    - If $n_p < \lambda^3$, the standard approach no longer guarantees that the prover finds a valid proof quickly.
+    - If $n_p < \lambda^2$, the standard approach no longer guarantees that the prover finds a valid proof quickly.
     - To fix this, we allow the prover to retry multiple times, increasing the chances of success without overwhelming computational cost.
     - Extra retries increase reliability, but they must be controlled to avoid unnecessary work.
 - Handling intermediate cases ($\lambda^2 < n_p < \lambda^3$):

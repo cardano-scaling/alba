@@ -9,7 +9,7 @@ $$
 2. Set the check values $s_1$ and $s_2$:
 
 $$
-ratio \coloneqq \frac{9 n_p \log e}{17u^2}
+ratio \coloneqq \frac{9 n_p \log e}{(17u)^2}
 $$
 
 $$
@@ -25,7 +25,7 @@ $$
 If ($s_1 < 1$ or $s_2 < 1$) $\implies$ SMALL CASE, $\quad n_p \leq \lambda^2$.
 
 $$
-r \coloneqq \lambda_{rel}, \quad d \coloneqq \lceil 32\cdot \ln(12)\cdot u \rceil,
+r \coloneqq \lceil \lambda_{rel} \rceil, \quad d \coloneqq \lceil 32\cdot \ln(12)\cdot u \rceil,
 $$
 
 $$
@@ -34,8 +34,8 @@ $$
 
 ---
 #### Mid case
-If $s_2 > 1$, we know that $\lambda_{rel}^{(2)} \coloneqq \mathsf{min}(\lambda_{rel}, s_2)$.
-In this case, if ($u > \lambda_{rel}^{(2)}$) $\implies$ MID CASE, $\quad \lambda^3 > n_p > \lambda^2$.
+If $s_2 \ge 1$, we know that $\lambda_{rel}^{(2)} = \mathsf{min}(\lambda_{rel}, s_2)$.
+In this case, if ($u \ge \lambda_{rel}^{(2)}$) $\implies$ MID CASE, $\quad \lambda^3 > n_p > \lambda^2$.
 
 First, we set $\lambda_{rel}^{(1)}$, and compute $\overline{\lambda_{rel}}$ and $d$:
 
@@ -67,8 +67,8 @@ $$
 
 ---
 #### High case
-Since $s_2 > 1$ and $\lambda_{rel}^{(2)} \coloneqq \mathsf{min}(\lambda_{rel}, s_2)$.
-If ($u > \lambda_{rel}^{(2)}$) $\implies$ HIGH CASE, $\quad n_p \geq \lambda^3$.
+Since $s_2 > 1$, $\lambda_{rel}^{(2)} = \mathsf{min}(\lambda_{rel}, s_2)$.
+If ($u < \lambda_{rel}^{(2)}$) $\implies$ HIGH CASE, $\quad n_p \geq \lambda^3$.
 
 First, we compute $d$:
 
