@@ -17,8 +17,6 @@ use common::{
     test_vectors::{Data, DATA_LENGTH},
 };
 
-use blake2::Blake2bVar;
-
 /// Global variables
 pub const NAME: &str = "Centralized";
 
@@ -26,8 +24,7 @@ pub const NAME: &str = "Centralized";
 pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<Data>, Telescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset =
-        test_utils::gen_items::<Blake2bVar, DATA_LENGTH>(&seed, params.total_num_elements);
+    let dataset = test_utils::gen_items::<DATA_LENGTH>(&seed, params.total_num_elements);
     let telescope = Telescope::create(
         params.lambda_sec,
         params.lambda_rel,
