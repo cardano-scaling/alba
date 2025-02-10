@@ -1,7 +1,6 @@
 //! Customer facing Lottery structure
 use super::params::Params;
 use super::proof::Proof;
-use crate::utils::types::ToBytes;
 
 /// The main simple lottery struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
@@ -107,7 +106,7 @@ impl Lottery {
     /// }
     /// let proof = lottery.prove(&prover_set).unwrap();
     /// ```
-    pub fn prove<E: ToBytes + Clone + Sized + Ord>(&self, prover_set: &[E]) -> Option<Proof<E>> {
+    pub fn prove<E: AsRef<[u8]> + Clone + Ord>(&self, prover_set: &[E]) -> Option<Proof<E>> {
         Proof::new(&self.params, prover_set)
     }
 
@@ -135,7 +134,7 @@ impl Lottery {
     /// let proof = lottery.prove(&prover_set).unwrap();
     /// assert!(lottery.verify(&proof));
     /// ```
-    pub fn verify<E: ToBytes + Clone + Sized + Ord>(&self, proof: &Proof<E>) -> bool {
+    pub fn verify<E: AsRef<[u8]> + Clone + Ord>(&self, proof: &Proof<E>) -> bool {
         proof.verify(&self.params)
     }
 }

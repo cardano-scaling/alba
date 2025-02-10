@@ -2,15 +2,12 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 
-use crate::utils::{
-    sample,
-    types::{Hash, ToBytes},
-};
+use crate::utils::{sample, types::Hash};
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round<E: ToBytes + Clone + Sized + Ord> {
+pub struct Round<E: AsRef<[u8]> + Clone + Ord> {
     /// Numbers of retries done so far
     pub retry_counter: u64,
     /// Index of the current subtree being searched
@@ -25,7 +22,7 @@ pub struct Round<E: ToBytes + Clone + Sized + Ord> {
     pub set_size: u64,
 }
 
-impl<E: ToBytes + Clone + Sized + Ord> Round<E> {
+impl<E: AsRef<[u8]> + Clone + Ord> Round<E> {
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
     /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)
@@ -48,7 +45,7 @@ impl<E: ToBytes + Clone + Sized + Ord> Round<E> {
     pub(super) fn update(r: &Self, element: &E) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
         element_sequence.push(element.clone());
-        let (hash, id_opt) = Self::round_hash(&r.hash, element.to_be_bytes().as_ref(), r.set_size);
+        let (hash, id_opt) = Self::round_hash(&r.hash, element.as_ref(), r.set_size);
         id_opt.map(|id| Self {
             retry_counter: r.retry_counter,
             search_counter: r.search_counter,

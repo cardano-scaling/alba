@@ -1,19 +1,16 @@
 //! Simple Lottery's Proof structure
 use super::params::Params;
-use crate::utils::{
-    sample,
-    types::{Hash, ToBytes},
-};
+use crate::utils::{sample, types::Hash};
 use blake2::{Blake2s256, Digest};
 
 /// Simple lottery proof
 #[derive(Debug, Clone)]
-pub struct Proof<E: ToBytes + Clone + Sized + Ord> {
+pub struct Proof<E: AsRef<[u8]> + Clone + Ord> {
     /// Sequence of elements from prover's set
     pub element_sequence: Vec<E>,
 }
 
-impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
+impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
     /// Simple Lottery's proving algorithm, based on a DFS algorithm.
     ///
     /// # Arguments
@@ -94,7 +91,7 @@ impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &E) -> bool {
         let mut hasher = Blake2s256::new();
-        hasher.update(element.to_be_bytes());
+        hasher.update(element.as_ref());
         let digest: Hash = hasher.finalize().into();
         sample::sample_bernoulli(&digest, lottery_probability)
     }

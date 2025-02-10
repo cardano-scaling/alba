@@ -4,15 +4,12 @@
 
 use super::params::Params;
 use super::round::Round;
-use crate::utils::{
-    sample,
-    types::{Hash, ToBytes},
-};
+use crate::utils::{sample, types::Hash};
 use blake2::{Blake2s256, Digest};
 
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
-pub struct Proof<E: ToBytes + Clone + Sized + Ord> {
+pub struct Proof<E: AsRef<[u8]> + Clone + Ord> {
     /// Numbers of retries done to find the proof
     pub retry_counter: u64,
     /// Index of the searched subtree to find the proof
@@ -21,7 +18,7 @@ pub struct Proof<E: ToBytes + Clone + Sized + Ord> {
     pub element_sequence: Vec<E>,
 }
 
-impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
+impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
@@ -248,7 +245,7 @@ impl<E: ToBytes + Clone + Sized + Ord> Proof<E> {
         let mut hasher = Blake2s256::new();
         hasher.update(b"Telescope-bin_hash");
         hasher.update(retry_bytes);
-        hasher.update(element.to_be_bytes());
+        hasher.update(element.as_ref());
         let digest: Hash = hasher.finalize().into();
         sample::sample_uniform(&digest, set_size)
     }
