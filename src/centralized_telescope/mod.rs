@@ -11,5 +11,7 @@ pub mod proof;
 
 mod round;
 
+
 mod telescope;
+#[doc = include_str!("../../docs/rustdoc/centralized_telescope/telescope/overview.md")]
 pub use telescope::Telescope;
