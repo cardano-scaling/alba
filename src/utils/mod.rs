@@ -1,5 +1,7 @@
+//! Shared utility functions
+
 pub(crate) mod sample;
 
-pub(crate) mod types;
+pub mod types;
 
 pub(crate) mod misc;

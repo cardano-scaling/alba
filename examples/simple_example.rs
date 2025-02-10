@@ -10,9 +10,6 @@ use blst::min_sig::PublicKey;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
-const DATA_LENGTH: usize = 48;
-type Element = [u8; DATA_LENGTH];
-
 fn main() {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let mut msg = [0u8; 16];
