@@ -137,10 +137,11 @@ impl AlbaThresholdSignature {
                     "-- Success: Alba proof verification took {:?}µs.",
                     time_verify_proof.elapsed().as_micros()
                 );
+                true
             } else {
                 println!("Error: Alba proof verification failed.");
+                false
             }
-            true
         } else {
             println!("Error: Registration is not closed.");
             false
