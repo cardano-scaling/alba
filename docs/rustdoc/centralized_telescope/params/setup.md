@@ -29,7 +29,7 @@ r \coloneqq \lceil \lambda_{rel} \rceil, \quad d \coloneqq \lceil 32\cdot \ln(12
 $$
 
 $$
-q \coloneqq \frac{2 \cdot \ln(12)}{d}, \quad b \coloneqq \Big\lfloor \frac{8 \cdot (u + 1) \cdot d}{\ln(12)} \Big\rfloor.
+q \coloneqq \frac{2 \cdot \ln(12)}{d}, \quad B \coloneqq \Big\lfloor \frac{8 \cdot (u + 1) \cdot d}{\ln(12)} \Big\rfloor.
 $$
 
 ---
@@ -62,7 +62,7 @@ r \coloneqq \Big\lceil\frac{\lambda_{rel}}{\lambda_{rel}^{(1)}}\Big\rceil, \quad
 $$
 
 $$
-b \coloneqq \Bigg\lfloor\Big(\frac{w \overline{\lambda_{rel}}}{d} + 1\Big) \cdot \mathsf{exp}\Big(\frac{2 u w \overline{\lambda_{rel}}}{n_p} + \frac{7 u}{w}\Big)d u + d \Bigg\rfloor
+B \coloneqq \Bigg\lfloor\Big(\frac{w \overline{\lambda_{rel}}}{d} + 1\Big) \cdot \mathsf{exp}\Big(\frac{2 u w \overline{\lambda_{rel}}}{n_p} + \frac{7 u}{w}\Big)d u + d \Bigg\rfloor
 $$
 
 ---
@@ -85,5 +85,5 @@ r \coloneqq \Big\lceil \frac{\lambda_{rel}}{\lambda_{rel}^{(2)}} \Big\rceil, \qu
 $$
 
 $$
-b \coloneqq \Bigg\lfloor\frac{\lambda_{rel}^{(2)} + 2 + \log{u}} {\lambda_{rel}^{(2)} + 2}\cdot \Big(3 \cdot u \cdot \frac{d}{4}\Big) + d + u\Bigg\rfloor
+B \coloneqq \Bigg\lfloor\frac{\lambda_{rel}^{(2)} + 2 + \log{u}} {\lambda_{rel}^{(2)} + 2}\cdot \Big(3 \cdot u \cdot \frac{d}{4}\Big) + d + u\Bigg\rfloor
 $$

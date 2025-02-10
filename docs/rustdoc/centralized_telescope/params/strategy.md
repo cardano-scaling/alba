@@ -13,7 +13,7 @@
     - This keeps the average workload low while ensuring the proof remains trustworthy and compact.
 - Keeping proof size practical:
     - The number of elements included in the proof remains almost unchanged, ensuring that verification remains efficient.
-    - Security adjustments are made to prevent the prover from taking shortcuts that might compromise reliability.
+    - The security parameters are further adjusted to increase overall reliability.
 - Preventing unbounded search:
     - Without restrictions, DFS could explore too many possibilities before finding a valid proof.
     - We limit the depth of the search, forcing it to stop early.
