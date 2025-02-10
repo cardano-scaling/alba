@@ -14,8 +14,6 @@ mod test_utils;
 pub mod common;
 use common::criterion_helpers::centralized::BenchParam;
 
-use blake2::Blake2bVar;
-
 /// Global variables
 pub const NAME: &str = "Centralized";
 
@@ -23,7 +21,7 @@ pub const NAME: &str = "Centralized";
 pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 48]>, Telescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset = test_utils::gen_items::<Blake2bVar, 48>(&seed, params.total_num_elements);
+    let dataset = test_utils::gen_items::<48>(&seed, params.total_num_elements);
     let telescope = Telescope::create(
         params.lambda_sec,
         params.lambda_rel,
