@@ -100,8 +100,8 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &E) -> bool {
-        let digest = H::new().chain_update(element.as_ref()).finalize().to_vec();
-        let hash = truncate(&digest);
+        let digest = H::new().chain_update(element.as_ref()).finalize();
+        let hash = truncate(digest.as_slice());
 
         sample::sample_bernoulli(&hash, lottery_probability)
     }
