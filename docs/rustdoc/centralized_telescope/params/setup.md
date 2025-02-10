@@ -37,11 +37,7 @@ $$
 If $s_2 \ge 1$, we know that $\lambda_{rel}^{(2)} = \mathsf{min}(\lambda_{rel}, s_2)$.
 In this case, if ($u \ge \lambda_{rel}^{(2)}$) $\implies$ MID CASE, $\quad \lambda^3 > n_p > \lambda^2$.
 
-First, we set $\lambda_{rel}^{(1)}$, and compute $\overline{\lambda_{rel}}$ and $d$:
-
-$$
-\lambda_{rel}^{(1)} \coloneqq \mathsf{min}(\lambda_{rel}, s_1 )
-$$
+First, we compute $\overline{\lambda_{rel}}$ and $d$:
 
 $$
 \overline{\lambda_{rel}} \coloneqq \frac{\lambda_{rel}^{(1)} + 7}{\log{e}}, \quad d \coloneqq \lceil 16 \cdot u \cdot \overline{\lambda_{rel}}\rceil
