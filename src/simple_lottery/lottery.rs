@@ -2,6 +2,7 @@
 use super::params::Params;
 use super::proof::Proof;
 use crate::utils::types::Element;
+use digest::{Digest, FixedOutput};
 
 /// The main simple lottery struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
@@ -99,16 +100,17 @@ impl Lottery {
     ///
     /// ```
     /// use alba::simple_lottery::Lottery;
+    /// use sha2::Sha256;
     /// let set_size = 200;
     /// let lottery = Lottery::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
     ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
-    /// let proof = lottery.prove(&prover_set).unwrap();
+    /// let proof = lottery.prove::<Sha256>(&prover_set).unwrap();
     /// ```
-    pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
-        Proof::new(&self.params, prover_set)
+    pub fn prove<H: Digest + FixedOutput>(&self, prover_set: &[Element]) -> Option<Proof<H>> {
+        Proof::<H>::new(&self.params, prover_set)
     }
 
     /// Verifies a Lottery proof.
@@ -126,16 +128,17 @@ impl Lottery {
     ///
     /// ```
     /// use alba::simple_lottery::Lottery;
+    /// use sha2::Sha256;
     /// let set_size = 200;
     /// let lottery = Lottery::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
     ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
-    /// let proof = lottery.prove(&prover_set).unwrap();
-    /// assert!(lottery.verify(&proof));
+    /// let proof = lottery.prove::<Sha256>(&prover_set).unwrap();
+    /// assert!(lottery.verify::<Sha256>(&proof));
     /// ```
-    pub fn verify(&self, proof: &Proof) -> bool {
+    pub fn verify<H: Digest + FixedOutput>(&self, proof: &Proof<H>) -> bool {
         proof.verify(&self.params)
     }
 }

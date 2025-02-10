@@ -6,9 +6,11 @@ use crate::simple_threshold_signature::signature::Signature;
 use crate::simple_threshold_signature::signer::Signer;
 use crate::simple_threshold_signature::threshold_signature::ThresholdSignature;
 use alba::centralized_telescope::Telescope;
-use blst::min_sig::PublicKey;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
+
+use blst::min_sig::PublicKey;
+use sha2::Sha256;
 
 const DATA_LENGTH: usize = 48;
 type Element = [u8; DATA_LENGTH];
@@ -54,7 +56,7 @@ fn main() {
     println!("--------------------------------------------------------");
     println!("----------- Generating Alba multi-signature. -----------");
     let (threshold_signature, indices) =
-        ThresholdSignature::aggregate(&signature_list, &alba, &public_key_list);
+        ThresholdSignature::<Sha256>::aggregate(&signature_list, &alba, &public_key_list);
     println!("-- Alba multi-signature is generated.");
     println!("--------------------------------------------------------");
     println!("----------- Verifying Alba multi-signature. ------------");

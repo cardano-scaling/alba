@@ -14,9 +14,16 @@ use utils::{
     setup, NAME,
 };
 
+use digest::{Digest, FixedOutput};
+use sha2::Sha256;
+
 /// Function benchmarking `sample_size` times the verification time
-fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
-    let mut rng = ChaCha20Rng::from_entropy();
+fn verify_duration<H: Digest + FixedOutput>(
+    params: &BenchParam,
+    truncate_size: u64,
+    n: u64,
+) -> Duration {
+    let mut rng = ChaCha20Rng::from_os_rng();
     let mut total_duration = Duration::ZERO;
 
     // Setup
@@ -24,7 +31,7 @@ fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration 
     // Truncate the dataset to give truncate_size elements to the prover
     dataset.truncate(truncate_size as usize);
     // Generate the proof
-    let proof_opt: Option<alba::centralized_telescope::proof::Proof> = telescope.prove(&dataset);
+    let proof_opt = telescope.prove::<H>(&dataset);
 
     if let Some(proof) = proof_opt {
         // Iterate on each sample `n` times
@@ -48,8 +55,8 @@ fn verify_benches(c: &mut Criterion) {
         c,
         SHORT_TESTS,
         format!("{} - {}", NAME, "Time"),
-        "Verify",
-        &verify_duration,
+        "Sha256/Verify",
+        &verify_duration::<Sha256>,
     );
 }
 
