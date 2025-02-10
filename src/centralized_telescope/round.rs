@@ -71,9 +71,8 @@ impl<H: Digest + FixedOutput> Round<H> {
             .chain_update(b"Telescope-round_hash")
             .chain_update(first_input)
             .chain_update(second_input)
-            .finalize()
-            .to_vec();
-        let hash = truncate(&digest);
+            .finalize();
+        let hash = truncate(digest.as_slice());
         (hash, sample::sample_uniform(&hash, set_size))
     }
 }

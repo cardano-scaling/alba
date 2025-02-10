@@ -101,8 +101,8 @@ impl<H: Digest + FixedOutput> Proof<H> {
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: Element) -> bool {
-        let digest = H::new().chain_update(element).finalize().to_vec();
-        let hash = truncate(&digest);
+        let digest = H::new().chain_update(element).finalize();
+        let hash = truncate(digest.as_slice());
 
         sample::sample_bernoulli(&hash, lottery_probability)
     }
