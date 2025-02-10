@@ -24,14 +24,14 @@ fn verify_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration 
     // Truncate the dataset to give truncate_size elements to the prover
     dataset.truncate(truncate_size as usize);
     // Generate the proof
-    let proof_opt: Option<alba::centralized_telescope::proof::Proof> = telescope.prove(&dataset);
+    let proof = telescope.prove(&dataset);
 
-    if let Some(proof) = proof_opt {
+    if let Ok(proof) = proof {
         // Iterate on each sample `n` times
         for _ in 0..n {
             // Benching the verification time
             let start = Instant::now();
-            black_box(telescope.verify(&proof));
+            let _ = black_box(telescope.verify(&proof));
             total_duration = total_duration.saturating_add(start.elapsed());
         }
     }

@@ -61,7 +61,7 @@ impl AlbaThresholdSignature {
 
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
-            let proof = alba.prove(&prover_set)?;
+            let proof = alba.prove(&prover_set).unwrap();
             println!(
                 "-- Alba proof is created in {:.3}s.",
                 time_gen_proof.elapsed().as_secs_f64()
@@ -132,15 +132,16 @@ impl AlbaThresholdSignature {
             let time_verify_proof = Instant::now();
             let result = alba.verify(&self.proof);
 
-            if result {
+            if result.is_ok() {
                 println!(
                     "-- Success: Alba proof verification took {:?}µs.",
                     time_verify_proof.elapsed().as_micros()
                 );
+                true
             } else {
                 println!("Error: Alba proof verification failed.");
+                false
             }
-            result
         } else {
             println!("Error: Registration is not closed.");
             false

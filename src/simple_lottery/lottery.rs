@@ -1,12 +1,13 @@
 //! Customer facing Lottery structure
 use super::params::Params;
 use super::proof::Proof;
-use crate::utils::types::Element;
+use crate::utils::types::{Element, ProofGenerationError, VerificationError};
 
 /// The main simple lottery struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
 pub struct Lottery {
     params: Params,
+    set_size: u64,
 }
 
 impl Lottery {
@@ -36,7 +37,7 @@ impl Lottery {
         lower_bound: u64,
     ) -> Self {
         let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-        Self::setup_unsafe(&params)
+        Self::setup_unsafe(&params, set_size)
     }
 
     /// Use with caution. Returns a `Lottery` structure from internal
@@ -56,10 +57,13 @@ impl Lottery {
     /// use alba::simple_lottery::Lottery;
     /// use alba::simple_lottery::params::Params;
     /// let params = Params {proof_size : 200, lottery_probability: 0.001};
-    /// let lottery = Lottery::setup_unsafe(&params);
+    /// let lottery = Lottery::setup_unsafe(&params, 1_000);
     /// ```
-    pub fn setup_unsafe(params: &Params) -> Self {
-        Self { params: *params }
+    pub fn setup_unsafe(params: &Params, set_size: u64) -> Self {
+        Self {
+            params: *params,
+            set_size,
+        }
     }
 
     /// Returns the `Params` structure from the `Lottery` structure
@@ -107,7 +111,16 @@ impl Lottery {
     /// }
     /// let proof = lottery.prove(&prover_set).unwrap();
     /// ```
-    pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ProofGenerationError`
+    pub fn prove(&self, prover_set: &[Element]) -> Result<Proof, ProofGenerationError> {
+        // TODO we should check that these elements are distinct
+        if (prover_set.len() as u64) < self.set_size {
+            return Err(ProofGenerationError::NotEnoughElements);
+        }
+
         Proof::new(&self.params, prover_set)
     }
 
@@ -133,9 +146,13 @@ impl Lottery {
     ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = lottery.prove(&prover_set).unwrap();
-    /// assert!(lottery.verify(&proof));
+    /// assert!(lottery.verify(&proof).is_ok());
     /// ```
-    pub fn verify(&self, proof: &Proof) -> bool {
+    ///
+    /// # Errors
+    ///
+    /// Returns a `VerificationError`
+    pub fn verify(&self, proof: &Proof) -> Result<(), VerificationError> {
         proof.verify(&self.params)
     }
 }

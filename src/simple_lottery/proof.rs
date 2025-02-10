@@ -2,7 +2,7 @@
 use super::params::Params;
 use crate::utils::{
     sample,
-    types::{Element, Hash},
+    types::{Element, Hash, ProofGenerationError, VerificationError},
 };
 use blake2::{Blake2s256, Digest};
 
@@ -38,7 +38,11 @@ impl Proof {
     /// }
     /// let proof = Proof::new(&params, &prover_set).unwrap();
     /// ```
-    pub fn new(params: &Params, prover_set: &[Element]) -> Option<Self> {
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ProofGenerationError`
+    pub fn new(params: &Params, prover_set: &[Element]) -> Result<Self, ProofGenerationError> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
         let mut element_sequence = Vec::with_capacity(params.proof_size as usize);
@@ -48,10 +52,10 @@ impl Proof {
             }
             if element_sequence.len() as u64 >= params.proof_size {
                 element_sequence.sort_unstable();
-                return Some(Proof { element_sequence });
+                return Ok(Proof { element_sequence });
             }
         }
-        None
+        Err(ProofGenerationError::NotFound)
     }
 
     /// Simple Telescope's verification algorithm, returns true if the proof is
@@ -78,16 +82,28 @@ impl Proof {
     ///     prover_set.push([(i % 256) as u8 ;48]);
     /// }
     /// let proof = Proof::new(&params, &prover_set).unwrap();
-    /// let b = proof.verify(&params);
-    /// assert!(b);
+    /// assert!(proof.verify(&params).is_ok());
     /// ```
-    pub fn verify(&self, params: &Params) -> bool {
-        (self.element_sequence.len() as u64 == params.proof_size)
-            && self.element_sequence.is_sorted_by(|a, b| a < b)
-            && self
-                .element_sequence
-                .iter()
-                .all(|&element| Proof::lottery_hash(params.lottery_probability, element))
+    /// # Errors
+    ///
+    /// Returns a `VerificationError`
+    pub fn verify(&self, params: &Params) -> Result<(), VerificationError> {
+        if self.element_sequence.len() as u64 != params.proof_size {
+            return Err(VerificationError::IncorrectNumberElements);
+        }
+
+        if !self.element_sequence.is_sorted_by(|a, b| a < b) {
+            return Err(VerificationError::RepeatedElements);
+        }
+        if self
+            .element_sequence
+            .iter()
+            .all(|&element| Proof::lottery_hash(params.lottery_probability, element))
+        {
+            Ok(())
+        } else {
+            Err(VerificationError::InvalidProof)
+        }
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0

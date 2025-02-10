@@ -28,7 +28,7 @@ fn prove_duration(params: &BenchParam, truncate_size: u64, n: u64) -> Duration {
     for _ in 0..n {
         // Bench the proving time
         let start = Instant::now();
-        black_box(telescope.prove(&dataset));
+        let _proof = black_box(telescope.prove(&dataset));
         total_duration = total_duration.saturating_add(start.elapsed());
     }
     total_duration

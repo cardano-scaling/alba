@@ -2,6 +2,7 @@
 
 use alba::centralized_telescope::Telescope;
 use alba::centralized_telescope::{params::Params, proof::Proof};
+use alba::utils::types::VerificationError;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
@@ -24,54 +25,96 @@ fn test(created_with_params: bool) {
         let alba = if created_with_params {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
-            let setup = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-            Telescope::setup_unsafe(set_size, &setup)
+            let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
+            Telescope::setup_unsafe(set_size, &params)
         };
+        let params = alba.get_params();
         let proof = alba.prove(&s_p).unwrap();
-        assert!(alba.verify(&proof));
-        // Checking that the proof fails if proof.search_counter is erroneous
-        let proof_t = Proof {
-            retry_counter: proof.retry_counter,
-            search_counter: proof.search_counter.wrapping_add(1),
-            element_sequence: proof.element_sequence.clone(),
-        };
-        assert!(!alba.verify(&proof_t));
-        // Checking that the proof fails if proof.retry_counter is erroneous
-        let proof_v = Proof {
-            retry_counter: proof.retry_counter.wrapping_add(1),
-            search_counter: proof.search_counter,
-            element_sequence: proof.element_sequence.clone(),
-        };
-        assert!(!alba.verify(&proof_v));
-        // Checking that the proof fails when no elements are included
-        let proof_item = Proof {
-            retry_counter: proof.retry_counter,
-            search_counter: proof.search_counter,
-            element_sequence: Vec::new(),
-        };
-        assert!(!alba.verify(&proof_item));
-        // Checking that the proof fails when wrong elements are included
+        assert!(alba.verify(&proof).is_ok());
+
+        // Checking that the verification fails if proof.search_counter is erroneous
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: params.search_width.wrapping_add(1),
+                element_sequence: proof.element_sequence.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidParameters)));
+
+        // Checking that the verification fails if proof.retry_counter is erroneous
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: params.max_retries.wrapping_add(1),
+                search_counter: proof.search_counter,
+                element_sequence: proof.element_sequence.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidParameters)));
+
+        // Checking that the verification fails if proof.search_counter is erroneous
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: u64::from(proof.search_counter == 0),
+                element_sequence: proof.element_sequence.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
+
+        // Checking that the verification fails if proof.retry_counter is erroneous
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: u64::from(proof.retry_counter == 0),
+                search_counter: proof.search_counter,
+                element_sequence: proof.element_sequence.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
+
+        // Checking that the verification fails when no elements are included
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: proof.search_counter,
+                element_sequence: Vec::new(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::IncorrectNumberElements)));
+
+        // Checking that the verification fails if fewer elements are included
+        let mut wrong_items = proof.element_sequence.clone();
+        let mut last_item = wrong_items.pop().unwrap();
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: proof.search_counter,
+                element_sequence: wrong_items.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::IncorrectNumberElements)));
+
+        // Checking that the verification fails when wrong elements are included
         // We are trying to trigger proof_hash
+        last_item[0] = last_item[0].wrapping_add(42u8);
+        wrong_items.push(last_item);
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: proof.search_counter,
+                element_sequence: wrong_items.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
+
+        // Checking that the verification fails when wrong elements are included
+        // We are trying to trigger round_hash
         let mut wrong_items = proof.element_sequence.clone();
         let last_item = wrong_items.pop().unwrap();
         let mut penultimate_item = wrong_items.pop().unwrap();
-        let proof_itembis = Proof {
-            retry_counter: proof.retry_counter,
-            search_counter: proof.search_counter,
-            element_sequence: wrong_items.clone(),
-        };
-        assert!(!alba.verify(&proof_itembis));
-        // Checking that the proof fails when wrong elements are included
-        // We are trying to trigger round_hash
         penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
         wrong_items.push(penultimate_item);
         wrong_items.push(last_item);
-        let proof_itembis = Proof {
-            retry_counter: proof.retry_counter,
-            search_counter: proof.search_counter,
-            element_sequence: wrong_items.clone(),
-        };
-        assert!(!alba.verify(&proof_itembis));
+        assert!(alba
+            .verify(&Proof {
+                retry_counter: proof.retry_counter,
+                search_counter: proof.search_counter,
+                element_sequence: wrong_items.clone(),
+            })
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
     }
 }
 
