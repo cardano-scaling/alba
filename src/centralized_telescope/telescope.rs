@@ -4,6 +4,8 @@ use super::proof::Proof;
 use crate::utils::types::Element;
 
 /// The main centralized Telescope struct with prove and verify functions.
+///
+/// See full documentation: [Centralized Telescope][crate::docs::centralized::telescope].
 #[derive(Debug, Clone, Copy)]
 pub struct Telescope {
     /// Approximate size of the prover set to lower bound

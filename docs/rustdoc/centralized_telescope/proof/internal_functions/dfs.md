@@ -1,0 +1,21 @@
+<a id="dfs">$\mathsf{dfs}$</a> $($ [$params$](variables#parameters) $,~ bins,~ $ [$round$](variables#round) $,~ step) \rightarrow (step, ~$ [$proof$](variables#proof) $)$:
+---
+- **if** $~~ \mathsf{size}($ [$round.slist$](variables#round-slist) $) ==~ $ [$params.u$](variables#params-u) $:$
+  - **if** $~~ $ [$\mathsf{H_2}$](hash_functions#proof-hash) $($ [$params.q$](variables#params-q) $,~ $ [$round$](variables#round) $) ==~ true :$
+    - $proof \leftarrow ($ [$round.v$](variables#round-v) $,~ $ [$round.t$](variables#round-t) $,~ $ [$round.slist$](variables#round-slist) $)$
+  - **else** : 
+    - $proof \leftarrow \bot$
+  - **return** $(step,~ proof).$
+- **for** each $~~ s \in bins\[$ [$round.id$](variables#round-id) $\]:$
+  - **if** $~~ step ~== $ [$params.b$](variables#params-b) $:$
+    - **return** $(step,~ \bot).$
+  - $new\\_slist \leftarrow$ [$round.slist$](variables#round-slist) $~ \cup ~~ \\{s\\}$
+  - $(hash,~ id) \leftarrow $ [$\mathsf{H_1}$](hash_functions#round-hash) $($ [$round.hash$](variables#round-digest) $,~ s,~ n_p)$
+  - **if** $~~ id ~~!= \bot:$
+    - $updated\\_round \leftarrow ($ [$round.v$](variables#round-v) $,~ $ [$round.t$](variables#round-t) $,~ new\\_slist,~ hash,~ id,~ n_p)$
+    - $(dfs\\_calls, ~ proof) \leftarrow$ [$\mathsf{dfs}$](#dfs) $($ [$params$](variables#parameters) $,~ bins,~ updated\\_round,~ step+1)$
+    - **if** $~~ proof ~~!= \bot:$
+      - **return** $(dfs\\_calls,~ proof).$
+    - $step \leftarrow dfs\\_calls$
+- **return** $(step,~ \bot).$
+---
