@@ -161,7 +161,7 @@ impl Proof {
         let proof_found = Arc::new(Mutex::new(false));
         let proof_opt = (0..params.search_width)
             .into_par_iter()
-            .find_map_first(|search_counter| {
+            .find_map_any(|search_counter| {
                 // If DFS was called more than params.dfs_bound times,or a proof was
                 // already found abort this retru
                 if Self::check_locks(params, step.clone(), proof_found.clone()) {
@@ -240,7 +240,7 @@ impl Proof {
         // For each element in bin numbered id
         bins[round.id as usize]
             .par_iter()
-            .find_map_first(|&element| {
+            .find_map_any(|&element| {
                 // If DFS was called more than params.dfs_bound times,or a
                 // proof was already found abort this round
                 if Self::check_locks(params, step.clone(), proof_found.clone()) {
