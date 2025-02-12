@@ -180,7 +180,7 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         let proof_found = Arc::new(Mutex::new(false));
         let proof_opt = (0..params.search_width)
             .into_par_iter()
-            .find_map_first(|search_counter| {
+            .find_map_any(|search_counter| {
                 // If DFS was called more than params.dfs_bound times,or a proof was
                 // already found abort this retru
                 if Self::check_locks(params, step.clone(), proof_found.clone()) {
@@ -258,30 +258,28 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
             return proof_opt;
         }
         // For each element in bin numbered id
-        bins[round.id as usize]
-            .par_iter()
-            .find_map_first(|element| {
-                // If DFS was called more than params.dfs_bound times,or a
-                // proof was already found abort this round
-                if Self::check_locks(params, step.clone(), proof_found.clone()) {
-                    return None;
-                }
-                // Update round with such element
-                if let Some(r) = Round::update(round, element) {
-                    // Run DFS on updated round, incrementing step
-                    Self::update_step_lock(local_step.clone(), 1u64);
-                    Self::dfs(
-                        params,
-                        bins,
-                        &r,
-                        step.clone(),
-                        local_step.clone(),
-                        proof_found.clone(),
-                    )
-                } else {
-                    None
-                }
-            })
+        bins[round.id as usize].par_iter().find_map_any(|element| {
+            // If DFS was called more than params.dfs_bound times,or a
+            // proof was already found abort this round
+            if Self::check_locks(params, step.clone(), proof_found.clone()) {
+                return None;
+            }
+            // Update round with such element
+            if let Some(r) = Round::update(round, element) {
+                // Run DFS on updated round, incrementing step
+                Self::update_step_lock(local_step.clone(), 1u64);
+                Self::dfs(
+                    params,
+                    bins,
+                    &r,
+                    step.clone(),
+                    local_step.clone(),
+                    proof_found.clone(),
+                )
+            } else {
+                None
+            }
+        })
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
