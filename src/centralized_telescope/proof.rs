@@ -234,12 +234,6 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         local_step: Arc<Mutex<u64>>,
         proof_found: Arc<Mutex<bool>>,
     ) -> Option<Self> {
-        // If DFS was called more than params.dfs_bound times,or a proof was
-        // already found abort this round
-        if Self::check_locks(params, step.clone(), proof_found.clone()) {
-            return None;
-        }
-
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
