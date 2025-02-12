@@ -189,12 +189,26 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
                 // Initialize new round
                 if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
                     // Run DFS on such round, incrementing step
-                    Self::update_step_lock(step.clone());
-                    let dfs_result =
-                        Self::dfs(params, &bins, &r, step.clone(), proof_found.clone());
-                    if dfs_result.is_some() {
-                        Self::update_proof_lock(proof_found.clone());
+                    Self::update_step_lock(step.clone(), params.proof_size);
+
+                    // Initializing thread dependent steps
+                    let search_step = Arc::new(Mutex::new(0u64));
+
+                    let dfs_result = Self::dfs(
+                        params,
+                        &bins,
+                        &r,
+                        step.clone(),
+                        search_step.clone(),
+                        proof_found.clone(),
+                    );
+
+                    // Updating global steps with local dependent one if needs be
+                    let nb_steps = *search_step.lock().unwrap();
+                    if nb_steps != params.proof_size {
+                        Self::update_step_lock(step.clone(), nb_steps - params.proof_size);
                     }
+
                     dfs_result
                 } else {
                     None
@@ -217,6 +231,7 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         bins: &[Vec<E>],
         round: &Round<E, H>,
         step: Arc<Mutex<u64>>,
+        local_step: Arc<Mutex<u64>>,
         proof_found: Arc<Mutex<bool>>,
     ) -> Option<Self> {
         // If DFS was called more than params.dfs_bound times,or a proof was
@@ -228,12 +243,19 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
-            return Self::proof_hash(params.valid_proof_probability, round).then_some(Self {
-                retry_counter: round.retry_counter,
-                search_counter: round.search_counter,
-                element_sequence: round.element_sequence.clone(),
-                hasher: PhantomData::<fn(H)>,
-            });
+            let proof_opt =
+                Self::proof_hash(params.valid_proof_probability, round).then_some(Self {
+                    retry_counter: round.retry_counter,
+                    search_counter: round.search_counter,
+                    element_sequence: round.element_sequence.clone(),
+                    hasher: PhantomData::<fn(H)>,
+                });
+
+            // If proof is found, upudate proof lock
+            if proof_opt.is_some() {
+                Self::update_proof_lock(proof_found.clone());
+            }
+            return proof_opt;
         }
         // For each element in bin numbered id
         bins[round.id as usize]
@@ -247,8 +269,15 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
                 // Update round with such element
                 if let Some(r) = Round::update(round, element) {
                     // Run DFS on updated round, incrementing step
-                    Self::update_step_lock(step.clone());
-                    Self::dfs(params, bins, &r, step.clone(), proof_found.clone())
+                    Self::update_step_lock(local_step.clone(), 1u64);
+                    Self::dfs(
+                        params,
+                        bins,
+                        &r,
+                        step.clone(),
+                        local_step.clone(),
+                        proof_found.clone(),
+                    )
                 } else {
                     None
                 }
@@ -287,9 +316,9 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         *step_lock.lock().unwrap() >= params.dfs_bound || *proof_lock.lock().unwrap() == true
     }
 
-    fn update_step_lock(step_lock: Arc<Mutex<u64>>) -> () {
+    fn update_step_lock(step_lock: Arc<Mutex<u64>>, to_add: u64) -> () {
         let mut step_guard = step_lock.lock().unwrap();
-        *step_guard += 1;
+        *step_guard += to_add;
         drop(step_guard);
     }
 
