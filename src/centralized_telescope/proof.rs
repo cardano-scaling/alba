@@ -169,9 +169,6 @@ impl Proof {
                 }
                 // Initialize new round
                 if let Some(r) = Round::new(retry_counter, search_counter, set_size) {
-                    // Run DFS on such round, incrementing step
-                    Self::update_step_lock(step.clone(), params.proof_size);
-
                     // Initializing thread dependent steps
                     let search_step = Arc::new(Mutex::new(0u64));
 
@@ -184,11 +181,8 @@ impl Proof {
                         proof_found.clone(),
                     );
 
-                    // Updating global steps with local dependent one if needs be
-                    let nb_steps = *search_step.lock().unwrap();
-                    if nb_steps != params.proof_size {
-                        Self::update_step_lock(step.clone(), nb_steps - params.proof_size);
-                    }
+                    // Updating global number of steps with the ones done in thread
+                    Self::update_step_lock(step.clone(), *search_step.lock().unwrap());
 
                     dfs_result
                 } else {
