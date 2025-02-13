@@ -25,7 +25,7 @@ pub struct Round<E, H> {
     /// Approximate size of prover set to lower bound
     pub set_size: u64,
     // Phantom type to link the tree with its hasher
-    hasher: PhantomData<H>,
+    hasher: PhantomData<fn(H)>,
 }
 
 impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Round<E, H> {
@@ -43,7 +43,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Round<E, H> {
             hash,
             id,
             set_size,
-            hasher: PhantomData,
+            hasher: PhantomData::<fn(H)>,
         })
     }
 

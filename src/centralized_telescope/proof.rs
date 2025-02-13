@@ -21,10 +21,10 @@ pub struct Proof<E, H> {
     /// Sequence of elements from prover's set
     pub element_sequence: Vec<E>,
     // Phantom type to link the tree with its hasher
-    hasher: PhantomData<H>,
+    hasher: PhantomData<fn(H)>,
 }
 
-impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
+impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
@@ -61,7 +61,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
             retry_counter,
             search_counter,
             element_sequence,
-            hasher: PhantomData::<H>,
+            hasher: PhantomData::<fn(H)>,
         }
     }
 
@@ -232,31 +232,27 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
                 retry_counter: round.retry_counter,
                 search_counter: round.search_counter,
                 element_sequence: round.element_sequence.clone(),
-                hasher: PhantomData::<H>,
+                hasher: PhantomData::<fn(H)>,
             });
         }
-
         // For each element in bin numbered id
-        for element in &bins[round.id as usize] {
-            // If DFS was called more than params.dfs_bound times,or a
-            // proof was already found abort this round
-            if Self::check_locks(params, step.clone(), proof_found.clone()) {
-                return None;
-            }
-
-            // Update round with such element
-            if let Some(r) = Round::update(round, element) {
-                // Run DFS on updated round, incrementing step
-                Self::update_step_lock(step.clone());
-                let proof_opt = Self::dfs(params, bins, &r, step.clone(), proof_found.clone());
-                // Return proof if found
-                if proof_opt.is_some() {
-                    return proof_opt;
+        bins[round.id as usize]
+            .par_iter()
+            .find_map_first(|element| {
+                // If DFS was called more than params.dfs_bound times,or a
+                // proof was already found abort this round
+                if Self::check_locks(params, step.clone(), proof_found.clone()) {
+                    return None;
                 }
-            }
-        }
-        // If no proof was found, return number of steps and None
-        None
+                // Update round with such element
+                if let Some(r) = Round::update(round, element) {
+                    // Run DFS on updated round, incrementing step
+                    Self::update_step_lock(step.clone());
+                    Self::dfs(params, bins, &r, step.clone(), proof_found.clone())
+                } else {
+                    None
+                }
+            })
     }
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
