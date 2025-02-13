@@ -185,7 +185,7 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
             .find_map_any(|search_counter| {
                 // If DFS was called more than params.dfs_bound times,or a proof was
                 // already found abort this retru
-                if check_step(params, total_step.clone()) || check_proof(found.clone()) {
+                if check_step(params, &total_step) || check_proof(&found) {
                     return None;
                 }
 
@@ -195,10 +195,10 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
                     let step = Arc::new(Mutex::new(0u64));
 
                     // Call DFS recursion
-                    let dfs_result = Self::dfs(params, &bins, &r, step.clone(), found.clone());
+                    let dfs_result = Self::dfs(params, &bins, &r, &step, &found);
 
                     // Updating global number of steps with the ones done in thread
-                    update_step_lock(total_step.clone(), *step.lock().unwrap());
+                    update_step_lock(&total_step, *step.lock().unwrap());
 
                     dfs_result
                 })
@@ -219,8 +219,8 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         params: &Params,
         bins: &[Vec<E>],
         round: &Round<E, H>,
-        step: Arc<Mutex<u64>>,
-        found: Arc<Mutex<bool>>,
+        step: &Arc<Mutex<u64>>,
+        found: &Arc<Mutex<bool>>,
     ) -> Option<Self> {
         // If the current round comprises `params.proof_size elements` and
         // passes the `proof_hash` check, then update the `found` boolean
@@ -228,7 +228,7 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         if round.element_sequence.len() as u64 == params.proof_size {
             let proof_found = Proof::proof_hash(params.valid_proof_probability, round);
             if proof_found {
-                update_proof_lock(found.clone());
+                update_proof_lock(found);
             }
             return proof_found.then(|| Self {
                 retry_counter: round.retry_counter,
@@ -242,15 +242,15 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
         // element contained in the bin referenced by the round's id
         bins[round.id as usize].par_iter().find_map_any(|element| {
             // If a proof has already been found, abort
-            if check_proof(found.clone()) {
+            if check_proof(found) {
                 return None;
             }
 
             // Otherwise, update the current round with the new element
             Round::update(round, element).and_then(|r| {
                 // Run DFS on updated round, incrementing step
-                update_step_lock(step.clone(), 1u64);
-                Self::dfs(params, bins, &r, step.clone(), found.clone())
+                update_step_lock(step, 1u64);
+                Self::dfs(params, bins, &r, step, found)
             })
         })
     }
@@ -280,21 +280,21 @@ impl<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput> Proof<E, H> 
     }
 }
 
-fn check_step(params: &Params, step_lock: Arc<Mutex<u64>>) -> bool {
+fn check_step(params: &Params, step_lock: &Arc<Mutex<u64>>) -> bool {
     *step_lock.lock().unwrap() >= params.dfs_bound
 }
 
-fn check_proof(proof_lock: Arc<Mutex<bool>>) -> bool {
-    *proof_lock.lock().unwrap() == true
+fn check_proof(proof_lock: &Arc<Mutex<bool>>) -> bool {
+    *proof_lock.lock().unwrap()
 }
 
-fn update_step_lock(step_lock: Arc<Mutex<u64>>, to_add: u64) -> () {
+fn update_step_lock(step_lock: &Arc<Mutex<u64>>, to_add: u64) {
     let mut step_guard = step_lock.lock().unwrap();
     *step_guard = (*step_guard).wrapping_add(to_add);
     drop(step_guard);
 }
 
-fn update_proof_lock(found_lock: Arc<Mutex<bool>>) -> () {
+fn update_proof_lock(found_lock: &Arc<Mutex<bool>>) {
     let mut proof_guard = found_lock.lock().unwrap();
     *proof_guard = true;
     drop(proof_guard);
