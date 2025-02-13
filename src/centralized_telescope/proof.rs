@@ -167,11 +167,8 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
         // Take only up to 2*set_size elements for efficiency and fill the bins
         // with them
         for element in prover_set.iter().take(set_size.saturating_mul(2) as usize) {
-            match Self::bin_hash(set_size, retry_counter, element) {
-                Some(bin_index) => {
-                    bins[bin_index as usize].push(element.clone());
-                }
-                None => return (0, None),
+            if let Some(bin_index) = Self::bin_hash(set_size, retry_counter, element) {
+                bins[bin_index as usize].push(element.clone());
             }
         }
 
