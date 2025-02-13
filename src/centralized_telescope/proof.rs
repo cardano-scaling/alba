@@ -176,7 +176,7 @@ impl Proof {
                         Self::dfs(params, &bins, &r, search_step.clone(), proof_found.clone());
 
                     // Updating global number of steps with the ones done in thread
-                    Self::update_step_lock(step.clone(), *search_step.lock().unwrap());
+                    update_step_lock(step.clone(), *search_step.lock().unwrap());
 
                     dfs_result
                 } else {
@@ -269,7 +269,7 @@ fn check_proof_lock(proof_lock: Arc<Mutex<bool>>) -> bool {
 
     fn update_step_lock(step_lock: Arc<Mutex<u64>>, to_add: u64) -> () {
         let mut step_guard = step_lock.lock().unwrap();
-        *step_guard += to_add;
+        *step_guard = (*step_guard).wrapping_add(to_add);
         drop(step_guard);
     }
 
