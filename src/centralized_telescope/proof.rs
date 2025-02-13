@@ -149,11 +149,8 @@ impl Proof {
         // Take only up to 2*set_size elements for efficiency and fill the bins
         // with them
         for &element in prover_set.iter().take(set_size.saturating_mul(2) as usize) {
-            match Proof::bin_hash(set_size, retry_counter, element) {
-                Some(bin_index) => {
+            if let Some(bin_index) =  Proof::bin_hash(set_size, retry_counter, element) {
                     bins[bin_index as usize].push(element);
-                }
-                None => return (0, None),
             }
         }
 
