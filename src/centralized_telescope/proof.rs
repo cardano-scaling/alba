@@ -54,20 +54,6 @@ impl Proof {
     /// # Returns
     ///
     /// The number of steps, and `Some(Proof)` structure
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use alba::centralized_telescope::params::Params;
-    /// use alba::centralized_telescope::proof::Proof;
-    /// let set_size = 200;
-    /// let params = Params::new(128.0, 128.0, 1_000, 750);
-    /// let mut prover_set = Vec::new();
-    /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ; 48]);
-    /// }
-    /// let (setps, proof_opt) = Proof::bench(set_size, &params, &prover_set);
-    /// ```
     pub fn bench(set_size: u64, params: &Params, prover_set: &[Element]) -> (u64, Option<Proof>) {
         Self::prove_routine(set_size, params, prover_set)
     }
