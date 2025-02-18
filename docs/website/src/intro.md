@@ -42,7 +42,7 @@ The prover begins by computing $H_1(1)$ to determine the first bin to explore.
 Suppose $H_1(1) = 3$, leading the prover to examine **Bin 3**. 
 From this bin, an element is selected, and suppose $A$ is chosen. 
 
-![](img/t11.png)
+![](img/t101.png)
 
 At this point, the current sequence is $(t, s_1) = (1, A)$.
 
@@ -53,9 +53,9 @@ At this point, the current sequence is $(t, s_1) = (1, A)$.
 Next, the prover computes $H_1(1, A)$ to identify the next bin. 
 Suppose $H_1(1, A) = 6$, directing the prover to **Bin 6**. 
 
-![](img/t12.png)
+![](img/t102.png)
 
-From this bin, an element is selected, and suppose $C$ is chosen, extending the sequence to $(t, s_1, s_2) = (1, A, C)$.
+This bin contains only one element, $C$, which extends the sequence to $(t, s_1, s_2) = (1, A, C)$.
 
 <p align="center">
   <img src="img/proof-12.png" alt="Alt Text" style="width:40%;">
@@ -64,19 +64,37 @@ From this bin, an element is selected, and suppose $C$ is chosen, extending the 
 Continuing the process, the prover computes $H_1(1, A, C)$ to find the next bin. 
 Suppose $H_1(1, A, C) = 9$, directing the prover to **Bin 9**. 
 
-![](img/t13.png)
+![](img/t103.png)
 
 However, **Bin 9 is empty**, meaning there is no valid extension for this sequence. 
+As a result, the prover **backtracks** to **Bin 6**.
+There is only one element in **Bin 6**, which is $C$.
+So, the prover **backtracks** to **Bin 3**.
+This time, instead of $A$, prover selects $J$ from **Bin 3**.
+
+![](img/t111.png)
+
+At this point, the current sequence is $(t, s_1) = (1, J)$.
+
+<p align="center">
+  <img src="img/proof-112.png" alt="Alt Text" style="width:40%;">
+</p>
+
+Next, the prover computes $H_1(1, J)$ to identify the next bin.
+Suppose $H_1(1, J) = 7$, directing the prover to **Bin 7**.
+
+![](img/t112.png)
+
+However, **Bin 7 is empty**, meaning there is no valid extension for this sequence.
 As a result, the prover **backtracks and attempts $t = 2$** instead.
 
 #### Attempting with $t = 2$
 The prover begins by computing $H_1(2)$ to determine the first bin to explore. 
 Suppose $H_1(2) = 8$, leading the prover to examine **Bin 8**. 
 
-![](img/t21.png)
+![](img/t201.png)
 
-From this bin, an element is selected, and suppose $B$ is chosen. 
-At this point, the current sequence is $(t, s_1) = (2, B)$.
+This bin contains only one element, $B$, which extends the sequence to $(t, s_1) = (2, B)$.
 
 <p align="center">
   <img src="img/proof-21.png" alt="Alt Text" style="width:40%;">
@@ -85,31 +103,45 @@ At this point, the current sequence is $(t, s_1) = (2, B)$.
 Next, the prover computes $H_1(2, B)$ to identify the next bin. 
 Suppose $H_1(2, B) = 5$, directing the prover to **Bin 5**. 
 
-![](img/t22.png)
+![](img/t202.png)
 
-From this bin, an element is selected, and suppose $G$ is chosen, extending the sequence to $(t, s_1, s_2) = (2, B, G)$.
+This bin has a single element, $G$, which is added to extend the sequence to $(t, s_1, s_2) = (2, B, G)$.
 
 <p align="center">
   <img src="img/proof-22.png" alt="Alt Text" style="width:40%;">
 </p>
 
 Continuing the process, the prover computes $H_1(2, B, G)$ to find the next bin. 
-Suppose $H_1(2, B, G) = 10$, directing the prover to **Bin 10**. 
+Suppose $H_1(2, B, G) = 11$, directing the prover to **Bin 11**. 
 
-![](img/t23.png)
+![](img/t2030.png)
 
-From this bin, $E$ is selected, updating the sequence to $(t, s_1, s_2, s_3) = (2, B, G, E)$.
+From this bin, $H$ is selected, updating the sequence to $(t, s_1, s_2, s_3) = (2, B, G, H)$.
 
 <p align="center">
-  <img src="img/proof-23.png" alt="Alt Text" style="width:40%;">
+  <img src="img/proof-230.png" alt="Alt Text" style="width:40%;">
 </p>
 
-Finally, the prover computes $H_1(2, B, G, E)$ to determine the next bin. 
-Suppose $H_1(2, B, G, E) = 11$, leading to **Bin 11**, which contains multiple elements. 
+Then, the prover computes $H_1(2, B, G, H)$ to determine the next bin. 
+Suppose $H_1(2, B, G, H) = 12$, leading to **Bin 12**, which contains no elements.
+It means that there is no valid extension for this sequence.
+As a result, the prover **backtracks** to **Bin 11**.
 
-![](img/t24.png)
+![](img/t2031.png)
 
-The prover selects $H$, completing the sequence as $(t, s_1, s_2, s_3, s_4) = (2, B, G, E, H)$.
+The prover selects $I$, updating the sequence as $(t, s_1, s_2, s_3) = (2, B, G, I)$.
+
+<p align="center">
+  <img src="img/proof-231.png" alt="Alt Text" style="width:40%;">
+</p>
+
+Finally, the prover computes $H_1(2, B, G, I)$ to determine the next bin.
+Suppose $H_1(2, B, G, I) = 10$, leading to **Bin 10**.
+
+![](img/t204.png)
+
+From this bin, $E$ is selected, completing the sequence to $(t, s_1, s_2, s_3) = (2, B, G, I, E)$.
+
 
 <p align="center">
   <img src="img/proof-24.png" alt="Alt Text" style="width:40%;">
@@ -117,13 +149,13 @@ The prover selects $H$, completing the sequence as $(t, s_1, s_2, s_3, s_4) = (2
 
 
 ### Step 3: Final proof selection
-- After reaching a tuple of length $u = 4$:
+After reaching a tuple of length $u = 4$:
 
 <p align="center">
   <img src="img/proof.png" alt="Alt Text" style="width:40%;">
 </p>
 
-- Compute $H_2(2, B, G, E, H)$.
+Prover computes $H_2(2, B, G, I, E)$.
   - If $H_2$ returns **1**, this tuple is **valid**, and we output it as the proof.
   - If not, we backtrack and try another sequence.
 
@@ -132,4 +164,4 @@ The prover selects $H$, completing the sequence as $(t, s_1, s_2, s_3, s_4) = (2
 The verifier checks the proof by ensuring that each step follows the binning structure and that the mappings determined by $H_1$ correctly match the prehashed bins. 
 Additionally, the verifier validates the final tuple using $H_2$. 
 
-If $H_2(2, B, G, E, H) = 1$, the proof is **accepted**.
+If $H_2(2, B, G, I, E) = 1$, the proof is **accepted**.
