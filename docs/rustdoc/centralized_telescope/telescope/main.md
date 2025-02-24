@@ -7,12 +7,12 @@
 ## Creating a Telescope
 
 Constructing an ALBA proof within a **centralized Telescope-bounded DFS setup** requires careful parameter selection to ensure both efficiency and security.
-- The **security parameter for adversarial resistance** ($\lambda_{\text{sec}}$) controls how difficult it is for an adversary to forge a valid proof.
+- The **soundness parameter** ($\lambda_{\text{sec}}$) controls how difficult it is for an adversary to forge a valid proof.
   - A higher $\lambda_{\text{sec}}$ increases the difficulty of false proofs but may require more computational resources.
-- The **security parameter for proof reliability** ($\lambda_{\text{rel}}$) determines the probability that an honest prover can generate a valid proof within the given constraints.
-  - If $\lambda_{\text{rel}}$ is too low, legitimate proofs may fail, necessitating retries or adjustments in other parameters.
+- The **reliability parameter** ($\lambda_{\text{rel}}$) determines the probability that an honest prover can generate a valid proof within the given constraints.
+  - If $\lambda_{\text{rel}}$ is too low, legitimate proof generation may fail, necessitating retries or adjustments in other parameters.
 - The **DFS bound** is essential for computational feasibility, limiting the number of explored vertices during proof construction.
-  - A sufficiently high DFS bound ensures a valid proof can be found, while an overly restrictive DFS bound may lead to incomplete proofs.
+  - A sufficiently high DFS bound ensures a valid proof can be found, while an overly restrictive DFS bound may lead to proof generation failure.
 - The **prover set size** ($n_p$) affects the likelihood of successful proof generation. 
   - With smaller values requiring additional proof attempts to compensate for reduced availability of valid elements.
 - The **random oracle model** plays a key role in ensuring unpredictability and cryptographic robustness.
@@ -43,7 +43,7 @@ We provide two methods for creating a `Telescope`, each serving different purpos
 - The [`setup_unsafe`][crate::centralized_telescope::Telescope#method.setup_unsafe] method allows the user to create a `Telescope` manually by directly specifying internal parameters. 
 - Unlike `create`, this method does **not** verify the consistency or correctness of the provided parameters. 
 - This gives the user full control but also places the responsibility on them to ensure that the chosen parameters do not compromise security or efficiency. 
-- The `setup_unsafe` function exists to provide flexibility for advanced users who need custom configurations. 
+- The `setup_unsafe` function exists to provide flexibility for advanced users who need custom configurations or create a `Telescope` object with trusted, already checked, parameters. 
 - Some users may have precomputed or externally derived parameters that they wish to use without the restrictions imposed by automatic fine-tuning. 
 - However, since there is no internal validation, improper usage can lead to weaker security guarantees, incorrect proofs, or unintended protocol behavior.
 
