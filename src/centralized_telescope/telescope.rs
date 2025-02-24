@@ -137,7 +137,7 @@ impl Telescope {
     /// }
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// ```
-    pub fn prove<E: AsRef<[u8]> + Clone + Ord>(&self, prover_set: &[E]) -> Option<Proof<E>> {
+    pub fn prove<E: AsRef<[u8]> + Clone>(&self, prover_set: &[E]) -> Option<Proof<E>> {
         Proof::new(self.set_size, &self.params, prover_set)
     }
 
@@ -165,7 +165,7 @@ impl Telescope {
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// assert!(telescope.verify(&proof));
     /// ```
-    pub fn verify<E: AsRef<[u8]> + Clone + Ord>(&self, proof: &Proof<E>) -> bool {
+    pub fn verify<E: AsRef<[u8]> + Clone>(&self, proof: &Proof<E>) -> bool {
         proof.verify(self.set_size, &self.params)
     }
 }
