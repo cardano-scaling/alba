@@ -1,7 +1,6 @@
 //! Customer facing Centralized Telescope structure
 use super::params::Params;
 use super::proof::Proof;
-use crate::utils::types::Element;
 
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
@@ -138,7 +137,7 @@ impl Telescope {
     /// }
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// ```
-    pub fn prove(&self, prover_set: &[Element]) -> Option<Proof> {
+    pub fn prove<E: AsRef<[u8]> + Clone>(&self, prover_set: &[E]) -> Option<Proof<E>> {
         Proof::new(self.set_size, &self.params, prover_set)
     }
 
@@ -166,7 +165,7 @@ impl Telescope {
     /// let proof = telescope.prove(&prover_set).unwrap();
     /// assert!(telescope.verify(&proof));
     /// ```
-    pub fn verify(&self, proof: &Proof) -> bool {
+    pub fn verify<E: AsRef<[u8]> + Clone>(&self, proof: &Proof<E>) -> bool {
         proof.verify(self.set_size, &self.params)
     }
 }
