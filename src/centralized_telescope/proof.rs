@@ -9,7 +9,7 @@ use blake2::{Blake2s256, Digest};
 
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
-pub struct Proof<E: AsRef<[u8]> + Clone + Ord> {
+pub struct Proof<E> {
     /// Numbers of retries done to find the proof
     pub retry_counter: u64,
     /// Index of the searched subtree to find the proof

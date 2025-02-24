@@ -7,7 +7,7 @@ use blake2::{Blake2s256, Digest};
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round<E: AsRef<[u8]> + Clone + Ord> {
+pub struct Round<E> {
     /// Numbers of retries done so far
     pub retry_counter: u64,
     /// Index of the current subtree being searched

@@ -5,7 +5,7 @@ use blake2::{Blake2s256, Digest};
 
 /// Simple lottery proof
 #[derive(Debug, Clone)]
-pub struct Proof<E: AsRef<[u8]> + Clone + Ord> {
+pub struct Proof<E> {
     /// Sequence of elements from prover's set
     pub element_sequence: Vec<E>,
 }
