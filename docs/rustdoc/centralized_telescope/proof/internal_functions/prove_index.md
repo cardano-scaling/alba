@@ -1,0 +1,22 @@
+<a id="prove-index">$\mathsf{prove\\_index}$</a> $(n_p,~$ [$params$](variables#parameters) $, ~S_p, ~v) \rightarrow (step, ~$ [$proof$](variables#proof) $/ \bot)$:
+---
+- $bins \leftarrow \big\\{ \\{ ~ \\}$ **for** $~ i \in \[n_p\] \big\\}:$
+- **for** each $~~ s \in S_p:$
+    - $ind \leftarrow$ [$\mathsf{H_0}$](hash_functions#bin-hash) $(n_p,~ v,~ s)$
+    - **if** $~~ ind ~~!= \bot:$
+        - $bins\[ind\] \leftarrow bins\[ind\] \cup \\{s\\}$
+    - **else**:
+        - **return** $(0,~ \bot).$
+- $step \leftarrow 0$
+- **for** each $~~ t \in \[$ [$params.d$](variables#params-d) $\]:$
+    - **if** $~~ step ~ \geq ~$ [$params.b$](variables#params-b) $:$
+        - **return** $(0,~ \bot).$
+    - $(hash,~ id) \leftarrow $ [$\mathsf{H_1}$](hash_functions#round-hash) $(\mathsf{bytes}(v),~ \mathsf{bytes}(t),~ n_p)$
+    - **if** $~~ id ~~!= \bot:$
+        - $round \leftarrow (v,~ t,~ \\{ ~ \\},~ hash,~ id,~ n_p)$
+        - $(dfs\\_calls, ~ proof) \leftarrow$ [$\mathsf{dfs}$](#dfs) $($ [$params$](variables#parameters) $,~ bins,~ round,~ step+1)$
+        - **if** $~~ proof ~~!= \bot :$
+            - **return** $(dfs\\_calls, ~ proof).$
+        - $step \leftarrow dfs\\_calls$
+- **return** $(step,~ \bot).$
+---

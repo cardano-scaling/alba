@@ -1,6 +1,7 @@
-//! Centralized Telescope's `Proof` structure
-
-#![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof.md")]
+//! Centralized Telescope's proof structure
+#![doc = include_str!("../../docs/rustdoc/centralized_telescope/proof/overview.md")]
+//!
+//! See full documentation: [Proof - Centralized Telescope][crate::docs::centralized::proof].
 
 use super::params::Params;
 use super::round::Round;
@@ -21,6 +22,9 @@ pub struct Proof {
     pub element_sequence: Vec<Element>,
 }
 
+/// See documentation:
+/// - [Proof generation][crate::docs::centralized::proof::prove],
+/// - [Proof verification][crate::docs::centralized::proof::verify].
 impl Proof {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
