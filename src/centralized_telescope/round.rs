@@ -22,7 +22,7 @@ pub struct Round<E> {
     pub set_size: u64,
 }
 
-impl<E: AsRef<[u8]> + Clone + Ord> Round<E> {
+impl<E: AsRef<[u8]> + Clone> Round<E> {
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
     /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)

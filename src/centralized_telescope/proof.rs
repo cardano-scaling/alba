@@ -18,7 +18,7 @@ pub struct Proof<E> {
     pub element_sequence: Vec<E>,
 }
 
-impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
+impl<E: AsRef<[u8]> + Clone> Proof<E> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.

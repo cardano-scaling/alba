@@ -10,7 +10,7 @@ pub struct Proof<E> {
     pub element_sequence: Vec<E>,
 }
 
-impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
+impl<E: AsRef<[u8]> + Clone> Proof<E> {
     /// Simple Lottery's proving algorithm, based on a DFS algorithm.
     ///
     /// # Arguments
@@ -44,7 +44,7 @@ impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
                 element_sequence.push(element.clone());
             }
             if element_sequence.len() as u64 >= params.proof_size {
-                element_sequence.sort_unstable();
+                element_sequence.sort_unstable_by(|a, b: &E| a.as_ref().cmp(b.as_ref()));
                 return Some(Proof { element_sequence });
             }
         }
@@ -80,7 +80,9 @@ impl<E: AsRef<[u8]> + Clone + Ord> Proof<E> {
     /// ```
     pub fn verify(&self, params: &Params) -> bool {
         (self.element_sequence.len() as u64 == params.proof_size)
-            && self.element_sequence.is_sorted_by(|a, b| a < b)
+            && self
+                .element_sequence
+                .is_sorted_by(|a, b| a.as_ref() < b.as_ref())
             && self
                 .element_sequence
                 .iter()
