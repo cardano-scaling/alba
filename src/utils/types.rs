@@ -29,7 +29,7 @@ impl Display for ProofGenerationError {
     fn fmt(&self, f: &mut Formatter) -> Result<(), FmtError> {
         match self {
             Self::NotEnoughElements => write!(f, "Not enough elements given to the prover"),
-            Self::NotFoundInBounds => write!(f, "No proof bound within DFs bound"),
+            Self::NotFoundInBounds => write!(f, "No proof bound within DFS bound"),
             Self::NotFound => write!(f, "No proof found"),
         }
     }
