@@ -1,8 +1,7 @@
 ## Prove
 The `prove` function generates a valid proof by iterating over multiple retries and ensuring proof construction within a bounded number of steps. 
 It follows these steps:
-- It initializes a step counter to keep track of the total number of DFS calls made throughout the process. 
-- The function then loops up to `max_retries` ($r$), where each iteration represents an independent attempt to find a valid proof.
+- The function loops up to `max_retries` ($r$), where each iteration represents an independent attempt to find a valid proof.
 - For each retry $v$, the function calls `prove_index`, which performs binning and initiates the DFS search for a proof. 
 - The number of DFS calls taken in each retry is accumulated into the step counter. 
 - If `prove_index` successfully finds a proof, it is immediately returned, as there is no need to continue searching. 
