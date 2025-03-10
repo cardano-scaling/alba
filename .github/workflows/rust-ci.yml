@@ -20,19 +20,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
+          components: clippy, rustfmt
           override: true
-
-      - name: Uninstall pre-installed tools
-        run: |
-          rm -f ~/.cargo/bin/rust-analyzer
-          rm -f ~/.cargo/bin/rustfmt
-          rm -f ~/.cargo/bin/cargo-fmt
-
-      - name: Update Rust toolchain and components
-        run: |
-          rustup update
-          rustup component add rustfmt
-          rustup component add clippy
 
       - name: Build
         run: RUSTFLAGS=-Dwarnings cargo build --all-features --all-targets --verbose
