@@ -1,6 +1,7 @@
 //! Customer facing Centralized Telescope structure
 use super::params::Params;
 use super::proof::Proof;
+use digest::{Digest, FixedOutput};
 
 /// The main centralized Telescope struct with prove and verify functions.
 #[derive(Debug, Clone, Copy)]
@@ -129,15 +130,19 @@ impl Telescope {
     ///
     /// ```
     /// use alba::centralized_telescope::Telescope;
+    /// use sha2::Sha256;
     /// let set_size = 200;
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
     ///     prover_set.push([(i % 256) as u8 ; 48]);
     /// }
-    /// let proof = telescope.prove(&prover_set).unwrap();
+    /// let proof = telescope.prove::<[u8;48], Sha256>(&prover_set).unwrap();
     /// ```
-    pub fn prove<E: AsRef<[u8]> + Clone>(&self, prover_set: &[E]) -> Option<Proof<E>> {
+    pub fn prove<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
+        &self,
+        prover_set: &[E],
+    ) -> Option<Proof<E, H>> {
         Proof::new(self.set_size, &self.params, prover_set)
     }
 
@@ -156,16 +161,20 @@ impl Telescope {
     ///
     /// ```
     /// use alba::centralized_telescope::Telescope;
+    /// use sha2::Sha256;
     /// let set_size = 200;
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
     ///     prover_set.push([(i % 256) as u8 ; 48]);
     /// }
-    /// let proof = telescope.prove(&prover_set).unwrap();
-    /// assert!(telescope.verify(&proof));
+    /// let proof = telescope.prove::<[u8;48], Sha256>(&prover_set).unwrap();
+    /// assert!(telescope.verify::<[u8;48], Sha256>(&proof));
     /// ```
-    pub fn verify<E: AsRef<[u8]> + Clone>(&self, proof: &Proof<E>) -> bool {
+    pub fn verify<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
+        &self,
+        proof: &Proof<E, H>,
+    ) -> bool {
         proof.verify(self.set_size, &self.params)
     }
 }

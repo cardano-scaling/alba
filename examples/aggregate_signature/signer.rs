@@ -2,7 +2,7 @@ use crate::aggregate_signature::helpers::get_commitment;
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
 use blst::min_sig::{PublicKey, SecretKey};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRng;
 
 /// Threshold signature signer
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ pub(crate) struct Signer {
 
 impl Signer {
     /// Create signing key and verification key for a signer
-    pub(crate) fn init(rng: &mut (impl RngCore + CryptoRng)) -> Self {
+    pub(crate) fn init(rng: &mut impl CryptoRng) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
 

@@ -4,21 +4,24 @@
 
 use super::params::Params;
 use super::round::Round;
-use crate::utils::{sample, types::Hash};
-use blake2::{Blake2s256, Digest};
+use crate::utils::{sample, types::truncate};
+use digest::{Digest, FixedOutput};
+use std::marker::PhantomData;
 
 /// Centralized Telescope proof
 #[derive(Debug, Clone)]
-pub struct Proof<E> {
+pub struct Proof<E, H> {
     /// Numbers of retries done to find the proof
     pub retry_counter: u64,
     /// Index of the searched subtree to find the proof
     pub search_counter: u64,
     /// Sequence of elements from prover's set
     pub element_sequence: Vec<E>,
+    // Phantom type to link the tree with its hasher
+    hasher: PhantomData<H>,
 }
 
-impl<E: AsRef<[u8]> + Clone> Proof<E> {
+impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
@@ -36,6 +39,27 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
         Self::prove_routine(set_size, params, prover_set).1
+    }
+
+    /// Constructs a `Proof` from a retry counter, search_counter and sequence
+    /// of elemenst.
+    ///
+    /// # Arguments
+    ///
+    /// * `retry_counter` - the numbers of retries done to find the proof
+    /// * `search_counter` - the index of the searched subtree to find the proof
+    /// * `element_sequence` - the sequence of elements from prover's set
+    ///
+    /// # Returns
+    ///
+    /// A `Proof` structure
+    pub fn from(retry_counter: u64, search_counter: u64, element_sequence: Vec<E>) -> Self {
+        Self {
+            retry_counter,
+            search_counter,
+            element_sequence,
+            hasher: PhantomData::<H>,
+        }
     }
 
     /// Alba's proving algorithm used for benchmarking, returning a proof if
@@ -57,13 +81,14 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
     /// ```
     /// use alba::centralized_telescope::params::Params;
     /// use alba::centralized_telescope::proof::Proof;
+    /// use sha2::Sha256;
     /// let set_size = 200;
     /// let params = Params::new(128.0, 128.0, 1_000, 750);
     /// let mut prover_set = Vec::new();
     /// for i in 0..set_size {
     ///     prover_set.push([(i % 256) as u8 ; 48]);
     /// }
-    /// let (setps, proof_opt) = Proof::bench(set_size, &params, &prover_set);
+    /// let (steps, proof_opt) = Proof::<[u8;48], Sha256>::bench(set_size, &params, &prover_set);
     /// ```
     pub fn bench(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
         Self::prove_routine(set_size, params, prover_set)
@@ -73,7 +98,7 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns the number of steps done when searching a proof as well as a
     /// `Proof` if a suitable candidate tuple is found, otherwise `None`.
-    fn prove_routine(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Proof<E>>) {
+    fn prove_routine(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
         let mut steps: u64 = 0;
 
         // Run prove_index up to max_retries times
@@ -114,7 +139,7 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
         }
 
         // Initialise a round with given retry and search counters
-        let Some(mut round) = Round::<E>::new(self.retry_counter, self.search_counter, set_size)
+        let Some(mut round) = Round::<E, H>::new(self.retry_counter, self.search_counter, set_size)
         else {
             return false;
         };
@@ -136,7 +161,7 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
                 return false;
             }
         }
-        Proof::proof_hash(params.valid_proof_probability, &round)
+        Self::proof_hash(params.valid_proof_probability, &round)
     }
 
     /// Indexed proving algorithm, returns the total number of DFS calls done
@@ -197,17 +222,18 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
     fn dfs(
         params: &Params,
         bins: &[Vec<E>],
-        round: &Round<E>,
+        round: &Round<E, H>,
         mut step: u64,
     ) -> (u64, Option<Self>) {
         // If current round comprises params.proof_size elements and satisfies
         // the proof_hash check, return it cast as a Proof
         if round.element_sequence.len() as u64 == params.proof_size {
-            let proof_opt = if Proof::proof_hash(params.valid_proof_probability, round) {
+            let proof_opt = if Self::proof_hash(params.valid_proof_probability, round) {
                 Some(Self {
                     retry_counter: round.retry_counter,
                     search_counter: round.search_counter,
                     element_sequence: round.element_sequence.clone(),
+                    hasher: PhantomData::<H>,
                 })
             } else {
                 None
@@ -242,21 +268,23 @@ impl<E: AsRef<[u8]> + Clone> Proof<E> {
     /// prehashing S_p
     fn bin_hash(set_size: u64, retry_counter: u64, element: &E) -> Option<u64> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-bin_hash");
-        hasher.update(retry_bytes);
-        hasher.update(element.as_ref());
-        let digest: Hash = hasher.finalize().into();
-        sample::sample_uniform(&digest, set_size)
+        let digest = H::new()
+            .chain_update(b"Telescope-bin_hash")
+            .chain_update(retry_bytes)
+            .chain_update(element.as_ref())
+            .finalize();
+        let hash = truncate(digest.as_slice());
+        sample::sample_uniform(&hash, set_size)
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
-    fn proof_hash(valid_proof_probability: f64, r: &Round<E>) -> bool {
-        let mut hasher = Blake2s256::new();
-        hasher.update(b"Telescope-proof_hash");
-        hasher.update(r.hash);
-        let digest: Hash = hasher.finalize().into();
-        sample::sample_bernoulli(&digest, valid_proof_probability)
+    fn proof_hash(valid_proof_probability: f64, r: &Round<E, H>) -> bool {
+        let digest = H::new()
+            .chain_update(b"Telescope-proof_hash")
+            .chain_update(r.hash)
+            .finalize();
+        let hash = truncate(digest.as_slice());
+        sample::sample_bernoulli(&hash, valid_proof_probability)
     }
 }

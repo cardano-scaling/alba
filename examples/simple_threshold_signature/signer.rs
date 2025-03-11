@@ -1,6 +1,6 @@
 use crate::simple_threshold_signature::signature::Signature;
 use blst::min_sig::{PublicKey, SecretKey};
-use rand_core::{CryptoRng, RngCore};
+use rand_core::CryptoRng;
 
 pub(crate) struct Signer {
     signing_key: SecretKey,
@@ -9,7 +9,7 @@ pub(crate) struct Signer {
 
 impl Signer {
     /// Create a pair of bls signing key and verification key
-    pub(crate) fn new(rng: &mut (impl RngCore + CryptoRng)) -> Self {
+    pub(crate) fn new(rng: &mut impl CryptoRng) -> Self {
         let mut ikm = [0u8; 32];
         rng.fill_bytes(&mut ikm);
         let sk = SecretKey::key_gen(&ikm, &[])

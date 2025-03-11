@@ -9,6 +9,7 @@ use alba::centralized_telescope::Telescope;
 use blst::min_sig::PublicKey;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
+use sha2::Sha256;
 
 fn main() {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
@@ -51,7 +52,7 @@ fn main() {
     println!("--------------------------------------------------------");
     println!("----------- Generating Alba multi-signature. -----------");
     let (threshold_signature, indices) =
-        ThresholdSignature::aggregate(&signature_list, &alba, &public_key_list);
+        ThresholdSignature::<Sha256>::aggregate(&signature_list, &alba, &public_key_list);
     println!("-- Alba multi-signature is generated.");
     println!("--------------------------------------------------------");
     println!("----------- Verifying Alba multi-signature. ------------");

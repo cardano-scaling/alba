@@ -1,11 +1,16 @@
 use crate::aggregate_signature::registration::Registration;
 use crate::aggregate_signature::signature::IndividualSignature;
 use crate::AlbaThresholdSignature;
-use blake2::digest::{Update, VariableOutput};
-use blake2::Blake2bVar;
+
+use digest::{Digest, FixedOutput};
+use std::collections::HashMap;
+
+use blake2::{
+    digest::{Update, VariableOutput},
+    Blake2bVar,
+};
 use blst::min_sig::{AggregatePublicKey, AggregateSignature, PublicKey, Signature};
 use blst::BLST_ERROR;
-use std::collections::HashMap;
 
 /// Helper function to compute a commitment by hashing `(checksum || msg)`
 pub(crate) fn get_commitment<const N: usize>(checksum: &[u8], msg: &[u8]) -> [u8; N] {
@@ -50,8 +55,8 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 
 /// Validate the signatures in `alba_threshold_signature` against the provided message and registration.
 /// Returns `true` if all signatures are valid and correctly aggregated, `false` otherwise.
-pub(crate) fn validate_signatures(
-    alba_threshold_signature: &AlbaThresholdSignature,
+pub(crate) fn validate_signatures<H: Digest + FixedOutput>(
+    alba_threshold_signature: &AlbaThresholdSignature<H>,
     registration: &Registration,
     commitment: &[u8],
 ) -> bool {
@@ -102,7 +107,9 @@ pub(crate) fn validate_signatures(
     }
 }
 
-pub(crate) fn ats_size<const N: usize>(ats: &AlbaThresholdSignature) -> usize {
+pub(crate) fn ats_size<H: Digest + FixedOutput, const N: usize>(
+    ats: &AlbaThresholdSignature<H>,
+) -> usize {
     let nb_elements = ats.indices.len();
     let size_indices = nb_elements.saturating_mul(8);
     let size_elements = nb_elements.saturating_mul(N);

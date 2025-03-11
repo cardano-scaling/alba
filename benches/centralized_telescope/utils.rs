@@ -12,16 +12,19 @@ mod test_utils;
 
 #[path = "../common/mod.rs"]
 pub mod common;
-use common::criterion_helpers::centralized::BenchParam;
+use common::{
+    criterion_helpers::centralized::BenchParam,
+    test_vectors::{Data, DATA_LENGTH},
+};
 
 /// Global variables
 pub const NAME: &str = "Centralized";
 
 /// Function generating a random set of elements to bench and calling Alba's centralized setup
-pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<[u8; 48]>, Telescope) {
+pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<Data>, Telescope) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset: Vec<[u8; 48]> = test_utils::gen_items(&seed, params.total_num_elements);
+    let dataset = test_utils::gen_items::<DATA_LENGTH>(&seed, params.total_num_elements);
     let telescope = Telescope::create(
         params.lambda_sec,
         params.lambda_rel,
