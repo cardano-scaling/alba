@@ -139,7 +139,7 @@ impl Telescope {
     /// }
     /// let proof = telescope.prove::<[u8;48], Sha256>(&prover_set).unwrap();
     /// ```
-    pub fn prove<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
+    pub fn prove<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput>(
         &self,
         prover_set: &[E],
     ) -> Option<Proof<E, H>> {
@@ -171,7 +171,7 @@ impl Telescope {
     /// let proof = telescope.prove::<[u8;48], Sha256>(&prover_set).unwrap();
     /// assert!(telescope.verify::<[u8;48], Sha256>(&proof));
     /// ```
-    pub fn verify<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
+    pub fn verify<E: AsRef<[u8]> + Clone + Send + Sync, H: Digest + FixedOutput>(
         &self,
         proof: &Proof<E, H>,
     ) -> bool {
