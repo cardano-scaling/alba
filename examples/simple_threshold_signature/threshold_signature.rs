@@ -1,12 +1,14 @@
 use crate::simple_threshold_signature::signature::Signature;
-use crate::Element;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::Telescope;
 use blst::min_sig::{PublicKey, Signature as BlsSignature};
 use blst::BLST_ERROR;
 
+const SIG_LENGTH: usize = 48;
+pub(crate) type SigBytes = [u8; SIG_LENGTH];
+
 pub(crate) struct ThresholdSignature {
-    proof: Proof,
+    proof: Proof<SigBytes>,
 }
 
 impl ThresholdSignature {
@@ -19,10 +21,7 @@ impl ThresholdSignature {
         public_key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<usize>) {
         // Convert signatures to bytes and collect as the prover set.
-        let prover_set = signatures
-            .iter()
-            .map(|s| s.signature.to_bytes())
-            .collect::<Vec<Element>>();
+        let prover_set: Vec<SigBytes> = signatures.iter().map(|s| s.signature.to_bytes()).collect();
 
         println!("-- Creating alba proof. ");
         // Create alba proof with the prover set

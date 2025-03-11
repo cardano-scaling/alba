@@ -2,21 +2,18 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 
-use crate::utils::{
-    sample,
-    types::{Element, Hash},
-};
+use crate::utils::{sample, types::Hash};
 use blake2::{Blake2s256, Digest};
 
 /// Round parameters
 #[derive(Debug, Clone)]
-pub struct Round {
+pub struct Round<E> {
     /// Numbers of retries done so far
     pub retry_counter: u64,
     /// Index of the current subtree being searched
     pub search_counter: u64,
     /// Candidate element sequence
-    pub element_sequence: Vec<Element>,
+    pub element_sequence: Vec<E>,
     /// Candidate round hash
     pub hash: Hash,
     /// Candidate round id, i.e. round hash mapped to [1, set_size]
@@ -25,7 +22,7 @@ pub struct Round {
     pub set_size: u64,
 }
 
-impl Round {
+impl<E: AsRef<[u8]> + Clone> Round<E> {
     /// Output a round from retry and search counters as well as set_size
     /// Initilialises the hash with round_hash(retry_counter || search_bytes)
     /// and random value as oracle(round_hash(retry_counter || search_bytes), set_size)
@@ -45,10 +42,10 @@ impl Round {
 
     /// Updates a round with an element
     /// Replaces the hash $h$ with $h' = round_hash(h, s)$ and the random value as oracle(h', set_size)
-    pub(super) fn update(r: &Self, element: Element) -> Option<Self> {
+    pub(super) fn update(r: &Self, element: &E) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
-        element_sequence.push(element);
-        let (hash, id_opt) = Self::round_hash(&r.hash, &element, r.set_size);
+        element_sequence.push(element.clone());
+        let (hash, id_opt) = Self::round_hash(&r.hash, element.as_ref(), r.set_size);
         id_opt.map(|id| Self {
             retry_counter: r.retry_counter,
             search_counter: r.search_counter,

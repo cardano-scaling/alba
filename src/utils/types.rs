@@ -1,7 +1,4 @@
-pub(crate) const DATA_LENGTH: usize = 48;
-
-/// Type of dataset's elements to lower bound
-pub(crate) type Element = [u8; DATA_LENGTH];
+//! Types and implementation
 
 /// Digest size for internal hashes
 pub(crate) const DIGEST_SIZE: usize = 32;
