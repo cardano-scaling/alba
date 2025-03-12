@@ -120,6 +120,7 @@ impl Params {
         case: &impl Case,
     ) -> bool {
         fn completeness_error(u: f64, d: u64, q: f64) -> f64 {
+            // TODO: update in case
             (-(q - u * q * q / 2.0) * d as f64).exp()
         }
         fn soundness_error(np: u64, nf: u64, u: f64, d: u64, q: f64) -> f64 {
@@ -157,7 +158,7 @@ impl Params {
         let valid_proof_probability = case.valid_proof_probability(params.search_width);
         if (valid_proof_probability - params.valid_proof_probability).abs()
             / valid_proof_probability
-            < error
+            > error
         {
             return false;
         }
@@ -166,7 +167,7 @@ impl Params {
         if completeness_error(proof_size, search_width, valid_proof_probability)
             .log2()
             .neg()
-            >= completeness_param
+            < completeness_param
         {
             return false;
         };
@@ -181,7 +182,7 @@ impl Params {
         )
         .log2()
         .neg()
-            >= soundness_param
+            < soundness_param
         {
             return false;
         }
