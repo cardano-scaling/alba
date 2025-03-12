@@ -42,6 +42,44 @@ impl Telescope {
         Self { set_size, params }
     }
 
+    /// Returns a `Telescope` structure from input and
+    /// internal parameters without checking the consistency between parameters
+    /// ///
+    /// # Arguments
+    ///
+    /// * `set_size` - the size of the prover set to lower bound
+    /// * `params` - some centralized Telescope internal parameters
+    ///
+    /// # Returns
+    ///
+    /// A `Telescope` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::centralized_telescope::Telescope;
+    /// use alba::centralized_telescope::params::Params;
+    /// let params = Params {proof_size : 337, max_retries: 128, search_width: 26_798, valid_proof_probability: 0.00018545463465840736, dfs_bound: 29_160_771};
+    /// let telescope = Telescope::setup(128.0, 128.0, 1_000, 750, &params);
+    /// assert!(telescope.is_some());
+    /// ```
+    pub fn setup(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Params,
+    ) -> Option<Self> {
+        Params::check_from(
+            soundness_param,
+            completeness_param,
+            set_size,
+            lower_bound,
+            params,
+        )
+        .then_some(Self::setup_unsafe(set_size, params))
+    }
+
     /// Use with caution. Returns a `Telescope` structure from input and
     /// internal parameters without checking the consistency between parameters
     ///

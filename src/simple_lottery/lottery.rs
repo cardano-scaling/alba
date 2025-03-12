@@ -56,6 +56,39 @@ impl Lottery {
     /// use alba::simple_lottery::Lottery;
     /// use alba::simple_lottery::params::Params;
     /// let params = Params {proof_size : 200, lottery_probability: 0.001};
+    /// let lottery = Lottery::setup(10.0, 10.0, 200_000, 200, &params);
+    /// assert!(lottery.is_some());
+    ///
+    /// ```
+    pub fn setup(
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+        params: &Params,
+    ) -> Option<Self> {
+        params
+            .check_from(soundness_param, completeness_param, set_size, lower_bound)
+            .then_some(Self::setup_unsafe(params))
+    }
+
+    /// Use with caution. Returns a `Lottery` structure from internal
+    /// parameters without checking
+    ///
+    /// # Arguments
+    ///
+    /// * `params` - some Lottery internal parameters
+    ///
+    /// # Returns
+    ///
+    /// A `Lottery` structure
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use alba::simple_lottery::Lottery;
+    /// use alba::simple_lottery::params::Params;
+    /// let params = Params {proof_size : 200, lottery_probability: 0.001};
     /// let lottery = Lottery::setup_unsafe(&params);
     /// ```
     pub fn setup_unsafe(params: &Params) -> Self {
