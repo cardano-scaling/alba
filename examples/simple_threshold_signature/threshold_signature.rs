@@ -6,12 +6,10 @@ use blst::{
     BLST_ERROR,
 };
 use digest::{Digest, FixedOutput};
-
-const SIG_LENGTH: usize = 48;
-pub(crate) type SigBytes = [u8; SIG_LENGTH];
+use alba::utils::types::Element;
 
 pub(crate) struct ThresholdSignature<H: Digest + FixedOutput> {
-    proof: Proof<SigBytes, H>,
+    proof: Proof<Element, H>,
 }
 
 impl<H: Digest + FixedOutput> ThresholdSignature<H> {
@@ -24,7 +22,8 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         public_key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<usize>) {
         // Convert signatures to bytes and collect as the prover set.
-        let prover_set: Vec<SigBytes> = signatures.iter().map(|s| s.signature.to_bytes()).collect();
+        let prover_set: Vec<Element> = signatures.iter().map(|s| Element::from_bytes(&s.signature.to_bytes()).unwrap())
+            .collect();
 
         println!("-- Creating alba proof. ");
         // Create alba proof with the prover set
@@ -47,7 +46,7 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         let proof_signatures: Vec<BlsSignature> = proof
             .element_sequence
             .iter()
-            .filter_map(|element| BlsSignature::from_bytes(element).ok())
+            .filter_map(|element| BlsSignature::from_bytes(element.as_ref()).ok())
             .collect();
 
         // Collect the indices of the signatures that create alba proof.
@@ -81,7 +80,7 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         // Get the bls signatures from byte representation
         for sig_bytes in &self.proof.element_sequence {
-            let Ok(signature) = BlsSignature::from_bytes(sig_bytes.as_slice()) else {
+            let Ok(signature) = BlsSignature::from_bytes(sig_bytes.as_ref()) else {
                 return false;
             };
             signatures.push(signature);
