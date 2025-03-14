@@ -9,11 +9,12 @@ mod utils;
 use utils::{
     common::{
         criterion_helpers::centralized::{benchmarks, BenchParam},
-        test_vectors::{centralized::SHORT_TESTS, Data},
+        test_vectors::centralized::SHORT_TESTS,
     },
     setup, NAME,
 };
 
+use alba::utils::types::Element;
 use digest::{Digest, FixedOutput};
 use sha2::Sha256;
 
@@ -31,7 +32,7 @@ fn verify_duration<H: Digest + FixedOutput>(
     // Truncate the dataset to give truncate_size elements to the prover
     dataset.truncate(truncate_size as usize);
     // Generate the proof
-    let proof_opt = telescope.prove::<Data, H>(&dataset);
+    let proof_opt = telescope.prove::<Element, H>(&dataset);
 
     if let Some(proof) = proof_opt {
         // Iterate on each sample `n` times

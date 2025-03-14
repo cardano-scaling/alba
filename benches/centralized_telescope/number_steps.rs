@@ -14,12 +14,13 @@ use utils::{
             centralized::{benchmarks, BenchParam},
             Steps,
         },
-        test_vectors::{centralized::SHORT_TESTS, Data},
+        test_vectors::centralized::SHORT_TESTS,
     },
     setup, NAME,
 };
 
 use alba::centralized_telescope::proof::Proof;
+use alba::utils::types::Element;
 
 /// Function benchmarking `sample_size` times the number of DFS calls, aka steps
 #[allow(clippy::unit_arg)]
@@ -38,7 +39,7 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     // single time the number of steps/DFS calls while generating a proof and
     // retun this number times n to fasten the bechmark.
     black_box({
-        let steps = Proof::<Data, Sha256>::bench(set_size, &params, &dataset).0;
+        let steps = Proof::<Element, Sha256>::bench(set_size, &params, &dataset).0;
         total_steps = total_steps.saturating_add(steps);
     });
     total_steps.saturating_mul(n)
