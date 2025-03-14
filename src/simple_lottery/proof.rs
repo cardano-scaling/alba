@@ -1,5 +1,6 @@
 //! Simple Lottery's Proof structure
 use super::params::Params;
+use crate::utils::types::Indexable;
 use crate::utils::{sample, types::truncate};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
@@ -13,7 +14,7 @@ pub struct Proof<E, H> {
     hasher: PhantomData<H>,
 }
 
-impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
+impl<E: AsRef<[u8]> + Clone + Indexable, H: Digest + FixedOutput> Proof<E, H> {
     /// Simple Lottery's proving algorithm, based on a DFS algorithm.
     ///
     /// # Arguments
@@ -31,13 +32,17 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// use alba::simple_lottery::params::Params;
     /// use alba::simple_lottery::proof::Proof;
     /// use sha2::Sha256;
+    /// use alba::utils::types::Element;
     /// let set_size = 200;
     /// let params = Params::new(128.0, 128.0, set_size, 100);
-    /// let mut prover_set = Vec::new();
+    /// let mut prover_set: Vec<Element> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;48]);
+    ///     let data = [(i % 256) as u8; 48]; // Create a 48-byte array
+    ///     if let Some(element) = Element::from_bytes_with_index(&data, i as u64) {
+    ///         prover_set.push(element);
+    ///     }
     /// }
-    /// let proof = Proof::<[u8;48], Sha256>::new(&params, &prover_set).unwrap();
+    /// let proof = Proof::<Element, Sha256>::new(&params, &prover_set).unwrap();
     /// ```
     pub fn new(params: &Params, prover_set: &[E]) -> Option<Self> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
@@ -76,13 +81,17 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// use alba::simple_lottery::params::Params;
     /// use alba::simple_lottery::proof::Proof;
     /// use sha2::Sha256;
+    /// use alba::utils::types::Element;
     /// let set_size = 200;
     /// let params = Params::new(128.0, 128.0, set_size, 100);
-    /// let mut prover_set = Vec::new();
+    /// let mut prover_set: Vec<Element> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ;48]);
+    ///     let data = [(i % 256) as u8; 48]; // Create a 48-byte array
+    ///     if let Some(element) = Element::from_bytes_with_index(&data, i as u64) {
+    ///         prover_set.push(element);
+    ///     }
     /// }
-    /// let proof = Proof::<[u8;48], Sha256>::new(&params, &prover_set).unwrap();
+    /// let proof = Proof::<Element, Sha256>::new(&params, &prover_set).unwrap();
     /// let b = proof.verify(&params);
     /// assert!(b);
     /// ```
@@ -100,7 +109,11 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &E) -> bool {
-        let digest = H::new().chain_update(element.as_ref()).finalize();
+        let mut hasher = H::new().chain_update(element.as_ref());
+        if let Some(index) = element.index() {
+            hasher = hasher.chain_update(index.to_be_bytes());
+        }
+        let digest = hasher.finalize();
         let hash = truncate(digest.as_slice());
 
         sample::sample_bernoulli(&hash, lottery_probability)
