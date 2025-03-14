@@ -1,12 +1,12 @@
 use crate::simple_threshold_signature::signature::Signature;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::Telescope;
+use alba::utils::types::Element;
 use blst::{
     min_sig::{PublicKey, Signature as BlsSignature},
     BLST_ERROR,
 };
 use digest::{Digest, FixedOutput};
-use alba::utils::types::Element;
 
 pub(crate) struct ThresholdSignature<H: Digest + FixedOutput> {
     proof: Proof<Element, H>,
@@ -22,7 +22,9 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         public_key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<usize>) {
         // Convert signatures to bytes and collect as the prover set.
-        let prover_set: Vec<Element> = signatures.iter().map(|s| Element::from_bytes(&s.signature.to_bytes()).unwrap())
+        let prover_set: Vec<Element> = signatures
+            .iter()
+            .map(|s| Element::from_bytes(&s.signature.to_bytes()).unwrap())
             .collect();
 
         println!("-- Creating alba proof. ");

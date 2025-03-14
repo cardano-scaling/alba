@@ -61,8 +61,8 @@ pub(crate) fn validate_signatures<H: Digest + FixedOutput>(
     commitment: &[u8],
 ) -> bool {
     let mut signatures = Vec::with_capacity(alba_threshold_signature.proof.element_sequence.len());
-    for sig_bytes in &alba_threshold_signature.proof.element_sequence {
-        if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
+    for element in &alba_threshold_signature.proof.element_sequence {
+        if let Ok(signature) = Signature::from_bytes(element.as_ref()) {
             signatures.push(signature);
         } else {
             println!("Error: Failed to parse signature from bytes.");
