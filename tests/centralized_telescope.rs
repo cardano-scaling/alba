@@ -8,12 +8,12 @@ use rand_core::{RngCore, SeedableRng};
 mod common;
 use common::gen_items;
 
+use alba::utils::types::Element;
 use sha2::Sha256;
 
 const DATA_LENGTH: usize = 48;
-type Data = [u8; DATA_LENGTH];
 
-type P = Proof<Data, Sha256>;
+type P = Proof<Element, Sha256>;
 
 fn test(created_with_params: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
@@ -25,14 +25,22 @@ fn test(created_with_params: bool) {
     let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
-        let s_p: Vec<Data> = gen_items::<DATA_LENGTH>(&seed, nb_elements);
+        // let s_p: Vec<Data> = gen_items::<DATA_LENGTH>(&seed, nb_elements);
+        let raw_s_p: Vec<Vec<u8>> = gen_items::<DATA_LENGTH>(&seed, nb_elements)
+            .into_iter()
+            .map(|d| d.to_vec()) // Convert [u8; 48] to Vec<u8>
+            .collect();
+
+        // Convert raw data to `Vec<Element>` with indexing
+        let s_p: Vec<Element> = Element::element_list_from_bytes_with_index(raw_s_p);
+
         let alba = if created_with_params {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
             let setup = Params::new(soundness_param, completeness_param, set_size, lower_bound);
             Telescope::setup_unsafe(set_size, &setup)
         };
-        let proof = alba.prove::<Data, Sha256>(&s_p).unwrap();
+        let proof = alba.prove::<Element, Sha256>(&s_p).unwrap();
         assert!(alba.verify(&proof));
         // Checking that the proof fails if proof.search_counter is erroneous
         let proof_t = P::from(
@@ -64,7 +72,7 @@ fn test(created_with_params: bool) {
         assert!(!alba.verify(&proof_itembis));
         // Checking that the proof fails when wrong elements are included
         // We are trying to trigger round_hash
-        penultimate_item[0] = penultimate_item[0].wrapping_add(42u8);
+        penultimate_item.data[0] = penultimate_item.data[0].wrapping_add(42u8);
         wrong_items.push(penultimate_item);
         wrong_items.push(last_item);
         let proof_itembis = P::from(

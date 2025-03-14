@@ -4,6 +4,7 @@
 
 use super::params::Params;
 use super::round::Round;
+use crate::utils::types::Indexable;
 use crate::utils::{sample, types::truncate};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
@@ -21,7 +22,7 @@ pub struct Proof<E, H> {
     hasher: PhantomData<H>,
 }
 
-impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
+impl<E: AsRef<[u8]> + Clone + Indexable, H: Digest + FixedOutput> Proof<E, H> {
     /// Centralized Telescope's proving algorithm, based on a DFS algorithm.
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns a `Proof` if a suitable candidate tuple is found.
@@ -81,14 +82,18 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// ```
     /// use alba::centralized_telescope::params::Params;
     /// use alba::centralized_telescope::proof::Proof;
+    /// use alba::utils::types::Element;
     /// use sha2::Sha256;
     /// let set_size = 200;
     /// let params = Params::new(128.0, 128.0, 1_000, 750);
-    /// let mut prover_set = Vec::new();
+    /// let mut prover_set: Vec<Element> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ; 48]);
+    ///     let data = [(i % 256) as u8; 48]; // Create a 48-byte array
+    ///     if let Some(element) = Element::from_bytes_with_index(&data, i as u64) {
+    ///         prover_set.push(element);
+    ///     }
     /// }
-    /// let (steps, proof_opt) = Proof::<[u8;48], Sha256>::bench(set_size, &params, &prover_set);
+    /// let (steps, proof_opt) = Proof::<Element, Sha256>::bench(set_size, &params, &prover_set);
     /// ```
     pub fn bench(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
         Self::prove_routine(set_size, params, prover_set)
@@ -266,13 +271,22 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
     /// prehashing S_p
-    fn bin_hash(set_size: u64, retry_counter: u64, element: &E) -> Option<u64> {
+    fn bin_hash(set_size: u64, retry_counter: u64, element: &E) -> Option<u64>
+    where
+        E: AsRef<[u8]> + Indexable,
+    {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-        let digest = H::new()
+        let mut hasher = H::new();
+        hasher = hasher
             .chain_update(b"Telescope-bin_hash")
             .chain_update(retry_bytes)
-            .chain_update(element.as_ref())
-            .finalize();
+            .chain_update(element.as_ref());
+
+        if let Some(index) = element.index() {
+            hasher = hasher.chain_update(index.to_be_bytes());
+        }
+
+        let digest = hasher.finalize();
         let hash = truncate(digest.as_slice());
         sample::sample_uniform(&hash, set_size)
     }

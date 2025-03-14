@@ -14,14 +14,15 @@ use std::time::Instant;
 mod aggregate_signature;
 
 const DATA_LENGTH: usize = 48;
-pub(crate) type Data = [u8; DATA_LENGTH];
+// pub(crate) type Data = [u8; DATA_LENGTH];
+use alba::utils::types::Element;
 use digest::{Digest, FixedOutput};
 use sha2::Sha512;
 
 #[derive(Debug, Clone)]
 pub(crate) struct AlbaThresholdSignature<H: Digest + FixedOutput> {
     /// Centralized telescope proof
-    pub(crate) proof: Proof<Data, H>,
+    pub(crate) proof: Proof<Element, H>,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
     /// Commitment `Hash(checksum || msg)`
@@ -59,8 +60,13 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
                 return None;
             }
 
-            // Collect the byte representation of valid signatures into a Vec
-            let prover_set: Vec<Data> = valid_signatures.keys().copied().collect();
+            // Collect the elements
+            let prover_set: Vec<Element> = valid_signatures
+                .iter()
+                .filter_map(|(sig_bytes, &index)| {
+                    Element::from_bytes_with_index(sig_bytes, index as u64)
+                })
+                .collect();
 
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
@@ -86,7 +92,7 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
             let indices: Vec<usize> = proof
                 .element_sequence
                 .iter()
-                .filter_map(|element: &Data| valid_signatures.get(element.as_slice()).copied())
+                .filter_map(|element| valid_signatures.get(element.data.as_slice()).copied())
                 .collect();
 
             let commitment = get_commitment::<N>(checksum, msg).to_vec();
