@@ -2,7 +2,7 @@
 //! The parameters chosen correspond to cases of interest for Cardano's Peras protocol.
 
 pub(crate) const DATA_LENGTH: usize = 48;
-pub(crate) type Data = [u8; DATA_LENGTH];
+pub(crate) type D = [u8; DATA_LENGTH];
 
 pub mod centralized {
     use super::super::criterion_helpers::centralized::BenchParam;

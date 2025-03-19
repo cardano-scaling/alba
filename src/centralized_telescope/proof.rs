@@ -4,6 +4,7 @@
 
 use super::params::Params;
 use super::round::Round;
+use crate::utils::types::Element;
 use crate::utils::{sample, types::truncate};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
@@ -16,7 +17,7 @@ pub struct Proof<E, H> {
     /// Index of the searched subtree to find the proof
     pub search_counter: u64,
     /// Sequence of elements from prover's set
-    pub element_sequence: Vec<E>,
+    pub element_sequence: Vec<Element<E>>,
     // Phantom type to link the tree with its hasher
     hasher: PhantomData<H>,
 }
@@ -35,7 +36,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// # Returns
     ///
     /// A `Proof` structure
-    pub(super) fn new(set_size: u64, params: &Params, prover_set: &[E]) -> Option<Self> {
+    pub(super) fn new(set_size: u64, params: &Params, prover_set: &[Element<E>]) -> Option<Self> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
         Self::prove_routine(set_size, params, prover_set).1
@@ -53,7 +54,11 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// # Returns
     ///
     /// A `Proof` structure
-    pub fn from(retry_counter: u64, search_counter: u64, element_sequence: Vec<E>) -> Self {
+    pub fn from(
+        retry_counter: u64,
+        search_counter: u64,
+        element_sequence: Vec<Element<E>>,
+    ) -> Self {
         Self {
             retry_counter,
             search_counter,
@@ -81,16 +86,17 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// ```
     /// use alba::centralized_telescope::params::Params;
     /// use alba::centralized_telescope::proof::Proof;
+    /// use alba::utils::types::Element;
     /// use sha2::Sha256;
     /// let set_size = 200;
     /// let params = Params::new(128.0, 128.0, 1_000, 750);
-    /// let mut prover_set = Vec::new();
+    /// let mut prover_set: Vec<Element<[u8; 48]>> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push([(i % 256) as u8 ; 48]);
+    ///     prover_set.push(Element{ data: [(i % 256) as u8 ; 48], index: Some(i)});
     /// }
     /// let (steps, proof_opt) = Proof::<[u8;48], Sha256>::bench(set_size, &params, &prover_set);
     /// ```
-    pub fn bench(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
+    pub fn bench(set_size: u64, params: &Params, prover_set: &[Element<E>]) -> (u64, Option<Self>) {
         Self::prove_routine(set_size, params, prover_set)
     }
 
@@ -98,7 +104,11 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// Calls up to `params.max_retries` times the prove_index function and
     /// returns the number of steps done when searching a proof as well as a
     /// `Proof` if a suitable candidate tuple is found, otherwise `None`.
-    fn prove_routine(set_size: u64, params: &Params, prover_set: &[E]) -> (u64, Option<Self>) {
+    fn prove_routine(
+        set_size: u64,
+        params: &Params,
+        prover_set: &[Element<E>],
+    ) -> (u64, Option<Self>) {
         let mut steps: u64 = 0;
 
         // Run prove_index up to max_retries times
@@ -170,7 +180,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     fn prove_index(
         set_size: u64,
         params: &Params,
-        prover_set: &[E],
+        prover_set: &[Element<E>],
         retry_counter: u64,
     ) -> (u64, Option<Self>) {
         // Initialize set_size bins
@@ -221,7 +231,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// - proof_hash(round_hash(... round_hash((round_hash(v, t), x_1), ..., x_u)) = true
     fn dfs(
         params: &Params,
-        bins: &[Vec<E>],
+        bins: &[Vec<Element<E>>],
         round: &Round<E, H>,
         mut step: u64,
     ) -> (u64, Option<Self>) {
@@ -266,13 +276,19 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
 
     /// Oracle producing a uniformly random value in [0, set_size[ used for
     /// prehashing S_p
-    fn bin_hash(set_size: u64, retry_counter: u64, element: &E) -> Option<u64> {
+    fn bin_hash(set_size: u64, retry_counter: u64, element: &Element<E>) -> Option<u64> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-        let digest = H::new()
+        let mut hasher = H::new();
+        hasher = hasher
             .chain_update(b"Telescope-bin_hash")
             .chain_update(retry_bytes)
-            .chain_update(element.as_ref())
-            .finalize();
+            .chain_update(element.as_ref());
+
+        if let Some(index) = element.index {
+            hasher = hasher.chain_update(index.to_be_bytes());
+        }
+
+        let digest = hasher.finalize();
         let hash = truncate(digest.as_slice());
         sample::sample_uniform(&hash, set_size)
     }

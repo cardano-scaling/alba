@@ -2,6 +2,7 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 
+use crate::utils::types::Element;
 use crate::utils::{
     sample,
     types::{truncate, Hash},
@@ -17,7 +18,7 @@ pub struct Round<E, H> {
     /// Index of the current subtree being searched
     pub search_counter: u64,
     /// Candidate element sequence
-    pub element_sequence: Vec<E>,
+    pub element_sequence: Vec<Element<E>>,
     /// Candidate round hash
     pub hash: Hash,
     /// Candidate round id, i.e. round hash mapped to [1, set_size]
@@ -49,7 +50,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Round<E, H> {
 
     /// Updates a round with an element
     /// Replaces the hash $h$ with $h' = round_hash(h, s)$ and the random value as oracle(h', set_size)
-    pub(super) fn update(r: &Self, element: &E) -> Option<Self> {
+    pub(super) fn update(r: &Self, element: &Element<E>) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
         element_sequence.push(element.clone());
         let (hash, id_opt) = Self::round_hash(&r.hash, element.as_ref(), r.set_size);
