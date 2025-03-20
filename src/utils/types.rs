@@ -14,7 +14,7 @@ pub(crate) fn truncate(data: &[u8]) -> Hash {
     hash
 }
 
-#[derive(Debug, Clone, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone)]
 /// Type of dataset's elements with an optional index
 pub struct Element<E> {
     /// Set element data
