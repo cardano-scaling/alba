@@ -55,14 +55,14 @@ pub(crate) fn collect_valid_signatures<const N: usize>(
 
 /// Validate the signatures in `alba_threshold_signature` against the provided message and registration.
 /// Returns `true` if all signatures are valid and correctly aggregated, `false` otherwise.
-pub(crate) fn validate_signatures<H: Digest + FixedOutput>(
-    alba_threshold_signature: &AlbaThresholdSignature<H>,
+pub(crate) fn validate_signatures<const N: usize, H: Digest + FixedOutput>(
+    alba_threshold_signature: &AlbaThresholdSignature<N, H>,
     registration: &Registration,
     commitment: &[u8],
 ) -> bool {
     let mut signatures = Vec::with_capacity(alba_threshold_signature.proof.element_sequence.len());
-    for sig_bytes in &alba_threshold_signature.proof.element_sequence {
-        if let Ok(signature) = Signature::from_bytes(sig_bytes.as_slice()) {
+    for element in &alba_threshold_signature.proof.element_sequence {
+        if let Ok(signature) = Signature::from_bytes(element.as_ref()) {
             signatures.push(signature);
         } else {
             println!("Error: Failed to parse signature from bytes.");
@@ -107,8 +107,8 @@ pub(crate) fn validate_signatures<H: Digest + FixedOutput>(
     }
 }
 
-pub(crate) fn ats_size<H: Digest + FixedOutput, const N: usize>(
-    ats: &AlbaThresholdSignature<H>,
+pub(crate) fn ats_size<const N: usize, H: Digest + FixedOutput>(
+    ats: &AlbaThresholdSignature<N, H>,
 ) -> usize {
     let nb_elements = ats.indices.len();
     let size_indices = nb_elements.saturating_mul(8);

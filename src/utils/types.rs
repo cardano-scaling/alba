@@ -13,3 +13,36 @@ pub(crate) fn truncate(data: &[u8]) -> Hash {
     hash[..n].copy_from_slice(&data[..n]);
     hash
 }
+
+#[derive(Debug, Clone)]
+/// Type of dataset's elements with an optional index
+pub struct Element<E> {
+    /// Set element data
+    pub data: E,
+    /// ID of the element
+    pub index: Option<u64>,
+}
+
+impl<E: AsRef<[u8]> + for<'a> From<&'a [u8]>> Element<E> {
+    /// Creates an `Element` from raw bytes with an explicit index
+    pub fn from_bytes_with_index(raw_bytes: &[u8], index: u64) -> Self {
+        Self {
+            data: E::from(raw_bytes),
+            index: Some(index),
+        }
+    }
+
+    /// Creates an `Element` from raw bytes without an explicit index
+    pub fn from_bytes_no_index(raw_bytes: &[u8]) -> Self {
+        Self {
+            data: E::from(raw_bytes),
+            index: None,
+        }
+    }
+}
+
+impl<E: AsRef<[u8]>> AsRef<[u8]> for Element<E> {
+    fn as_ref(&self) -> &[u8] {
+        self.data.as_ref()
+    }
+}

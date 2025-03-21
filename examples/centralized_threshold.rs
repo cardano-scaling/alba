@@ -14,25 +14,25 @@ use std::time::Instant;
 mod aggregate_signature;
 
 const DATA_LENGTH: usize = 48;
-pub(crate) type Data = [u8; DATA_LENGTH];
+use alba::utils::types::Element;
 use digest::{Digest, FixedOutput};
 use sha2::Sha512;
 
 #[derive(Debug, Clone)]
-pub(crate) struct AlbaThresholdSignature<H: Digest + FixedOutput> {
+pub(crate) struct AlbaThresholdSignature<const N: usize, H: Digest + FixedOutput> {
     /// Centralized telescope proof
-    pub(crate) proof: Proof<Data, H>,
+    pub(crate) proof: Proof<[u8; N], H>,
     /// Registration indices of the element sequence signers
     pub(crate) indices: Vec<usize>,
     /// Commitment `Hash(checksum || msg)`
     pub(crate) commitment: Vec<u8>,
 }
 
-impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
+impl<const N: usize, H: Digest + FixedOutput> AlbaThresholdSignature<N, H> {
     /// Create AlbaThresholdSignature. Validate and collect signatures in byte representation.
     /// Create Alba proof and extract indices of proof elements.
     /// Return proof, commitment, and indices.
-    fn prove<const N: usize>(
+    fn prove(
         alba: &Telescope,
         signature_list: &[IndividualSignature],
         registration: &Registration,
@@ -41,7 +41,8 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
         if let Some(checksum) = &registration.checksum {
             let time_validate_sigs = Instant::now();
             // Collect valid individual signatures' byte representation into a hashmap
-            let valid_signatures = collect_valid_signatures::<N>(signature_list, registration, msg);
+            let valid_signatures =
+                collect_valid_signatures::<{ N }>(signature_list, registration, msg);
             // let duration_sig_validate = start_prove.elapsed();
             println!(
                 "-- Collected {} valid signatures in {:.3}s. ",
@@ -59,8 +60,21 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
                 return None;
             }
 
-            // Collect the byte representation of valid signatures into a Vec
-            let prover_set: Vec<Data> = valid_signatures.keys().copied().collect();
+            let mut prover_set: Vec<Element<[u8; N]>> = Vec::with_capacity(valid_signatures.len());
+
+            prover_set.extend(valid_signatures.iter().filter_map(|(sig_bytes, index)| {
+                sig_bytes
+                    .as_slice()
+                    .try_into()
+                    .ok()
+                    .map(|data: [u8; N]| Element {
+                        data,
+                        index: Some(*index as u64),
+                    })
+            }));
+
+            // // Collect the byte representation of valid signatures into a Vec
+            // let prover_set: Vec<Data> = valid_signatures.keys().copied().collect();
 
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
@@ -86,10 +100,12 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
             let indices: Vec<usize> = proof
                 .element_sequence
                 .iter()
-                .filter_map(|element: &Data| valid_signatures.get(element.as_slice()).copied())
+                .filter_map(|element: &Element<[u8; N]>| {
+                    valid_signatures.get(element.as_ref()).copied()
+                })
                 .collect();
 
-            let commitment = get_commitment::<N>(checksum, msg).to_vec();
+            let commitment = get_commitment::<{ N }>(checksum, msg).to_vec();
 
             // Return the constructed AlbaThresholdSignature
             Some(Self {
@@ -104,14 +120,9 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
     }
 
     /// Verify AlbaThresholdSignature. Validate individual signatures and verify Alba proof.
-    fn verify<const N: usize>(
-        &self,
-        alba: &Telescope,
-        registration: &Registration,
-        msg: &[u8],
-    ) -> bool {
+    fn verify(&self, alba: &Telescope, registration: &Registration, msg: &[u8]) -> bool {
         if let Some(checksum) = &registration.checksum {
-            let commitment = get_commitment::<N>(checksum, msg).to_vec();
+            let commitment = get_commitment::<{ N }>(checksum, msg).to_vec();
 
             if commitment != self.commitment {
                 println!("Error: Commitment mismatch.");
@@ -220,7 +231,7 @@ fn main() {
 
     // Generate AlbaThresholdSignature proof
     let start_prove = Instant::now();
-    if let Some(alba_threshold_signature) = AlbaThresholdSignature::<Sha512>::prove::<DATA_LENGTH>(
+    if let Some(alba_threshold_signature) = AlbaThresholdSignature::<DATA_LENGTH, Sha512>::prove(
         &alba,
         &signature_list,
         &registration,
@@ -234,14 +245,14 @@ fn main() {
         );
         println!(
             "** Alba Threshold Signature Size: {} B",
-            ats_size::<Sha512, DATA_LENGTH>(&alba_threshold_signature)
+            ats_size::<DATA_LENGTH, Sha512>(&alba_threshold_signature)
         );
         println!("----------------------------------------------------------------------");
         println!("---------------- Verifying Alba threshold signature. -----------------");
 
         // Verify the proof
         let start_verify = Instant::now();
-        if alba_threshold_signature.verify::<DATA_LENGTH>(&alba, &registration, msg) {
+        if alba_threshold_signature.verify(&alba, &registration, msg) {
             let duration_verify = start_verify.elapsed();
             println!("-- Verification successful.");
             println!(

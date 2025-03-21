@@ -14,7 +14,7 @@ use utils::{
             centralized::{benchmarks, BenchParam},
             Steps,
         },
-        test_vectors::{centralized::SHORT_TESTS, Data},
+        test_vectors::{centralized::SHORT_TESTS, D},
     },
     setup, NAME,
 };
@@ -38,7 +38,7 @@ fn prove_steps(param: &BenchParam, truncate_size: u64, n: u64) -> u64 {
     // single time the number of steps/DFS calls while generating a proof and
     // retun this number times n to fasten the bechmark.
     black_box({
-        let steps = Proof::<Data, Sha256>::bench(set_size, &params, &dataset).0;
+        let steps = Proof::<D, Sha256>::bench(set_size, &params, &dataset).0;
         total_steps = total_steps.saturating_add(steps);
     });
     total_steps.saturating_mul(n)
