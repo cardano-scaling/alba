@@ -9,10 +9,10 @@ use blst::{
 use digest::{Digest, FixedOutput};
 
 const SIG_LENGTH: usize = 48;
-// pub(crate) type SigBytes = [u8; SIG_LENGTH];
+pub(crate) type SigBytes = [u8; SIG_LENGTH];
 
 pub(crate) struct ThresholdSignature<H: Digest + FixedOutput> {
-    proof: Proof<[u8; SIG_LENGTH], H>,
+    proof: Proof<SigBytes, H>,
 }
 
 impl<H: Digest + FixedOutput> ThresholdSignature<H> {
@@ -25,12 +25,9 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         public_key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<usize>) {
         // Convert signatures to bytes and collect as the prover set.
-        let prover_set: Vec<Element<[u8; SIG_LENGTH]>> = signatures
+        let prover_set: Vec<Element<SigBytes>> = signatures
             .iter()
-            .map(|s| Element {
-                data: s.signature.to_bytes(),
-                index: None,
-            })
+            .map(|s| Element::new(s.signature.to_bytes(), None))
             .collect();
 
         println!("-- Creating alba proof. ");
