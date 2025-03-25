@@ -60,7 +60,7 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
                 return None;
             }
 
-            // Collect the byte representation of valid signatures into a Vec
+            // Create elements for prover from the valid signatures
             let prover_set: Vec<Element<Data>> = valid_signatures
                 .iter()
                 .map(|vs| Element::new(*vs.0, Some(*vs.1 as u64)))
