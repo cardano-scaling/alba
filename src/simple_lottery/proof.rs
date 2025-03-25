@@ -50,12 +50,21 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
                 element_sequence.push(element.clone());
             }
             if element_sequence.len() as u64 >= params.proof_size {
-                element_sequence
-                    .sort_unstable_by(|a: &Element<E>, b: &Element<E>| a.as_ref().cmp(b.as_ref()));
-                return Some(Self {
-                    element_sequence,
-                    hasher: PhantomData,
-                });
+                let all_have_index = element_sequence.iter().all(|e| e.index.is_some());
+                if all_have_index {
+                    element_sequence.sort_unstable_by(|a: &Element<E>, b: &Element<E>| {
+                        let cmp = a.as_ref().cmp(b.as_ref());
+                        if cmp == std::cmp::Ordering::Equal {
+                            a.index.unwrap().cmp(&b.index.unwrap())
+                        } else {
+                            cmp
+                        }
+                    });
+                } else {
+                    element_sequence.sort_unstable_by(|a: &Element<E>, b: &Element<E>| {
+                        a.as_ref().cmp(b.as_ref())
+                    });
+                }
             }
         }
         None

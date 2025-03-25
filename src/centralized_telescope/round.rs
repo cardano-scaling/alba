@@ -8,7 +8,6 @@ use crate::utils::{
     types::{truncate, Hash},
 };
 use digest::{Digest, FixedOutput};
-use std::intrinsics::mul_with_overflow;
 use std::marker::PhantomData;
 
 /// Round parameters
