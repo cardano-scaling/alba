@@ -9,12 +9,11 @@ mod utils;
 use utils::{
     common::{
         criterion_helpers::centralized::{benchmarks, BenchParam},
-        test_vectors::centralized::SHORT_TESTS,
+        test_vectors::{centralized::SHORT_TESTS, Data},
     },
     setup, NAME,
 };
 
-use crate::utils::common::test_vectors::D;
 use digest::{Digest, FixedOutput};
 use sha2::Sha256;
 
@@ -36,7 +35,7 @@ fn prove_duration<H: Digest + FixedOutput>(
     for _ in 0..n {
         // Bench the proving time
         let start = Instant::now();
-        black_box(telescope.prove::<D, H>(&dataset));
+        black_box(telescope.prove::<Data, H>(&dataset));
         total_duration = total_duration.saturating_add(start.elapsed());
     }
     total_duration
