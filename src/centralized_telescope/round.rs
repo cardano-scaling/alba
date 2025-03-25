@@ -8,6 +8,7 @@ use crate::utils::{
     types::{truncate, Hash},
 };
 use digest::{Digest, FixedOutput};
+use std::intrinsics::mul_with_overflow;
 use std::marker::PhantomData;
 
 /// Round parameters
@@ -53,7 +54,12 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Round<E, H> {
     pub(super) fn update(r: &Self, element: &Element<E>) -> Option<Self> {
         let mut element_sequence = r.element_sequence.clone();
         element_sequence.push(element.clone());
-        let (hash, id_opt) = Self::round_hash(&r.hash, element.as_ref(), r.set_size);
+        let mut round_hash_input: Vec<u8> = Vec::new();
+        round_hash_input.append(&mut element.as_ref().to_vec());
+        if let Some(index) = element.index {
+            round_hash_input.append(&mut index.to_be_bytes().to_vec());
+        }
+        let (hash, id_opt) = Self::round_hash(&r.hash, &round_hash_input, r.set_size);
         id_opt.map(|id| Self {
             retry_counter: r.retry_counter,
             search_counter: r.search_counter,
