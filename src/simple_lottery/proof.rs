@@ -65,6 +65,10 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
                         a.as_ref().cmp(b.as_ref())
                     });
                 }
+                return Some(Self {
+                    element_sequence,
+                    hasher: PhantomData,
+                });
             }
         }
         None
@@ -100,14 +104,33 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// assert!(b);
     /// ```
     pub fn verify(&self, params: &Params) -> bool {
-        (self.element_sequence.len() as u64 == params.proof_size)
-            && self
-                .element_sequence
-                .is_sorted_by(|a, b| a.as_ref() < b.as_ref())
-            && self
-                .element_sequence
-                .iter()
-                .all(|element| Self::lottery_hash(params.lottery_probability, element))
+        if self.element_sequence.len() as u64 != params.proof_size {
+            // println!("len: {}, proof size: {}", self.element_sequence.len(), params.proof_size);
+            return false;
+        }
+
+        let all_have_index = self.element_sequence.iter().all(|e| e.index.is_some());
+
+        let sorted = if all_have_index {
+            self.element_sequence.windows(2).all(|w| {
+                let a = &w[0];
+                let b = &w[1];
+                let cmp = a.as_ref().cmp(b.as_ref());
+                cmp == std::cmp::Ordering::Less
+                    || (cmp == std::cmp::Ordering::Equal && a.index.unwrap() <= b.index.unwrap())
+            })
+        } else {
+            self.element_sequence
+                .windows(2)
+                .all(|w| w[0].as_ref() <= w[1].as_ref())
+        };
+
+        let all_pass_lottery = self
+            .element_sequence
+            .iter()
+            .all(|element| Self::lottery_hash(params.lottery_probability, element));
+
+        sorted && all_pass_lottery
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
