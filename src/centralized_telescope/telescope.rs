@@ -137,7 +137,7 @@ impl Telescope {
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set: Vec<Element<[u8; 48]>> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push(Element{ data: [(i % 256) as u8 ; 48], index: Some(i)});
+    ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let proof = telescope.prove::<[u8; 48], Sha256>(&prover_set).unwrap();
     /// ```
@@ -169,7 +169,7 @@ impl Telescope {
     /// let telescope = Telescope::create(64.0, 64.0, set_size, 100);
     /// let mut prover_set: Vec<Element<[u8; 48]>> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push(Element{ data: [(i % 256) as u8 ; 48], index: Some(i)});
+    ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let proof = telescope.prove::<[u8; 48], Sha256>(&prover_set).unwrap();
     /// assert!(telescope.verify::<[u8;48], Sha256>(&proof));

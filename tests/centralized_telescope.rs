@@ -6,15 +6,16 @@ use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
 mod common;
-use common::gen_items;
+use crate::common::{gen_items_no_index, gen_items_with_index};
 
 use alba::utils::types::Element;
 use sha2::Sha256;
 
 const DATA_LENGTH: usize = 48;
-type P = Proof<[u8; DATA_LENGTH], Sha256>;
+type Data = [u8; DATA_LENGTH];
+type P = Proof<Data, Sha256>;
 
-fn test(created_with_params: bool) {
+fn test(created_with_params: bool, indexed: bool) {
     let mut rng = ChaCha20Rng::from_seed(Default::default());
     let nb_tests = 1_000;
     let nb_elements: u64 = 1_000;
@@ -24,7 +25,11 @@ fn test(created_with_params: bool) {
     let lower_bound = nb_elements.saturating_mul(20).div_ceil(100);
     for _t in 0..nb_tests {
         let seed = rng.next_u32().to_be_bytes().to_vec();
-        let s_p: Vec<Element<[u8; DATA_LENGTH]>> = gen_items::<DATA_LENGTH>(&seed, nb_elements);
+        let s_p: Vec<Element<Data>> = if indexed {
+            gen_items_with_index::<DATA_LENGTH>(&seed, nb_elements, &mut rng)
+        } else {
+            gen_items_no_index::<DATA_LENGTH>(&seed, nb_elements)
+        };
         let alba = if created_with_params {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
@@ -76,11 +81,21 @@ fn test(created_with_params: bool) {
 }
 
 #[test]
-fn created_with_params() {
-    test(true);
+fn created_with_params_indexed() {
+    test(true, true);
 }
 
 #[test]
-fn created_with_setup() {
-    test(false);
+fn created_with_params_no_index() {
+    test(true, false);
+}
+
+#[test]
+fn created_with_setup_indexed() {
+    test(false, true);
+}
+
+#[test]
+fn created_with_setup_no_index() {
+    test(false, false);
 }

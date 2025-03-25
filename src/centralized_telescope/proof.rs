@@ -92,7 +92,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// let params = Params::new(128.0, 128.0, 1_000, 750);
     /// let mut prover_set: Vec<Element<[u8; 48]>> = Vec::new();
     /// for i in 0..set_size {
-    ///     prover_set.push(Element{ data: [(i % 256) as u8 ; 48], index: Some(i)});
+    ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let (steps, proof_opt) = Proof::<[u8;48], Sha256>::bench(set_size, &params, &prover_set);
     /// ```
