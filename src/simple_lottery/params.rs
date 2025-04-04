@@ -56,6 +56,84 @@ impl Params {
         }
     }
 
+    /// Calculates Params parameters.
+    pub fn check_from(
+        self,
+        soundness_param: f64,
+        completeness_param: f64,
+        set_size: u64,
+        lower_bound: u64,
+    ) -> bool {
+        // We first check that proof_size is greater than the security bounds
+        // computed from the user parameters
+        {
+            // Compute the ratios from the user parameters
+            let (computed_ratio_soundness, computed_ratio_completeness) =
+                Self::compute_ratios(soundness_param, completeness_param, set_size, lower_bound);
+
+            // Derive the bounds from the ratios and user inputs
+            let computed_bound_soundness: f64 =
+                Self::bound_soundness(soundness_param, computed_ratio_soundness);
+            let computed_bound_completeness =
+                Self::bound_completeness(completeness_param, computed_ratio_completeness);
+
+            // Derive the proof size for the given user parameters
+            let computed_proof_size = computed_bound_soundness
+                .max(computed_bound_completeness)
+                .ceil();
+
+            // Check if the input proof_size is greater than the computed one,
+            // or the lower_bound for small databases
+            if lower_bound < computed_proof_size as u64 {
+                if self.proof_size < lower_bound {
+                    return false;
+                }
+            } else {
+                if self.proof_size < computed_proof_size as u64 {
+                    return false;
+                }
+            }
+        }
+
+        // We finally check that lottery_probability is greater than the one
+        // computed from the user parameters and the input proof_size
+        {
+            let set_size_f64 = set_size as f64;
+            let lower_bound_f64 = lower_bound as f64;
+
+            // If the proof_size equals lower_bound, i.e. for small datasets,
+            // check that lottery_probability than set_size / lower_bound
+            if self.proof_size == lower_bound {
+                return self.lottery_probability >= lower_bound_f64 / set_size_f64;
+            }
+
+            // Otherwise, we compute the input ratios and check proof_size is
+            // still greater than the derived bounds.
+            // The person could have used different ratios, but this would have
+            // led to higher proof_size hence the check is still valid.
+
+            // By definition u = rs * p * nf, hence rs = u / (nf * p)
+            let input_ratio_soundness =
+                self.proof_size as f64 * (self.lottery_probability * lower_bound_f64);
+            let input_bound_soundness =
+                Self::bound_soundness(soundness_param, input_ratio_soundness);
+            if self.proof_size < input_bound_soundness.ceil() as u64 {
+                return false;
+            }
+
+            // By definition rs * rc = np / nf, hence rc = np / (nf * rs)
+            let input_ratio_completeness =
+                (set_size_f64 / lower_bound_f64) * input_ratio_soundness.recip();
+            let input_bound_completeness =
+                Self::bound_completeness(completeness_param, input_ratio_completeness);
+            if self.proof_size < input_bound_completeness.ceil() as u64 {
+                return false;
+            }
+        }
+
+        true
+    }
+
     /// Compute the soundness and completeness ratio out of the security
     /// parameters, the set size and the lower bound
     fn compute_ratios(
