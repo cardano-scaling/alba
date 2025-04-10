@@ -25,7 +25,7 @@ pub const NAME: &str = "Lottery";
 pub fn setup(rng: &mut ChaCha20Rng, params: &BenchParam) -> (Vec<Element<Data>>, Lottery) {
     let seed_u32 = rng.next_u32();
     let seed = seed_u32.to_ne_bytes().to_vec();
-    let dataset = test_utils::gen_items_no_index::<DATA_LENGTH>(&seed, params.total_num_elements);
+    let dataset = test_utils::gen_items::<DATA_LENGTH>(&seed, params.total_num_elements, false);
     let telescope = Lottery::create(
         params.lambda_sec,
         params.lambda_rel,

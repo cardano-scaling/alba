@@ -50,23 +50,9 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
                 element_sequence.push(element.clone());
             }
             if element_sequence.len() as u64 >= params.proof_size {
-                let all_have_index = element_sequence.iter().all(|e| e.index.is_some());
-                if all_have_index {
-                    element_sequence.sort_unstable_by(|a: &Element<E>, b: &Element<E>| {
-                        let cmp = a.as_ref().cmp(b.as_ref());
-                        if cmp == std::cmp::Ordering::Equal {
-                            a.index.unwrap().cmp(&b.index.unwrap())
-                        } else {
-                            cmp
-                        }
-                    });
-                } else {
-                    element_sequence.sort_unstable_by(|a: &Element<E>, b: &Element<E>| {
-                        a.as_ref().cmp(b.as_ref())
-                    });
-                }
+                let sorted_element_sequence = Element::sort_elements(&element_sequence).unwrap();
                 return Some(Self {
-                    element_sequence,
+                    element_sequence: sorted_element_sequence,
                     hasher: PhantomData,
                 });
             }
@@ -109,21 +95,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
             return false;
         }
 
-        let all_have_index = self.element_sequence.iter().all(|e| e.index.is_some());
-
-        let sorted = if all_have_index {
-            self.element_sequence.windows(2).all(|w| {
-                let a = &w[0];
-                let b = &w[1];
-                let cmp = a.as_ref().cmp(b.as_ref());
-                cmp == std::cmp::Ordering::Less
-                    || (cmp == std::cmp::Ordering::Equal && a.index.unwrap() <= b.index.unwrap())
-            })
-        } else {
-            self.element_sequence
-                .windows(2)
-                .all(|w| w[0].as_ref() <= w[1].as_ref())
-        };
+        let sorted = Element::<E>::is_sorted(&self.element_sequence);
 
         let all_pass_lottery = self
             .element_sequence
