@@ -1,7 +1,7 @@
 //! Centralized Telescope integration tests
 
-use alba::centralized_telescope::Telescope;
-use alba::centralized_telescope::{params::Params, proof::Proof};
+use alba::centralized_telescope::{params::Params, proof::Proof, Telescope};
+use alba::utils::errors::VerificationError;
 use rand_chacha::ChaCha20Rng;
 use rand_core::{RngCore, SeedableRng};
 
@@ -30,41 +30,81 @@ fn test(created_with_params: bool, indexed: bool) {
         let alba = if created_with_params {
             Telescope::create(soundness_param, completeness_param, set_size, lower_bound)
         } else {
-            let setup = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-            Telescope::setup_unsafe(set_size, &setup)
+            let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
+            Telescope::setup_unsafe(set_size, &params)
         };
-        let proof = alba.prove::<[u8; DATA_LENGTH], Sha256>(&s_p).unwrap();
-        assert!(alba.verify(&proof));
-        // Checking that the proof fails if proof.search_counter is erroneous
+        let params = alba.get_params();
+        let proof = alba.prove::<Data, Sha256>(&s_p).unwrap();
+        assert!(alba.verify(&proof).is_ok());
+        // Checking that the verification fails if proof.search_counter is erroneous
+        let proof_t = P::from(
+            proof.retry_counter,
+            params.search_width.wrapping_add(1),
+            proof.element_sequence.clone(),
+        );
+        assert!(alba
+            .verify(&proof_t)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidParameters)));
+        // Checking that the verification fails if proof.search_counter is erroneous
         let proof_t = P::from(
             proof.retry_counter,
             proof.search_counter.wrapping_add(1),
             proof.element_sequence.clone(),
         );
-        assert!(!alba.verify(&proof_t));
-        // Checking that the proof fails if proof.retry_counter is erroneous
+        assert!(alba
+            .verify(&proof_t)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
+        // Checking that the verification fails if proof.retry_counter is erroneous
+        let proof_v = P::from(
+            params.max_retries.wrapping_add(1),
+            proof.search_counter,
+            proof.element_sequence.clone(),
+        );
+        assert!(alba
+            .verify(&proof_v)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidParameters)));
+        // Checking that the verification fails if proof.retry_counter is erroneous
         let proof_v = P::from(
             proof.retry_counter.wrapping_add(1),
             proof.search_counter,
             proof.element_sequence.clone(),
         );
-        assert!(!alba.verify(&proof_v));
-        // Checking that the proof fails when no elements are included
+        assert!(alba
+            .verify(&proof_v)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
+        // Checking that the verification fails when no elements are included
         let proof_item = P::from(proof.retry_counter, proof.search_counter, Vec::new());
-        assert!(!alba.verify(&proof_item));
-        // Checking that the proof fails when wrong elements are included
-        // We are trying to trigger proof_hash
+        assert!(alba
+            .verify(&proof_item)
+            .is_err_and(|e| matches!(e, VerificationError::IncorrectNumberElements)));
+        // Checking that the verification fails if fewer elements are included
         let mut wrong_items = proof.element_sequence.clone();
-        let last_item = wrong_items.pop().unwrap();
-        let mut penultimate_item = wrong_items.pop().unwrap();
-        let proof_itembis = P::from(
+        let mut last_item = wrong_items.pop().unwrap();
+        let proof_item = P::from(
             proof.retry_counter,
             proof.search_counter,
             wrong_items.clone(),
         );
-        assert!(!alba.verify(&proof_itembis));
+        assert!(alba
+            .verify(&proof_item)
+            .is_err_and(|e| matches!(e, VerificationError::IncorrectNumberElements)));
+        // Checking that the verification fails when wrong elements are included
+        // We are trying to trigger proof_hash
+        last_item.data[0] = last_item.data[0].wrapping_add(42u8);
+        wrong_items.push(last_item);
+        let proof_item = P::from(
+            proof.retry_counter,
+            proof.search_counter,
+            wrong_items.clone(),
+        );
+        assert!(alba
+            .verify(&proof_item)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
         // Checking that the proof fails when wrong elements are included
         // We are trying to trigger round_hash
+        let mut wrong_items = proof.element_sequence.clone();
+        let last_item = wrong_items.pop().unwrap();
+        let mut penultimate_item = wrong_items.pop().unwrap();
         penultimate_item.data[0] = penultimate_item.data[0].wrapping_add(42u8);
         wrong_items.push(penultimate_item);
         wrong_items.push(last_item);
@@ -73,7 +113,9 @@ fn test(created_with_params: bool, indexed: bool) {
             proof.search_counter,
             wrong_items.clone(),
         );
-        assert!(!alba.verify(&proof_itembis));
+        assert!(alba
+            .verify(&proof_itembis)
+            .is_err_and(|e| matches!(e, VerificationError::InvalidProof)));
     }
 }
 
