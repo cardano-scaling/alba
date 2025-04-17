@@ -1,8 +1,10 @@
 //! Simple Lottery's Proof structure
 use super::params::Params;
-use crate::utils::errors::{ProofGenerationError, VerificationError};
-use crate::utils::types::Element;
-use crate::utils::{sample, types::truncate};
+use crate::utils::{
+    errors::{ProofGenerationError, VerificationError},
+    sample,
+    types::{truncate, Element},
+};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
 
@@ -132,8 +134,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &Element<E>) -> bool {
-        let mut hasher = H::new();
-        hasher = hasher.chain_update(element.as_ref());
+        let mut hasher = H::new().chain_update(element.as_ref());
         if let Some(index) = element.index {
             hasher = hasher.chain_update(index.to_be_bytes());
         }

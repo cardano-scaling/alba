@@ -313,8 +313,7 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// prehashing S_p
     fn bin_hash(set_size: u64, retry_counter: u64, element: &Element<E>) -> Option<u64> {
         let retry_bytes: [u8; 8] = retry_counter.to_be_bytes();
-        let mut hasher = H::new();
-        hasher = hasher
+        let mut hasher = H::new()
             .chain_update(b"Telescope-bin_hash")
             .chain_update(retry_bytes)
             .chain_update(element.as_ref());

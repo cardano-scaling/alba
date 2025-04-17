@@ -2,10 +2,9 @@
 
 #![doc = include_str!("../../docs/rustdoc/centralized_telescope/round.md")]
 
-use crate::utils::types::Element;
 use crate::utils::{
     sample,
-    types::{truncate, Hash},
+    types::{truncate, Element, Hash},
 };
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;

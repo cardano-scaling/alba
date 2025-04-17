@@ -1,8 +1,10 @@
 //! Customer facing Lottery structure
 use super::params::Params;
 use super::proof::Proof;
-use crate::utils::errors::{ProofGenerationError, VerificationError};
-use crate::utils::types::Element;
+use crate::utils::{
+    errors::{ProofGenerationError, VerificationError},
+    types::Element,
+};
 use digest::{Digest, FixedOutput};
 
 /// The main simple lottery struct with prove and verify functions.
