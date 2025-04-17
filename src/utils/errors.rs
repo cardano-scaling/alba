@@ -39,6 +39,15 @@ pub enum VerificationError {
     /// Proof does not respect the given parameters
     #[error("Some parameters are not respected")]
     InvalidParameters,
+    /// Proof does not contain unique elements (Lottery)
+    #[error("Some elements are repeated")]
+    RepeatedElements,
+    /// Proof's elements are not sorted (Lottery)
+    #[error("Elements are not sorted")]
+    UnsortedElements,
+    /// Proof's elements are not unique (Lottery)
+    #[error("Elements are not unique")]
+    UniqueElements,
     /// Proof does not verify successfully
     #[error("The proof does not verify")]
     InvalidProof,

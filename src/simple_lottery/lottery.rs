@@ -1,6 +1,7 @@
 //! Customer facing Lottery structure
 use super::params::Params;
 use super::proof::Proof;
+use crate::utils::errors::{ProofGenerationError, VerificationError};
 use crate::utils::types::Element;
 use digest::{Digest, FixedOutput};
 
@@ -8,6 +9,7 @@ use digest::{Digest, FixedOutput};
 #[derive(Debug, Clone, Copy)]
 pub struct Lottery {
     params: Params,
+    set_size: u64,
 }
 
 impl Lottery {
@@ -37,7 +39,7 @@ impl Lottery {
         lower_bound: u64,
     ) -> Self {
         let params = Params::new(soundness_param, completeness_param, set_size, lower_bound);
-        Self::setup_unsafe(&params)
+        Self::setup_unsafe(&params, set_size)
     }
 
     /// Use with caution. Returns a `Lottery` structure from internal
@@ -57,10 +59,13 @@ impl Lottery {
     /// use alba::simple_lottery::Lottery;
     /// use alba::simple_lottery::params::Params;
     /// let params = Params {proof_size : 200, lottery_probability: 0.001};
-    /// let lottery = Lottery::setup_unsafe(&params);
+    /// let lottery = Lottery::setup_unsafe(&params, 1_000);
     /// ```
-    pub fn setup_unsafe(params: &Params) -> Self {
-        Self { params: *params }
+    pub fn setup_unsafe(params: &Params, set_size: u64) -> Self {
+        Self {
+            params: *params,
+            set_size,
+        }
     }
 
     /// Returns the `Params` structure from the `Lottery` structure
@@ -110,10 +115,19 @@ impl Lottery {
     /// }
     /// let proof = lottery.prove::<[u8;48], Sha256>(&prover_set).unwrap();
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ProofGenerationError`
     pub fn prove<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
         &self,
         prover_set: &[Element<E>],
-    ) -> Option<Proof<E, H>> {
+    ) -> Result<Proof<E, H>, ProofGenerationError> {
+        // TODO we should check that these elements are distinct
+        if (prover_set.len() as u64) < self.set_size {
+            return Err(ProofGenerationError::NotEnoughElements);
+        }
+
         Proof::<E, H>::new(&self.params, prover_set)
     }
 
@@ -141,12 +155,16 @@ impl Lottery {
     ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let proof = lottery.prove::<[u8;48], Sha256>(&prover_set).unwrap();
-    /// assert!(lottery.verify::<[u8;48], Sha256>(&proof));
+    /// assert!(lottery.verify(&proof).is_ok());
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `VerificationError`
     pub fn verify<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
         &self,
         proof: &Proof<E, H>,
-    ) -> bool {
+    ) -> Result<(), VerificationError> {
         proof.verify(&self.params)
     }
 }
