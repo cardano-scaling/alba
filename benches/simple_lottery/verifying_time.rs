@@ -33,12 +33,12 @@ fn verify_duration<H: Digest + FixedOutput>(
     // Generate the proof
     let proof_opt = telescope.prove::<Data, H>(&dataset);
 
-    if let Some(proof) = proof_opt {
+    if let Ok(proof) = proof_opt {
         // Iterate on each sample `n` times
         for _ in 0..n {
             // Benching the verification time
             let start = Instant::now();
-            black_box(telescope.verify(&proof));
+            let _ = black_box(telescope.verify(&proof));
             total_duration = total_duration.saturating_add(start.elapsed());
         }
     }
