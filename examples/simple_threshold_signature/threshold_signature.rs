@@ -1,6 +1,7 @@
 use crate::simple_threshold_signature::signature::Signature;
 use alba::centralized_telescope::proof::Proof;
 use alba::centralized_telescope::Telescope;
+use alba::utils::types::Element;
 use blst::{
     min_sig::{PublicKey, Signature as BlsSignature},
     BLST_ERROR,
@@ -24,7 +25,10 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         public_key_list: &[(usize, PublicKey)],
     ) -> (Self, Vec<usize>) {
         // Convert signatures to bytes and collect as the prover set.
-        let prover_set: Vec<SigBytes> = signatures.iter().map(|s| s.signature.to_bytes()).collect();
+        let prover_set: Vec<Element<SigBytes>> = signatures
+            .iter()
+            .map(|s| Element::new(s.signature.to_bytes(), None))
+            .collect();
 
         println!("-- Creating alba proof. ");
         // Create alba proof with the prover set
@@ -47,7 +51,7 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         let proof_signatures: Vec<BlsSignature> = proof
             .element_sequence
             .iter()
-            .filter_map(|element| BlsSignature::from_bytes(element).ok())
+            .filter_map(|element| BlsSignature::from_bytes(element.as_ref()).ok())
             .collect();
 
         // Collect the indices of the signatures that create alba proof.
@@ -81,7 +85,7 @@ impl<H: Digest + FixedOutput> ThresholdSignature<H> {
         let mut signatures = Vec::with_capacity(self.proof.element_sequence.len());
         // Get the bls signatures from byte representation
         for sig_bytes in &self.proof.element_sequence {
-            let Ok(signature) = BlsSignature::from_bytes(sig_bytes.as_slice()) else {
+            let Ok(signature) = BlsSignature::from_bytes(sig_bytes.as_ref()) else {
                 return false;
             };
             signatures.push(signature);

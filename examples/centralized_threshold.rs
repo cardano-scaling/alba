@@ -15,6 +15,7 @@ mod aggregate_signature;
 
 const DATA_LENGTH: usize = 48;
 pub(crate) type Data = [u8; DATA_LENGTH];
+use alba::utils::types::Element;
 use digest::{Digest, FixedOutput};
 use sha2::Sha512;
 
@@ -59,8 +60,11 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
                 return None;
             }
 
-            // Collect the byte representation of valid signatures into a Vec
-            let prover_set: Vec<Data> = valid_signatures.keys().copied().collect();
+            // Create elements for prover from the valid signatures
+            let prover_set: Vec<Element<Data>> = valid_signatures
+                .iter()
+                .map(|vs| Element::new(*vs.0, Some(*vs.1 as u64)))
+                .collect();
 
             println!("-- Creating alba proof. ");
             let time_gen_proof = Instant::now();
@@ -86,7 +90,9 @@ impl<H: Digest + FixedOutput> AlbaThresholdSignature<H> {
             let indices: Vec<usize> = proof
                 .element_sequence
                 .iter()
-                .filter_map(|element: &Data| valid_signatures.get(element.as_slice()).copied())
+                .filter_map(|element: &Element<Data>| {
+                    valid_signatures.get(element.as_ref()).copied()
+                })
                 .collect();
 
             let commitment = get_commitment::<N>(checksum, msg).to_vec();
