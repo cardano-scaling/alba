@@ -1,5 +1,6 @@
-//! Types and implementation
+//! Types, traits and their implementation
 
+use super::errors::ElementError;
 use std::cmp::Ordering;
 
 /// Digest size for internal hashes
@@ -32,31 +33,43 @@ impl<E: AsRef<[u8]> + Clone> Element<E> {
     }
 
     /// Sort given list of elements
-    pub fn sort_elements(elements: &[Element<E>]) -> Option<Vec<Element<E>>> {
+    /// # Errors
+    ///
+    /// Returns an `ElementError`
+    pub fn sort_elements(elements: &[Element<E>]) -> Result<Vec<Element<E>>, ElementError> {
         if elements.is_empty() {
-            return Some(vec![]);
+            return Ok(vec![]);
         }
 
         let all_have_index = elements[0].index.is_some();
         if elements.iter().any(|e| e.index.is_some() != all_have_index) {
-            return None; // Mixed Some and None
+            // Mixed Some and None
+            return Err(ElementError::InconsistentElements);
         }
 
         let mut sorted = elements.to_vec();
 
+        let mut unique_elements = true;
         sorted.sort_unstable_by(|a, b| {
             a.as_ref()
                 .cmp(b.as_ref())
                 .then(if let (Some(a_i), Some(b_i)) = (a.index, b.index) {
-                    match a_i.cmp(&b_i) {
-                        Ordering::Equal => panic!("a = b, a.index = b.index"),
-                        c => c,
+                    if a_i.cmp(&b_i).is_eq() {
+                        unique_elements = false;
                     }
+                    a_i.cmp(&b_i)
                 } else {
-                    panic!("a=b, and at least one has no index");
+                    // Should not happen
+                    unique_elements = false;
+                    Ordering::Equal
                 })
         });
-        Some(sorted)
+
+        if unique_elements {
+            Ok(sorted)
+        } else {
+            Err(ElementError::RepeatedElements)
+        }
     }
 
     /// Return true if the elements is sorted
@@ -67,6 +80,14 @@ impl<E: AsRef<[u8]> + Clone> Element<E> {
                     && a.index
                         .is_some_and(|a_i| b.index.is_some_and(|b_i| a_i < b_i)))
         })
+    }
+
+    /// Return true if the elements are unique
+    pub fn is_unique(elements: &[Element<E>]) -> bool {
+        !matches!(
+            Element::sort_elements(elements),
+            Err(ElementError::RepeatedElements)
+        )
     }
 }
 

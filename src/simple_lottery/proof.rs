@@ -1,7 +1,10 @@
 //! Simple Lottery's Proof structure
 use super::params::Params;
-use crate::utils::types::Element;
-use crate::utils::{sample, types::truncate};
+use crate::utils::{
+    errors::{ProofGenerationError, VerificationError},
+    sample,
+    types::{truncate, Element},
+};
 use digest::{Digest, FixedOutput};
 use std::marker::PhantomData;
 
@@ -41,23 +44,37 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     /// }
     /// let proof = Proof::<[u8;48], Sha256>::new(&params, &prover_set).unwrap();
     /// ```
-    pub fn new(params: &Params, prover_set: &[Element<E>]) -> Option<Self> {
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ProofGenerationError`
+    pub fn new(params: &Params, prover_set: &[Element<E>]) -> Result<Self, ProofGenerationError> {
         debug_assert!(crate::utils::misc::check_distinct(prover_set));
 
-        let mut element_sequence = Vec::with_capacity(params.proof_size as usize);
+        if params.proof_size > prover_set.len() as u64 {
+            return Err(ProofGenerationError::NotEnoughElements);
+        }
+
+        let mut element_sequence = Vec::new();
         for element in prover_set {
             if Self::lottery_hash(params.lottery_probability, element) {
                 element_sequence.push(element.clone());
             }
-            if element_sequence.len() as u64 >= params.proof_size {
-                let sorted_element_sequence = Element::sort_elements(&element_sequence).unwrap();
-                return Some(Self {
-                    element_sequence: sorted_element_sequence,
-                    hasher: PhantomData,
-                });
-            }
         }
-        None
+
+        match Element::sort_elements(&element_sequence) {
+            Ok(sorted) => {
+                let element_sequence = sorted
+                    .into_iter()
+                    .take(params.proof_size as usize)
+                    .collect();
+                Ok(Self {
+                    element_sequence,
+                    hasher: PhantomData,
+                })
+            }
+            _ => Err(ProofGenerationError::NotFound),
+        }
     }
 
     /// Simple Telescope's verification algorithm, returns true if the proof is
@@ -86,30 +103,38 @@ impl<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput> Proof<E, H> {
     ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let proof = Proof::<[u8;48], Sha256>::new(&params, &prover_set).unwrap();
-    /// let b = proof.verify(&params);
-    /// assert!(b);
+    /// assert!(proof.verify(&params).is_ok());
     /// ```
-    pub fn verify(&self, params: &Params) -> bool {
+    /// # Errors
+    ///
+    /// Returns a `VerificationError`
+    pub fn verify(&self, params: &Params) -> Result<(), VerificationError> {
         if self.element_sequence.len() as u64 != params.proof_size {
-            // println!("len: {}, proof size: {}", self.element_sequence.len(), params.proof_size);
-            return false;
+            return Err(VerificationError::IncorrectNumberElements);
         }
 
-        let sorted = Element::<E>::is_sorted(&self.element_sequence);
+        if !Element::<E>::is_sorted(&self.element_sequence) {
+            return Err(VerificationError::UnsortedElements);
+        }
 
-        let all_pass_lottery = self
+        if !Element::<E>::is_unique(&self.element_sequence) {
+            return Err(VerificationError::RepeatedElements);
+        }
+
+        if !self
             .element_sequence
             .iter()
-            .all(|element| Self::lottery_hash(params.lottery_probability, element));
-
-        sorted && all_pass_lottery
+            .all(|element| Self::lottery_hash(params.lottery_probability, element))
+        {
+            return Err(VerificationError::InvalidProof);
+        }
+        Ok(())
     }
 
     /// Oracle defined as Bernoulli(q) returning 1 with probability q and 0
     /// otherwise
     fn lottery_hash(lottery_probability: f64, element: &Element<E>) -> bool {
-        let mut hasher = H::new();
-        hasher = hasher.chain_update(element.as_ref());
+        let mut hasher = H::new().chain_update(element.as_ref());
         if let Some(index) = element.index {
             hasher = hasher.chain_update(index.to_be_bytes());
         }

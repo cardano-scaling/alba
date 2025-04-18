@@ -35,7 +35,7 @@ fn prove_duration<H: Digest + FixedOutput>(
     for _ in 0..n {
         // Bench the proving time
         let start = Instant::now();
-        black_box(telescope.prove::<Data, H>(&dataset));
+        let _proof = black_box(telescope.prove::<Data, H>(&dataset));
         total_duration = total_duration.saturating_add(start.elapsed());
     }
     total_duration

@@ -1,7 +1,10 @@
 //! Customer facing Centralized Telescope structure
 use super::params::Params;
 use super::proof::Proof;
-use crate::utils::types::Element;
+use crate::utils::{
+    errors::{ProofGenerationError, VerificationError},
+    types::Element,
+};
 use digest::{Digest, FixedOutput};
 
 /// The main centralized Telescope struct with prove and verify functions.
@@ -141,10 +144,14 @@ impl Telescope {
     /// }
     /// let proof = telescope.prove::<[u8; 48], Sha256>(&prover_set).unwrap();
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `ProofGenerationError`
     pub fn prove<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
         &self,
         prover_set: &[Element<E>],
-    ) -> Option<Proof<E, H>> {
+    ) -> Result<Proof<E, H>, ProofGenerationError> {
         Proof::new(self.set_size, &self.params, prover_set)
     }
 
@@ -172,12 +179,16 @@ impl Telescope {
     ///     prover_set.push(Element::new([(i % 256) as u8 ; 48], Some(i)));
     /// }
     /// let proof = telescope.prove::<[u8; 48], Sha256>(&prover_set).unwrap();
-    /// assert!(telescope.verify::<[u8;48], Sha256>(&proof));
+    /// assert!(telescope.verify(&proof).is_ok());
     /// ```
+    ///
+    /// # Errors
+    ///
+    /// Returns a `VerificationError`
     pub fn verify<E: AsRef<[u8]> + Clone, H: Digest + FixedOutput>(
         &self,
         proof: &Proof<E, H>,
-    ) -> bool {
+    ) -> Result<(), VerificationError> {
         proof.verify(self.set_size, &self.params)
     }
 }
