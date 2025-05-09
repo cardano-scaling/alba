@@ -7,3 +7,6 @@ title = "ALBA"
 
 [output.html]
 mathjax-support = true
+
+[preprocessor.katex]
+macros = "./macros.txt"
